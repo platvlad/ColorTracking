@@ -1,17 +1,17 @@
 #include <GroundTruthPoseGetter.h>
-#include <InputReader.h>
+#include <DataIO.h>
 
 GroundTruthPoseGetter::GroundTruthPoseGetter(const boost::filesystem::path& ground_truth_path) : current_frame(1),
                                                                                                  path(ground_truth_path)
 {
-    frame_number = InputReader::getNumFrames(ground_truth_path);
+    frame_number = DataIO::getNumFrames(ground_truth_path);
 }
 
-glm::mat4 GroundTruthPoseGetter::getPose()
+glm::mat4 GroundTruthPoseGetter::getPose(const cv::Mat& frame)
 {
     if (current_frame <= frame_number)
     {
-        glm::mat4 pose = InputReader::getPose(path);
+        glm::mat4 pose = DataIO::getPose(path, current_frame);
         ++current_frame;
         return pose;
     }

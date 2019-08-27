@@ -1,5 +1,6 @@
 #include <iostream>
 #include <boost/filesystem/operations.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 
 #define TINYOBJLOADER_IMPLEMENTATION
@@ -7,27 +8,27 @@
 
 #include "test_runner/io.hpp"
 
-#include "InputReader.h"
+#include "DataIO.h"
 
-InputReader::InputReader(const std::string& directory_name)
+DataIO::DataIO(const std::string& directory_name) : directory_name(directory_name)
 {
     boost::filesystem::path mesh_path(directory_name + "/mesh.obj");
     boost::filesystem::path camera_path(directory_name+ "/camera.yml");
     ground_truth_path = boost::filesystem::path(directory_name+ "/ground_truth.yml");
     boost::filesystem::path video_path(directory_name + "/rgb");
-    histograms::Mesh mesh = InputReader::getMesh(mesh_path);
-    videoCapture = InputReader::getVideo(video_path);
+    histograms::Mesh mesh = DataIO::getMesh(mesh_path);
+    videoCapture = DataIO::getVideo(video_path);
     int height = videoCapture.get(cv::CAP_PROP_FRAME_HEIGHT);
     int width = videoCapture.get(cv::CAP_PROP_FRAME_WIDTH);
-    glm::mat4 camera_matrix = InputReader::getCamera(camera_path, height);
-    glm::mat4 pose = InputReader::getPose(ground_truth_path);
-    float zNear = InputReader::getZNear(pose);
-    Renderer renderer(camera_matrix, zNear, zNear * 10000, width, height);
+    glm::mat4 camera_matrix = DataIO::getCamera(camera_path, height);
+    glm::mat4 pose = DataIO::getPose(ground_truth_path);
+    float zNear = DataIO::getZNear(pose);
+    Renderer renderer = Renderer(camera_matrix, zNear, zNear * 10000, width, height);
     histograms::Object3d some_other_object = histograms::Object3d(mesh, renderer);
     object3D = some_other_object;
 }
 
-histograms::Mesh InputReader::getMesh(const boost::filesystem::path& path)
+histograms::Mesh DataIO::getMesh(const boost::filesystem::path& path)
 {
     std::string file_name = path.string();
     std::vector<glm::vec3> vertices;
@@ -62,7 +63,7 @@ histograms::Mesh InputReader::getMesh(const boost::filesystem::path& path)
     return histograms::Mesh(vertices, faces);
 }
 
-glm::mat4 InputReader::getCamera(const boost::filesystem::path& path, int height)
+glm::mat4 DataIO::getCamera(const boost::filesystem::path& path, int height)
 {
     glm::mat4 input_camera = testrunner::readCamera(path);
     bool kinect_matrix = true;
@@ -73,19 +74,19 @@ glm::mat4 InputReader::getCamera(const boost::filesystem::path& path, int height
     return input_camera;
 }
 
-glm::mat4 InputReader::getPose(const boost::filesystem::path &path, int frame_number)
+glm::mat4 DataIO::getPose(const boost::filesystem::path &path, int frame_number)
 {
     std::map<int, testrunner::Pose> poses = testrunner::readPoses(path);
     return poses[frame_number].pose;
 }
 
-int InputReader::getNumFrames(const boost::filesystem::path& path)
+int DataIO::getNumFrames(const boost::filesystem::path& path)
 {
     std::map<int, testrunner::Pose> poses = testrunner::readPoses(path);
     return poses.size();
 }
 
-cv::VideoCapture InputReader::getVideo(const boost::filesystem::path& filePath)
+cv::VideoCapture DataIO::getVideo(const boost::filesystem::path& filePath)
 {
     using namespace boost::filesystem;
     std::string fileName = filePath.string();
@@ -97,11 +98,44 @@ cv::VideoCapture InputReader::getVideo(const boost::filesystem::path& filePath)
     return cv::VideoCapture(fileName);
 }
 
-float InputReader::getZNear(const glm::mat4& pose)
+float DataIO::getZNear(const glm::mat4& pose)
 {
     float x = pose[3][0];
     float y = pose[3][1];
     float z = pose[3][2];
     float distance = sqrt(x * x + y * y + z * z);
     return distance * 0.01f;
+}
+
+void DataIO::writePositions()
+{
+    boost::filesystem::path output_yml_path(directory_name + "/output.yml");
+    testrunner::writePoses(estimated_poses, output_yml_path);
+}
+
+void DataIO::writePng(cv::Mat3b frame, int frame_number)
+{
+    cv::Mat3b output = frame.clone();
+    const Renderer& renderer = object3D.getRenderer();
+    const histograms::Mesh& mesh = object3D.getMesh();
+    glm::mat4 pose = estimated_poses[frame_number].pose;
+    renderer.renderMesh(mesh, output, pose);
+//    Maps maps = renderer.projectMesh(mesh, pose);
+//    cv::Mat& mask = maps.mask;
+//    cv::Rect roi =  maps.roi;
+//    for (int row = 0; row < output.rows; ++row)
+//    {
+//        for (int column = 0; column < output.cols; ++column)
+//        {
+//            if (mask.at<uchar>(row, column))
+//            {
+//                output.at<cv::Vec3b>(row, column) = cv::Vec3b(0, 128, 0);
+//                cv::Vec3b abracadabra = frame.at<cv::Vec3b>(row, column);
+//            }
+//        }
+//    }
+    std::string frame_name = std::to_string(frame_number);
+    frame_name = std::string(4 - frame_name.length(), '0') + frame_name;
+
+    cv::imwrite(directory_name + "/output_frames/" + frame_name + ".png", output);
 }

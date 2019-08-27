@@ -12,7 +12,7 @@ set(DEBUG_LIBRARIES
         /usr/local/lib/libnlopt.dylib
         ${PROJECT_SOURCE_DIR}/deps/lib/libyaml-cpp.a
         ${PROJECT_SOURCE_DIR}/../histograms/cmake-build-debug/libhistograms.a
-        ${PROJECT_SOURCE_DIR}/../Renderer/cmake-build-debug/libRenderer.a
+#        ${PROJECT_SOURCE_DIR}/../Renderer/cmake-build-debug/libRenderer.a
         )
 
 set(OPTIMIZED_LIBRARIES
@@ -21,7 +21,7 @@ set(OPTIMIZED_LIBRARIES
         /usr/local/lib/libnlopt.dylib
         ${PROJECT_SOURCE_DIR}/deps/lib/libyaml-cpp.a
         ${PROJECT_SOURCE_DIR}/../histograms/cmake-build-release/libhistograms.a
-        ${PROJECT_SOURCE_DIR}/../Renderer/cmake-build-release/libRenderer.a
+#        ${PROJECT_SOURCE_DIR}/../Renderer/cmake-build-release/libRenderer.a
         )
 
 INCLUDE_DIRECTORIES(
@@ -29,12 +29,12 @@ INCLUDE_DIRECTORIES(
         ${PROJECT_SOURCE_DIR}/deps/include
         ../deps/include
         ${PROJECT_SOURCE_DIR}/../histograms/include
-        ${PROJECT_SOURCE_DIR}/../Renderer/include
+#        ${PROJECT_SOURCE_DIR}/../Renderer/include
         include
         tests
 )
 
-add_executable(ColorTracking main.cpp include/InputReader.h src/InputReader.cpp include/GroundTruthPoseGetter.h src/GroundTruthPoseGetter.cpp tests/tests.cpp tests/tests.h include/test_runner/argparsing.hpp include/test_runner/data.hpp include/test_runner/io.hpp include/utils/OptProcessor.hpp src/test_runner/argparsing.cpp src/test_runner/data.cpp src/test_runner/io.cpp src/utils/OptProcessor.cpp include/SLSQPPoseGetter.h src/SLSQPPoseGetter.cpp include/PoseGetter.h)
+add_executable(ColorTracking main.cpp include/DataIO.h src/DataIO.cpp include/GroundTruthPoseGetter.h src/GroundTruthPoseGetter.cpp tests/tests.cpp tests/tests.h include/test_runner/argparsing.hpp include/test_runner/data.hpp include/test_runner/io.hpp include/utils/OptProcessor.hpp src/test_runner/argparsing.cpp src/test_runner/data.cpp src/test_runner/io.cpp src/utils/OptProcessor.cpp include/SLSQPPoseGetter.h src/SLSQPPoseGetter.cpp include/PoseGetter.h)
 
 TARGET_LINK_LIBRARIES(ColorTracking debug ${DEBUG_LIBRARIES})
 TARGET_LINK_LIBRARIES(ColorTracking optimized ${OPTIMIZED_LIBRARIES})

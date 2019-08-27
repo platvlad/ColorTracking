@@ -13,6 +13,7 @@ namespace histograms
         Maps maps = renderer.projectMesh(mesh, pose);
         int histogram_radius = object.getHistogramRadius();
         cv::Rect roi = maps.getExtendedROI(histogram_radius);
+        const cv::Mat1f& signed_distance = maps.signed_distance(roi);
 
         std::vector< std::vector <std::vector<const Histogram* > > > histogram_centers_on_image(roi.height);
         for (int row = 0; row < roi.height; ++row)
@@ -20,7 +21,7 @@ namespace histograms
             histogram_centers_on_image[row] = std::vector< std::vector<const Histogram*> >(roi.width);
             for (int column = 0; column < roi.width; ++column)
             {
-                histogram_centers_on_image[row][column] = std::vector<const Histogram*>();
+                histogram_centers_on_image[row][column] = std::vector<const Histogram *>();
             }
         }
 
@@ -33,13 +34,13 @@ namespace histograms
             int row = (int)round(pixel.y);
             int roi_column = column - roi.x;
             int roi_row = row - roi.y;
-            if (row == 120 && column == 193)
-            {
-
-            }
             if (roi_column > 0 && roi_column < roi.width && roi_row >= 0 && roi_row < roi.height)
             {
-                if (pixel.z <= maps.depth_map.at<float>(pixel.y, pixel.x))
+//                if (pixel.z <= maps.depth_map.at<float>(pixel.y, pixel.x))
+//                {
+//                    histogram_centers_on_image[roi_row][roi_column].push_back(&histograms[i]);
+//                }
+                if (abs(signed_distance(roi_row, roi_column)) < 5)
                 {
                     histogram_centers_on_image[roi_row][roi_column].push_back(&histograms[i]);
                 }
@@ -94,7 +95,7 @@ namespace histograms
                     float histo_vote_background = 1 - histo_vote_foreground;
                     float new_error = -log(heaviside_value * histo_vote_foreground +
                                           (1 - heaviside_value) * histo_vote_background);
-                    if (new_error < 0.05f)
+                    if (new_error > 0.15f)
                     {
 
                     }

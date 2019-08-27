@@ -1,5 +1,7 @@
-#ifndef COLORTRACKING_INPUTREADER_H
-#define COLORTRACKING_INPUTREADER_H
+#ifndef COLORTRACKING_DATAIO_H
+#define COLORTRACKING_DATAIO_H
+
+#include <map>
 
 #include <glm/mat4x4.hpp>
 #include <boost/filesystem/path.hpp>
@@ -7,14 +9,22 @@
 #include <opencv2/videoio.hpp>
 #include <Object3d.h>
 
-class InputReader
+#include "test_runner/io.hpp"
+
+class DataIO
 {
 public:
     histograms::Object3d object3D;
     cv::VideoCapture videoCapture;
+    std::string directory_name;
     boost::filesystem::path ground_truth_path;
+    std::map<int, testrunner::Pose> estimated_poses;
 
-    explicit InputReader(const std::string& directory_name);
+    explicit DataIO(const std::string& directory_name);
+
+    void writePositions();
+
+    void writePng(cv::Mat3b frame, int frame_number);
 
     static histograms::Mesh getMesh(const boost::filesystem::path& path);
 
@@ -29,4 +39,4 @@ public:
     static float getZNear(const glm::mat4& pose);
 };
 
-#endif //COLORTRACKING_INPUTREADER_H
+#endif //COLORTRACKING_DATAIO_H

@@ -1,5 +1,6 @@
 #include <set>
 #include <iostream>
+#include <opencv2/imgcodecs.hpp>
 
 #include "Object3d.h"
 
@@ -13,7 +14,8 @@ namespace histograms
         size_t default_radius = 40;
         size_t default_width = 640;
         size_t width = renderer.getWidth();
-        histogram_radius = width * default_radius / default_width;
+        //histogram_radius = width * default_radius / default_width;
+        histogram_radius = default_radius;
         dist_to_contour = lambda * histogram_radius;
         size_t vertex_num = mesh.getVertices().size();
         histograms = std::vector<Histogram>(vertex_num, Histogram(histogram_radius));
@@ -39,7 +41,7 @@ namespace histograms
         const cv::Mat1f& signed_distance = maps.signed_distance;
         const cv::Mat1b& mask = maps.mask;
         const cv::Mat1f& heaviside = maps.heaviside;
-
+        cv::imwrite("/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/cube-3/mask.png", mask);
         std::vector< std::vector <std::vector< Histogram* > > > histogram_centers_on_image(roi.height);
         for (int row = 0; row < roi.height; ++row)
         {
@@ -135,6 +137,9 @@ namespace histograms
                     }
                 }
             }
+//            initial_foreground_pixel_num = mask_on_roi.at<uchar>(row, histogram_radius) ? 1 : 0;
+//            initial_background_pixel_num = 1 - initial_foreground_pixel_num;
+
             for (unsigned int edge_column = 0; edge_column <= histogram_radius; ++edge_column)
             {
                 int top_edge_row_on_image = row - edge_curve[edge_column + histogram_radius];
@@ -166,6 +171,19 @@ namespace histograms
 
         cv::Mat3b color_on_roi = discretized_color(roi);
         std::set<Histogram*> row_beginning_set = std::set<Histogram*>();
+
+        for (unsigned int row = 0; row <= histogram_radius; ++row)
+        {
+            for (int column = 0; column <= edge_curve[row + histogram_radius]; ++column)
+            {
+                std::vector<Histogram*> hist_vector = histogram_centers_on_image[row][column];
+                for (size_t i = 0; i < hist_vector.size(); ++i)
+                {
+                    row_beginning_set.insert(hist_vector[i]);
+                }
+            }
+        }
+
         for (int row = 0; row < color_on_roi.rows; ++row)
         {
             std::set<Histogram*> histograms_set = row_beginning_set;
@@ -235,6 +253,13 @@ namespace histograms
                     }
                 }
             }
+//            std::vector<Histogram*> &top_histograms =
+//                    histogram_centers_on_image[row][histogram_radius];
+//            if (row < roi.height - 1)
+//            {
+//                std::vector<Histogram*>& bottom_histograms =
+//                        histogram_centers_on_image[row + 1][histogram_radius];
+//            }
 
         }
 
