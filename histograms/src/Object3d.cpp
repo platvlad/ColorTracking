@@ -13,7 +13,8 @@ namespace histograms
         size_t default_radius = 40;
         size_t default_width = 640;
         size_t width = renderer.getWidth();
-        histogram_radius = width * default_radius / default_width;
+        // histogram_radius = width * default_radius / default_width;
+        histogram_radius = default_radius;
         dist_to_contour = lambda * histogram_radius;
         size_t vertex_num = mesh.getVertices().size();
         histograms = std::vector<Histogram>(vertex_num, Histogram(histogram_radius));

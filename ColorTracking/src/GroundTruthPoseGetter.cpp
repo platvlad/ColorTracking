@@ -7,7 +7,7 @@ GroundTruthPoseGetter::GroundTruthPoseGetter(const boost::filesystem::path& grou
     frame_number = InputReader::getNumFrames(ground_truth_path);
 }
 
-glm::mat4 GroundTruthPoseGetter::getPose()
+glm::mat4 GroundTruthPoseGetter::getPose(const cv::Mat& frame)
 {
     if (current_frame <= frame_number)
     {

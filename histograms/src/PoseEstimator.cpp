@@ -13,6 +13,7 @@ namespace histograms
         Maps maps = renderer.projectMesh(mesh, pose);
         int histogram_radius = object.getHistogramRadius();
         cv::Rect roi = maps.getExtendedROI(histogram_radius);
+        const cv::Mat1f& signed_distance = maps.signed_distance(roi);
 
         std::vector< std::vector <std::vector<const Histogram* > > > histogram_centers_on_image(roi.height);
         for (int row = 0; row < roi.height; ++row)
@@ -41,7 +42,10 @@ namespace histograms
             {
                 if (pixel.z <= maps.depth_map.at<float>(pixel.y, pixel.x))
                 {
-                    histogram_centers_on_image[roi_row][roi_column].push_back(&histograms[i]);
+                    if (abs(signed_distance(roi_row, roi_column)) < 5)
+                    {
+                        histogram_centers_on_image[roi_row][roi_column].push_back(&histograms[i]);
+                    }
                 }
             }
         }

@@ -59,7 +59,7 @@ glm::vec3 Renderer::projectVertex(const glm::vec3& vertex, const glm::mat4& pose
     glm::vec4 p_hom = camera_matrix * v_hom;
     if (p_hom[3] != 0.0f)
     {
-        return glm::vec3(p_hom[0] / p_hom[3], p_hom[1] / p_hom[3], p_hom[3]);
+        return glm::vec3(p_hom[0] / p_hom[3], -2 * camera_matrix[2][1] - (p_hom[1] / p_hom[3]), p_hom[3]);
     }
     return glm::vec3();
 }

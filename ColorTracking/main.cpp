@@ -125,13 +125,12 @@ void slsqpOptimization()
         object3D.updateHistograms(frame, pose);
 
         videoCapture >> frame;
-        poseGetter.setFrame(frame);
         ++frame_number;
         if (frame.empty())
         {
             break;
         }
-        pose = poseGetter.getPose();
+        pose = poseGetter.getPose(frame);
 
         std::cout << frame_number << ' ' << estimateEnergy(object3D, frame, pose) << std::endl;
         //plotEnergy(object3D, frame, pose, frame_number);
