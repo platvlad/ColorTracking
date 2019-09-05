@@ -98,7 +98,7 @@ void plotEnergyRodrigues(const Object3d& object3d, const cv::Mat& frame, const g
     float rotation_step = max_rotation / num_points;
     float translation_step = max_translation / num_points;
     std::string base_file_name =
-            "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/ho_fm_f/plots/" + std::to_string(frame_number);
+            "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/ir_ir_5_r/plots/" + std::to_string(frame_number);
     std::ofstream fout_rot_x( base_file_name + "rot_x.yml");
     std::ofstream fout_rot_y(base_file_name + "rot_y.yml");
     std::ofstream fout_rot_z(base_file_name + "rot_z.yml");
@@ -204,10 +204,17 @@ void slsqpOptimization()
             break;
         }
         pose = poseGetter.getPose(frame);
-
         std::cout << frame_number << ' ' << estimateEnergy(object3D, frame, pose) << std::endl;
-        //plotEnergy(object3D, frame, pose, frame_number);
-
+//        if (frame_number == 4)
+//        {
+//            GroundTruthPoseGetter groundTruthPoseGetter = GroundTruthPoseGetter(gt_path);
+//            groundTruthPoseGetter.getPose(frame);
+//            groundTruthPoseGetter.getPose(frame);
+//            groundTruthPoseGetter.getPose(frame);
+//            pose = groundTruthPoseGetter.getPose(frame);
+//            std::cout << frame_number << " real " << estimateEnergy(object3D, frame, pose) << std::endl;
+//            plotEnergyRodrigues(object3D, frame, pose, frame_number);
+//        }
     }
     data.writePositions();
 }

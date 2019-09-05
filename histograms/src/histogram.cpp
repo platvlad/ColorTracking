@@ -17,7 +17,7 @@ namespace histograms
     {
     }
 
-    void Histogram::setForegroundBackground(size_t foreground, size_t background)
+    void Histogram::setForegroundBackground(float foreground, float background)
     {
         visited = true;
         eta_f = 0;

@@ -14,8 +14,8 @@ namespace histograms
         bool first_visit;
         bool visited;
 
-        size_t num_foreground;
-        size_t num_background;
+        float num_foreground;
+        float num_background;
 
         float eta_f;
         float eta_b;
@@ -26,7 +26,7 @@ namespace histograms
     public:
         explicit Histogram(unsigned int radius);
 
-        void setForegroundBackground(size_t foreground, size_t background);
+        void setForegroundBackground(float foreground, float background);
 
         void incrementColor(uchar blue, uchar green, uchar red, float heaviside);
 

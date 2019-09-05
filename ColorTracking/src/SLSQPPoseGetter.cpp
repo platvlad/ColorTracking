@@ -25,11 +25,11 @@ SLSQPPoseGetter::SLSQPPoseGetter(histograms::Object3d* object3d, const glm::mat4
     pass_to_optimization.delta_step[4] = 1e-2f * max_rotation_shift;
     pass_to_optimization.delta_step[5] = 1e-2f * max_rotation_shift;
 
-    opt = nlopt_create(NLOPT_LD_SLSQP, 6);
-    //opt = nlopt_create(NLOPT_LN_NELDERMEAD, 6);
+    //opt = nlopt_create(NLOPT_LD_SLSQP, 6);
+    opt = nlopt_create(NLOPT_LN_NELDERMEAD, 6);
     nlopt_set_min_objective(opt, energy_function, &pass_to_optimization);
     nlopt_set_ftol_rel(opt, 1e-3);
-    nlopt_set_maxeval(opt, 36);
+    nlopt_set_maxeval(opt, 108);
 }
 
 glm::mat4 SLSQPPoseGetter::params_to_transform(const double *x)
@@ -82,75 +82,29 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
     if (grad)
     {
         double x_plus_delta[6];
-        double x_plus_2delta[6];
-        double x_plus_3delta[6];
-        double x_plus_4delta[6];
-        double x_plus_5delta[6];
+//        double x_plus_2delta[6];
+//        double x_plus_3delta[6];
+//        double x_plus_4delta[6];
+//        double x_plus_5delta[6];
         double x_minus_delta[6];
-        double x_minus_2delta[6];
-        double x_minus_3delta[6];
-        double x_minus_4delta[6];
-        double x_minus_5delta[6];
         for (int i = 0; i < 6; ++i)
         {
             x_plus_delta[i] = x[i];
-            x_plus_2delta[i] = x[i];
-            x_plus_3delta[i] = x[i];
-            x_plus_4delta[i] = x[i];
-            x_plus_5delta[i] = x[i];
             x_minus_delta[i] = x[i];
-            x_minus_2delta[i] = x[i];
-            x_minus_3delta[i] = x[i];
-            x_minus_4delta[i] = x[i];
-            x_minus_5delta[i] = x[i];
         }
 
         for (int i = 0; i < 6; ++i)
         {
             x_plus_delta[i] += delta_step[i];
-            x_plus_2delta[i] += 2 * delta_step[i];
-            x_plus_3delta[i] += 3 * delta_step[i];
-            x_plus_4delta[i] += 4 * delta_step[i];
-            x_plus_5delta[i] += 5 * delta_step[i];
             x_minus_delta[i] -= delta_step[i];
-            x_minus_2delta[i] -= 2 * delta_step[i];
-            x_minus_3delta[i] -= 3 * delta_step[i];
-            x_minus_4delta[i] -= 4 * delta_step[i];
-            x_minus_5delta[i] -= 5 * delta_step[i];
             glm::mat4 plus_transform = applyResultToPose(initial_pose, x_plus_delta);
-            glm::mat4 plus2_transform = applyResultToPose(initial_pose, x_plus_2delta);
-            glm::mat4 plus3_transform = applyResultToPose(initial_pose, x_plus_3delta);
-            glm::mat4 plus4_transform = applyResultToPose(initial_pose, x_plus_4delta);
-            glm::mat4 plus5_transform = applyResultToPose(initial_pose, x_plus_5delta);
             glm::mat4 minus_transform = applyResultToPose(initial_pose, x_minus_delta);
-            glm::mat4 minus2_transform = applyResultToPose(initial_pose, x_minus_2delta);
-            glm::mat4 minus3_transform = applyResultToPose(initial_pose, x_minus_3delta);
-            glm::mat4 minus4_transform = applyResultToPose(initial_pose, x_minus_4delta);
-            glm::mat4 minus5_transform = applyResultToPose(initial_pose, x_minus_5delta);
 
             float err_plus = histograms::estimateEnergy(*object, frame, plus_transform);
-            float err_plus2 = histograms::estimateEnergy(*object, frame, plus2_transform);
-            float err_plus3 = histograms::estimateEnergy(*object, frame, plus3_transform);
-            float err_plus4 = histograms::estimateEnergy(*object, frame, plus4_transform);
-            float err_plus5 = histograms::estimateEnergy(*object, frame, plus5_transform);
             float err_minus = histograms::estimateEnergy(*object, frame, minus_transform);
-            float err_minus2 = histograms::estimateEnergy(*object, frame, minus2_transform);
-            float err_minus3 = histograms::estimateEnergy(*object, frame, minus3_transform);
-            float err_minus4 = histograms::estimateEnergy(*object, frame, minus4_transform);
-            float err_minus5 = histograms::estimateEnergy(*object, frame, minus5_transform);
             grad[i] = (err_plus - err_minus) / (2 * delta_step[i]);
-            grad[i] = (42 * (err_plus - err_minus) + 48 * (err_plus2 - err_minus2) + 27 * (err_plus3 - err_minus3) +
-                      8 * (err_plus4 - err_minus4) + err_plus5 - err_minus5) / (512 * delta_step[i]);
             x_plus_delta[i] = x[i];
-            x_plus_2delta[i] = x[i];
-            x_plus_3delta[i] = x[i];
-            x_plus_4delta[i] = x[i];
-            x_plus_5delta[i] = x[i];
             x_minus_delta[i] = x[i];
-            x_minus_2delta[i] = x[i];
-            x_minus_3delta[i] = x[i];
-            x_minus_4delta[i] = x[i];
-            x_minus_5delta[i] = x[i];
         }
     }
     return current_value;
