@@ -155,6 +155,40 @@ void plotEnergyRodrigues(const Object3d& object3d, const cv::Mat& frame, const g
     fout_tr_z.close();
 }
 
+void plotRodriguesDirection(const Object3d& object3d,
+                            const cv::Mat& frame,
+                            const glm::mat4& estimated_pose,
+                            const glm::mat4& real_pose,
+                            std::string base_file_name)
+{
+    glm::mat4 er_tr = glm::inverse(estimated_pose) * real_pose;
+    cv::Matx33f rot_matr = cv::Matx33f(er_tr[0][0], er_tr[1][0], er_tr[2][0],
+                                       er_tr[0][1], er_tr[1][1], er_tr[2][1],
+                                       er_tr[0][2], er_tr[1][2], er_tr[2][2]);
+    cv::Matx31f rot_vec = cv::Matx31f();
+    cv::Rodrigues(rot_matr, rot_vec);
+    float max_rot_x = 2 * rot_vec(0, 0);
+    float max_rot_y = 2 * rot_vec(1, 0);
+    float max_rot_z = 2 * rot_vec(2, 0);
+    float max_tr_x = 2 * er_tr[3][0];
+    float max_tr_y = 2 * er_tr[3][1];
+    float max_tr_z = 2 * er_tr[3][2];
+    int num_points = 100;
+    float steps[6] = { max_rot_x / num_points, max_rot_y / num_points, max_rot_z / num_points,
+                       max_tr_x / num_points, max_tr_y / num_points, max_tr_z / num_points };
+    std::ofstream fout(base_file_name + "tr_dir.yml");
+    fout << "frames:" << std::endl;
+    for (int pt = -num_points; pt <= num_points; ++pt)
+    {
+        int pose_number = pt + num_points + 1;
+        double params[6] = { steps[0] * pt, steps[1] * pt, steps[2] * pt, steps[3] * pt, steps[4] * pt, steps[5] * pt };
+        glm::mat4 transform = applyResultToPose(estimated_pose, params);
+        fout << "  - frame: " << pose_number << std::endl;
+        fout << "    error: " << estimateEnergy(object3d, frame, transform) << std::endl;
+    }
+    fout.close();
+}
+
 void testEvaluateEnergyHouse()
 {
     std::string input_file = "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/ho_fm_f/mesh.obj";
@@ -182,7 +216,8 @@ void testEvaluateEnergyHouse()
 
 void slsqpOptimization()
 {
-    DataIO data = DataIO("/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/ir_ir_5_r");
+    std::string directory_name = "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/foxes";
+    DataIO data = DataIO(directory_name);
     Object3d& object3D = data.object3D;
     cv::VideoCapture& videoCapture = data.videoCapture;
     boost::filesystem::path& gt_path = data.ground_truth_path;
@@ -205,16 +240,14 @@ void slsqpOptimization()
         }
         pose = poseGetter.getPose(frame);
         std::cout << frame_number << ' ' << estimateEnergy(object3D, frame, pose) << std::endl;
-//        if (frame_number == 4)
-//        {
-//            GroundTruthPoseGetter groundTruthPoseGetter = GroundTruthPoseGetter(gt_path);
-//            groundTruthPoseGetter.getPose(frame);
-//            groundTruthPoseGetter.getPose(frame);
-//            groundTruthPoseGetter.getPose(frame);
-//            pose = groundTruthPoseGetter.getPose(frame);
-//            std::cout << frame_number << " real " << estimateEnergy(object3D, frame, pose) << std::endl;
-//            plotEnergyRodrigues(object3D, frame, pose, frame_number);
-//        }
+        if (frame_number == 12)
+        {
+            GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(gt_path);
+            glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
+            std::cout << "real pose error: " << estimateEnergy(object3D, frame, real_pose) << std::endl;
+            plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plots/" + std::to_string(frame_number));
+            //plotEnergyRodrigues(object3D, frame, pose, frame_number);
+        }
     }
     data.writePositions();
 }

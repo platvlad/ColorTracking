@@ -40,16 +40,17 @@ namespace histograms
     void Histogram::incrementColor(uchar blue, uchar green, uchar red, float heaviside)
     {
         bool foreground = heaviside > 0.5f;
-        if (foreground && num_foreground)
+        eta_f += heaviside;
+        eta_b += (1 - heaviside);
+        if (num_foreground > 0)
         {
-            eta_f += heaviside;
-            prob_fg[blue][green][red] += !first_visit ? Histogram::alpha_f / num_foreground : 1.0f / num_foreground;
-            return;
+            prob_fg[blue][green][red] += !first_visit ? heaviside * Histogram::alpha_f / num_foreground : heaviside /
+                                                                                                          num_foreground;
         }
-        if (num_background)
+        if (num_background > 0)
         {
-            eta_b += (1 - heaviside);
-            prob_bg[blue][green][red] += !first_visit ? Histogram::alpha_b / num_background : 1.0f / num_background;
+            prob_bg[blue][green][red] += !first_visit ? (1 - heaviside) * Histogram::alpha_b / num_background :
+                                         (1 - heaviside) / num_background;
         }
     }
 

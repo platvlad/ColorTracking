@@ -78,26 +78,20 @@ namespace histograms
         cv::Mat1f heaviside_on_roi = heaviside(roi);
 
         //compute number of foreground and background pixels for each histogram
-        size_t initial_foreground_pixel_num = 0;
-        size_t initial_background_pixel_num = 0;
-        for (unsigned int row = 0; row <= histogram_radius; ++row)
+        float initial_foreground_pixel_num = 0;
+        float initial_background_pixel_num = 0;
+        for (int row = 0; row <= histogram_radius; ++row)
         {
             for (int column = 0; column <= edge_curve[row + histogram_radius]; ++column)
             {
-                if (mask_on_roi.at<uchar>((int)row, column))
-                {
-                    ++initial_foreground_pixel_num;
-                }
-                else
-                {
-                    ++initial_background_pixel_num;
-                }
+                initial_foreground_pixel_num += heaviside_on_roi(row, column);
+                initial_background_pixel_num += (1 - heaviside_on_roi(row, column));
             }
         }
         for (int row = 0; row < roi.height; ++row)
         {
-            size_t foreground_pixel_num = initial_foreground_pixel_num;
-            size_t background_pixel_num = initial_background_pixel_num;
+            float foreground_pixel_num = initial_foreground_pixel_num;
+            float background_pixel_num = initial_background_pixel_num;
             for (int column = 0; column < roi.width; ++column)
             {
                 std::vector<Histogram*> pixel_histograms = histogram_centers_on_image[row][column];
@@ -113,26 +107,14 @@ namespace histograms
                         int left_edge_column_on_image = column - edge_curve[edge_row];
                         if (left_edge_column_on_image >= 0 && left_edge_column_on_image < roi.width)
                         {
-                            if (mask_on_roi[edge_row_on_image][left_edge_column_on_image])
-                            {
-                                --foreground_pixel_num;
-                            }
-                            else
-                            {
-                                --background_pixel_num;
-                            }
+                            foreground_pixel_num -= heaviside_on_roi(edge_row_on_image, left_edge_column_on_image);
+                            background_pixel_num -= (1 - heaviside_on_roi(edge_row_on_image, left_edge_column_on_image));
                         }
                         int right_edge_column_on_image = column + edge_curve[edge_row] + 1;
                         if (right_edge_column_on_image >= 0 && right_edge_column_on_image < roi.width)
                         {
-                            if (mask_on_roi[edge_row_on_image][right_edge_column_on_image])
-                            {
-                                ++foreground_pixel_num;
-                            }
-                            else
-                            {
-                                ++background_pixel_num;
-                            }
+                            foreground_pixel_num += heaviside_on_roi(edge_row_on_image, right_edge_column_on_image);
+                            background_pixel_num += (1 - heaviside_on_roi(edge_row_on_image, right_edge_column_on_image));
                         }
                     }
                 }
@@ -140,31 +122,19 @@ namespace histograms
 //            initial_foreground_pixel_num = mask_on_roi.at<uchar>(row, histogram_radius) ? 1 : 0;
 //            initial_background_pixel_num = 1 - initial_foreground_pixel_num;
 
-            for (unsigned int edge_column = 0; edge_column <= histogram_radius; ++edge_column)
+            for (int edge_column = 0; edge_column <= histogram_radius; ++edge_column)
             {
                 int top_edge_row_on_image = row - edge_curve[edge_column + histogram_radius];
                 if (top_edge_row_on_image >= 0 && top_edge_row_on_image < roi.height)
                 {
-                    if (mask_on_roi[top_edge_row_on_image][edge_column])
-                    {
-                        --initial_foreground_pixel_num;
-                    }
-                    else
-                    {
-                        --initial_background_pixel_num;
-                    }
+                    initial_foreground_pixel_num -= heaviside_on_roi(top_edge_row_on_image, edge_column);
+                    initial_background_pixel_num -= (1 - heaviside_on_roi(top_edge_row_on_image, edge_column));
                 }
                 int bottom_edge_row_on_image = row + edge_curve[edge_column + histogram_radius] + 1;
                 if (bottom_edge_row_on_image >= 0 && bottom_edge_row_on_image < roi.height)
                 {
-                    if (mask_on_roi[bottom_edge_row_on_image][edge_column])
-                    {
-                        ++initial_foreground_pixel_num;
-                    }
-                    else
-                    {
-                        ++initial_background_pixel_num;
-                    }
+                    initial_foreground_pixel_num += heaviside_on_roi(bottom_edge_row_on_image, edge_column);
+                    initial_background_pixel_num += (1 - heaviside_on_roi(bottom_edge_row_on_image, edge_column));
                 }
             }
         }

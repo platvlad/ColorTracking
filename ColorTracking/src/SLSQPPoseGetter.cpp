@@ -18,12 +18,12 @@ SLSQPPoseGetter::SLSQPPoseGetter(histograms::Object3d* object3d, const glm::mat4
     max_translation_shift = 0.2f * mesh_diameter;
     max_rotation_shift = 0.5f;
 
-    pass_to_optimization.delta_step[0] = 1e-2f * max_translation_shift;
-    pass_to_optimization.delta_step[1] = 1e-2f * max_translation_shift;
-    pass_to_optimization.delta_step[2] = 1e-2f * max_translation_shift;
-    pass_to_optimization.delta_step[3] = 1e-2f * max_rotation_shift;
-    pass_to_optimization.delta_step[4] = 1e-2f * max_rotation_shift;
-    pass_to_optimization.delta_step[5] = 1e-2f * max_rotation_shift;
+    pass_to_optimization.delta_step[0] = 1e-4f * max_translation_shift;
+    pass_to_optimization.delta_step[1] = 1e-4f * max_translation_shift;
+    pass_to_optimization.delta_step[2] = 1e-4f * max_translation_shift;
+    pass_to_optimization.delta_step[3] = 1e-4f * max_rotation_shift;
+    pass_to_optimization.delta_step[4] = 1e-4f * max_rotation_shift;
+    pass_to_optimization.delta_step[5] = 1e-4f * max_rotation_shift;
 
     //opt = nlopt_create(NLOPT_LD_SLSQP, 6);
     opt = nlopt_create(NLOPT_LN_NELDERMEAD, 6);

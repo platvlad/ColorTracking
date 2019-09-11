@@ -15,7 +15,7 @@ DataIO::DataIO(const std::string& directory_name) : directory_name(directory_nam
     boost::filesystem::path mesh_path(directory_name + "/mesh.obj");
     boost::filesystem::path camera_path(directory_name+ "/camera.yml");
     ground_truth_path = boost::filesystem::path(directory_name+ "/ground_truth.yml");
-    boost::filesystem::path video_path(directory_name + "/rgb");
+    boost::filesystem::path video_path(directory_name + "/rgb.mov");
     histograms::Mesh mesh = DataIO::getMesh(mesh_path);
     videoCapture = DataIO::getVideo(video_path);
     int height = videoCapture.get(cv::CAP_PROP_FRAME_HEIGHT);
@@ -66,7 +66,7 @@ histograms::Mesh DataIO::getMesh(const boost::filesystem::path& path)
 glm::mat4 DataIO::getCamera(const boost::filesystem::path& path, int height)
 {
     glm::mat4 input_camera = testrunner::readCamera(path);
-    bool kinect_matrix = true;
+    bool kinect_matrix = false;
     if (kinect_matrix)
     {
         input_camera[2][1] = -height - input_camera[2][1];
@@ -119,21 +119,24 @@ void DataIO::writePng(cv::Mat3b frame, int frame_number)
     const Renderer& renderer = object3D.getRenderer();
     const histograms::Mesh& mesh = object3D.getMesh();
     glm::mat4 pose = estimated_poses[frame_number].pose;
-    renderer.renderMesh(mesh, output, pose);
-//    Maps maps = renderer.projectMesh(mesh, pose);
-//    cv::Mat& mask = maps.mask;
-//    cv::Rect roi =  maps.roi;
-//    for (int row = 0; row < output.rows; ++row)
-//    {
-//        for (int column = 0; column < output.cols; ++column)
-//        {
-//            if (mask.at<uchar>(row, column))
-//            {
-//                output.at<cv::Vec3b>(row, column) = cv::Vec3b(0, 128, 0);
-//                cv::Vec3b abracadabra = frame.at<cv::Vec3b>(row, column);
-//            }
-//        }
-//    }
+//    renderer.renderMesh(mesh, output, pose);
+    Maps maps = renderer.projectMesh(mesh, pose);
+    cv::Mat& mask = maps.mask;
+    cv::Rect roi =  maps.roi;
+    for (int row = 0; row < output.rows; ++row)
+    {
+        for (int column = 0; column < output.cols; ++column)
+        {
+            if (mask.at<uchar>(row, column))
+            {
+                float blue = frame(row, column)[0] / 2;
+                float green = frame(row, column)[1] / 2;
+                float red = frame(row, column)[2] / 2;
+                output.at<cv::Vec3b>(row, column) = cv::Vec3b(blue, green + 128, red);
+                cv::Vec3b abracadabra = frame.at<cv::Vec3b>(row, column);
+            }
+        }
+    }
     std::string frame_name = std::to_string(frame_number);
     frame_name = std::string(4 - frame_name.length(), '0') + frame_name;
 

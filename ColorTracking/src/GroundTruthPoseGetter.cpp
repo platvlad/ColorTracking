@@ -17,3 +17,11 @@ glm::mat4 GroundTruthPoseGetter::getPose(const cv::Mat& frame)
     }
     return glm::mat4();
 }
+
+glm::mat4 GroundTruthPoseGetter::getPose(int frame_index)
+{
+    if (frame_index > 0) {
+        return DataIO::getPose(path, frame_index);
+    }
+    return glm::mat4();
+}

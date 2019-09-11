@@ -13,5 +13,7 @@ public:
     explicit GroundTruthPoseGetter(const boost::filesystem::path& ground_truth_path);
 
     glm::mat4 getPose(const cv::Mat& frame);
+
+    glm::mat4 getPose(int frame_index);
 };
 #endif //COLORTRACKING_GROUNDTRUTHPOSEGETTER_H
