@@ -16,11 +16,12 @@ namespace histograms
     class Object3d
     {
         static const float lambda;
+        int histogram_radius;
         float dist_to_contour;
         Renderer renderer;
         Mesh mesh;
         std::vector<Histogram> histograms;
-        unsigned int histogram_radius;
+
         CircleWindow circle_window;
 
     public:
@@ -28,7 +29,7 @@ namespace histograms
 
         Object3d();
 
-        void updateHistograms(const cv::Mat& frame, const glm::mat4& pose);
+        void updateHistograms(const cv::Mat3b& frame, const glm::mat4& pose);
 
         const Mesh& getMesh() const;
 

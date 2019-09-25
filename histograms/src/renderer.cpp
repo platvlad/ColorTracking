@@ -26,9 +26,10 @@ Renderer::Renderer()
 }
 
 
-Maps Renderer::projectMesh(const histograms::Mesh& mesh, const glm::mat4& pose) const
+void Renderer::projectMesh(const histograms::Mesh& mesh, const glm::mat4& pose, Maps &maps) const
 {
-    Maps maps(width, height);
+
+    //Maps maps(width, height);
     const std::vector<glm::uvec3>& faces = mesh.getFaces();
     const std::vector<glm::vec3>& vertices = mesh.getVertices();
     for (size_t i = 0; i < faces.size(); ++i)
@@ -43,13 +44,12 @@ Maps Renderer::projectMesh(const histograms::Mesh& mesh, const glm::mat4& pose) 
 
         if (p0 != glm::vec3() && p1 != glm::vec3() && p2 != glm::vec3())
         {
-            renderTriangle(maps, i, p0, p1, p2);
+            renderTriangle(maps, p0, p1, p2);
         }
 
     }
     computeSignedDistance(maps.mask, maps.signed_distance);
     computeHeaviside(maps.signed_distance, maps.heaviside);
-    return maps;
 }
 
 glm::vec3 Renderer::projectVertex(const glm::vec3& vertex, const glm::mat4& pose) const
@@ -63,39 +63,6 @@ glm::vec3 Renderer::projectVertex(const glm::vec3& vertex, const glm::mat4& pose
     }
     return glm::vec3();
 }
-
-//const cv::Mat1f& Renderer::getDepthMap() const
-//{
-//    return depth_map;
-//}
-//
-//const cv::Mat1f& Renderer::getSignedDistance() const
-//{
-//    return signed_distance;
-//}
-//
-//const cv::Mat1f& Renderer::getHeaviside() const
-//{
-//    return heaviside;
-//}
-//
-//const cv::Mat1b& Renderer::getMask() const
-//{
-//    return mask;
-//}
-//
-//cv::Rect2i Renderer::getROI(int frame_size) const
-//{
-//    if (roi.empty())
-//    {
-//        return roi;
-//    }
-//    int left = std::max(0, roi.x - frame_size);
-//    int right = std::min(width, roi.x + roi.width + frame_size);
-//    int top = std::max(0, roi.y - frame_size);
-//    int bottom = std::min(height, roi.y + roi.height + frame_size);
-//    return cv::Rect2i(left, top, right - left, bottom - top);
-//}
 
 size_t Renderer::getWidth() const
 {
@@ -111,7 +78,7 @@ void Renderer::roundXY(glm::vec3& point)
 // z -- depth
 // x, y are in screen coordinates
 // before: depth[:, :] = std::numeric_limits<float>::max()
-void Renderer::renderTriangle(Maps& maps, int const color, glm::vec3& p0, glm::vec3& p1, glm::vec3& p2) const
+void Renderer::renderTriangle(Maps& maps, glm::vec3& p0, glm::vec3& p1, glm::vec3& p2) const
 {
     roundXY(p0);  // inplace
     roundXY(p1);
@@ -154,7 +121,6 @@ void Renderer::renderTriangle(Maps& maps, int const color, glm::vec3& p0, glm::v
             }
             if (maps.depth_map.at<float>(y, x) > p.z) {  // cv::Mat1f
                 maps.depth_map.at<float>(y, x) = p.z;
-                maps.color_map.at<float>(y, x) = color;  // cv::Mat1i
                 maps.mask.at<uchar>(y, x) = 255;
                 updateROI(maps.roi, x, y);
             }

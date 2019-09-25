@@ -15,7 +15,7 @@ using namespace histograms;
 
 namespace histograms
 {
-    float estimateEnergy(const Object3d &object, const cv::Mat &frame, const glm::mat4 &pose);
+    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose);
 }
 
 glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params);
@@ -37,13 +37,13 @@ glm::mat4 getHousePose()
     );
 }
 
-void plotEnergy(const Object3d& object3d, const cv::Mat& frame, const glm::mat4& pose, int frame_number)
+void plotEnergy(const Object3d& object3d, const cv::Mat3b& frame, const glm::mat4& pose, int frame_number)
 {
     int num_points = 100;
     float max_rotation = 1;
     float max_translation = 0.2f * object3d.getMesh().getBBDiameter();
-    float rotation_step = max_rotation / num_points;
-    float translation_step = max_translation / num_points;
+    float rotation_step = max_rotation / static_cast<float>(num_points);
+    float translation_step = max_translation / static_cast<float>(num_points);
     std::string base_file_name =
             "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/ho_fm_f/plots copy/" + std::to_string(frame_number);
     std::ofstream fout_rot_x( base_file_name + "rot_x.yml");
@@ -201,7 +201,7 @@ void testEvaluateEnergyHouse()
     glm::mat4 pose = getHousePose();
     Renderer renderer(camera_matrix, 0.08, 800, 1920, 1080);
     Object3d object3D = Object3d(house, renderer);
-    cv::Mat first_image =
+    cv::Mat3b first_image =
             cv::imread("/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/ho_fm_f/rgb/0001.png");
     object3D.updateHistograms(first_image, pose);
     float energy = estimateEnergy(object3D, first_image, pose);
@@ -240,14 +240,14 @@ void slsqpOptimization()
         }
         pose = poseGetter.getPose(frame);
         std::cout << frame_number << ' ' << estimateEnergy(object3D, frame, pose) << std::endl;
-        if (frame_number == 12)
-        {
-            GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(gt_path);
-            glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
-            std::cout << "real pose error: " << estimateEnergy(object3D, frame, real_pose) << std::endl;
-            plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plots/" + std::to_string(frame_number));
-            //plotEnergyRodrigues(object3D, frame, pose, frame_number);
-        }
+//        if (frame_number == 12)
+//        {
+//            GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(gt_path);
+//            glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
+//            std::cout << "real pose error: " << estimateEnergy(object3D, frame, real_pose) << std::endl;
+//            plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plots/" + std::to_string(frame_number));
+//            //plotEnergyRodrigues(object3D, frame, pose, frame_number);
+//        }
     }
     data.writePositions();
 }

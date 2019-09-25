@@ -22,7 +22,7 @@ private:
     int height;
 
 
-    void renderTriangle(Maps& maps, int color, glm::vec3& p0, glm::vec3& p1, glm::vec3& p2) const;
+    void renderTriangle(Maps& maps, glm::vec3& p0, glm::vec3& p1, glm::vec3& p2) const;
 
     static void renderTriangleWireframe(cv::Mat3b& color_map, glm::vec3& p0, glm::vec3& p1, glm::vec3& p2);
 
@@ -41,7 +41,7 @@ public:
 
     Renderer();
 
-    Maps projectMesh(const histograms::Mesh& mesh, const glm::mat4& pose) const;
+    void projectMesh(const histograms::Mesh& mesh, const glm::mat4& pose, Maps &maps) const;
 
     void renderMesh(const histograms::Mesh& mesh, cv::Mat3b& frame, const glm::mat4& pose) const;
 

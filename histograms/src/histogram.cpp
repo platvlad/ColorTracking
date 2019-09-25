@@ -1,29 +1,31 @@
+#include <maps.h>
 #include "histogram.h"
 
 namespace histograms
 {
     float Histogram::alpha_f = 0.1;
     float Histogram::alpha_b = 0.2;
+    bool Histogram::window_mask_initialized = false;
+    cv::Mat1b Histogram::window_mask;
 
-    Histogram::Histogram(unsigned int radius) : first_visit(true),
-                                                prob_fg(),
-                                                prob_bg(),
-                                                radius(radius),
-                                                num_foreground(0),
-                                                num_background(0),
-                                                eta_f(0),
-                                                eta_b(0),
-                                                visited(false)
+    Histogram::Histogram() : prob_fg(),
+                             prob_bg(),
+                             visited(false)
     {
+        if (!window_mask_initialized)
+        {
+            Histogram::window_mask = CircleWindow(radius).getMask();
+            window_mask_initialized = true;
+        }
     }
 
-    void Histogram::setForegroundBackground(float foreground, float background)
-    {
-        visited = true;
-        eta_f = 0;
-        eta_b = 0;
-        num_foreground = foreground;
-        num_background = background;
+    void Histogram::update(const Maps &local_square, int center_x, int center_y) {
+        std::pair<float, float> eta_f_eta_b = get_eta_f_eta_b(local_square, center_x, center_y);
+        int col_offset = static_cast<int>(radius) - center_x;
+        int row_offset = static_cast<int>(radius) - center_y;
+        float num_foreground = eta_f_eta_b.first;
+        float num_background = eta_f_eta_b.second;
+
         for (int i = 0; i < COLORS_PER_CHANNEL; ++i)
         {
             for (int j = 0; j < COLORS_PER_CHANNEL; ++j)
@@ -35,30 +37,25 @@ namespace histograms
                 }
             }
         }
-    }
 
-    void Histogram::incrementColor(uchar blue, uchar green, uchar red, float heaviside)
-    {
-        bool foreground = heaviside > 0.5f;
-        eta_f += heaviside;
-        eta_b += (1 - heaviside);
-        if (num_foreground > 0)
-        {
-            prob_fg[blue][green][red] += !first_visit ? heaviside * Histogram::alpha_f / num_foreground : heaviside /
-                                                                                                          num_foreground;
+        for (int row = 0; row < local_square.mask.rows; ++row) {
+            for (int col = 0; col < local_square.mask.cols; ++col) {
+                if (window_mask(row + row_offset, col + col_offset)) {
+                    int binSize = ceil(256.0 / COLORS_PER_CHANNEL);
+                    uchar blue = local_square.color_map(row, col)[0] / binSize;
+                    uchar green = local_square.color_map(row, col)[1] / binSize;
+                    uchar red = local_square.color_map(row, col)[2] / binSize;
+                    prob_fg[blue][green][red] += visited ?
+                            local_square.heaviside(row, col) * Histogram::alpha_f / num_foreground :
+                            local_square.heaviside(row, col) / num_foreground;
+                    prob_bg[blue][green][red] += visited ?
+                            (1 - local_square.heaviside(row, col)) * Histogram::alpha_b / num_background :
+                            (1 - local_square.heaviside(row, col)) / num_background;
+                }
+            }
         }
-        if (num_background > 0)
-        {
-            prob_bg[blue][green][red] += !first_visit ? (1 - heaviside) * Histogram::alpha_b / num_background :
-                                         (1 - heaviside) / num_background;
-        }
-    }
+        visited = true;
 
-    void Histogram::resetCurrentForegroundBackground()
-    {
-        first_visit = false;
-        num_foreground = 0;
-        num_background = 0;
     }
 
     bool Histogram::isVisited() const
@@ -66,7 +63,24 @@ namespace histograms
         return visited;
     }
 
-    float Histogram::voteForeground(uchar blue, uchar green, uchar red) const
+    std::pair<float, float> Histogram::get_eta_f_eta_b(const Maps &local_square, int center_x, int center_y)
+    {
+        int col_offset = static_cast<int>(radius) - center_x;
+        int row_offset = static_cast<int>(radius) - center_y;
+        float eta_f = 0;
+        float eta_b = 0;
+        for (int row = 0; row < local_square.mask.rows; ++row) {
+            for (int col = 0; col < local_square.mask.cols; ++col) {
+                if (window_mask(row + row_offset, col + col_offset)) {
+                    eta_f += local_square.heaviside(row, col);
+                    eta_b += 1 - local_square.heaviside(row, col);
+                }
+            }
+        }
+        return std::pair<float, float>(eta_f, eta_b);
+    }
+
+    float Histogram::voteColor(uchar blue, uchar green, uchar red, float eta_f, float eta_b) const
     {
         float for_fore = eta_f * prob_fg[blue][green][red];
         float for_back = eta_b * prob_bg[blue][green][red];
@@ -77,5 +91,29 @@ namespace histograms
         return 0.5f;
         //return -1;
     }
+
+    void
+    Histogram::votePatch(const Maps &local_square, int center_x, int center_y, cv::Mat1f &votes, cv::Mat1i &numVoters) const
+    {
+        std::pair<float, float> eta_f_eta_b = get_eta_f_eta_b(local_square, center_x, center_y);
+        const cv::Mat3b& color_map = local_square.color_map;
+        float eta_f = eta_f_eta_b.first;
+        float eta_b = eta_f_eta_b.second;
+        int col_offset = static_cast<int>(radius) - center_x;
+        int row_offset = static_cast<int>(radius) - center_y;
+        int bin_size = ceil(256.0 / COLORS_PER_CHANNEL);
+        for (int row = 0; row < local_square.mask.rows; ++row) {
+            for (int col = 0; col < local_square.mask.cols; ++col) {
+                if (window_mask(row + row_offset, col + col_offset)) {
+                    uchar blue = color_map(row, col)[0] / bin_size;
+                    uchar green = color_map(row, col)[1] / bin_size;
+                    uchar red = color_map(row, col)[2] / bin_size;
+                    votes(row, col) += voteColor(blue, green, red, eta_f, eta_b);
+                    ++numVoters(row, col);
+                }
+            }
+        }
+    }
+
 
 }

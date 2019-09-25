@@ -10,7 +10,7 @@
 
 namespace histograms
 {
-float estimateEnergy(const Object3d &object, const cv::Mat &frame, const glm::mat4 &pose);
+float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose);
 }
 
 histograms::Mesh Tests::getPyramidMesh()
@@ -66,9 +66,13 @@ Maps Tests::projectPyramid()
 {
     histograms::Mesh mesh = getPyramidMesh();
     glm::mat4 camera_matrix = getPyramidCameraMatrix();
-    Renderer renderer(camera_matrix, 16, 160000, 640, 512);
+    int width = 640;
+    int height = 512;
+    Renderer renderer(camera_matrix, 16, 160000, width, height);
     glm::mat4 pose = getPyramidPose();
-    Maps maps = renderer.projectMesh(mesh, pose);
+    cv::Mat3b color = cv::Mat3b::zeros(height, width);
+    Maps maps = Maps(color);
+    renderer.projectMesh(mesh, pose, maps);
     return maps;
 }
 

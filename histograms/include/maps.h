@@ -12,14 +12,25 @@ class Maps
 public:
     Maps(int width, int height);
 
+    explicit Maps(const cv::Mat3b &color_frame);
+
+
     cv::Mat1f depth_map;
-    cv::Mat1i color_map;
+    const cv::Mat3b color_map;
     cv::Mat1b mask;
     cv::Mat1f signed_distance;
     cv::Mat1f heaviside;
     cv::Rect roi;
 
     cv::Rect getExtendedROI(int offset = 0) const;
+
+    Maps operator()(const cv::Rect &req_roi) const;
+
+    cv::Rect getPatchSquare(int center_x, int center_y, int radius);
+
+    bool hasEmptyProjection() const;
+
+    bool isEmpty() const;
 
 };
 
