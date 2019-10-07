@@ -4,7 +4,7 @@
 
 namespace histograms
 {
-    float estimateEnergy(const Object3d &object, const cv::Mat& frame, const glm::mat4& pose)
+    float estimateEnergy(Object3d &object, const cv::Mat& frame, const glm::mat4& pose)
     {
         const cv::Mat3b discretized_color = cv::Mat3b(frame.size());
         frame.convertTo(discretized_color, CV_8UC3);
@@ -26,7 +26,8 @@ namespace histograms
         }
 
         const std::vector<glm::vec3>& vertices = mesh.getVertices();
-        const std::vector<Histogram>& histograms = object.getHistograms();
+        std::vector<Histogram>& histograms = object.getHistograms();
+        const cv::Mat1f& heaviside = maps.heaviside(roi);
         for (size_t i = 0; i < vertices.size(); ++i)
         {
             glm::vec3 pixel = renderer.projectVertex(vertices[i], pose);
@@ -42,13 +43,19 @@ namespace histograms
 //                }
                 if (abs(signed_distance(roi_row, roi_column)) < 5)
                 {
+                    int patch_x = std::max(0, roi_column - histogram_radius);
+                    int patch_y = std::max(0, roi_row - histogram_radius);
+                    int patch_x_right = std::min(heaviside.cols, roi_column + histogram_radius + 1);
+                    int patch_y_down = std::min(heaviside.rows, roi_row + histogram_radius + 1);
+                    cv::Rect patch = cv::Rect(patch_x, patch_y, patch_x_right - patch_x, patch_y_down - patch_y);
+                    cv::Mat1f heaviside_on_patch = heaviside(patch);
                     histogram_centers_on_image[roi_row][roi_column].push_back(&histograms[i]);
+                    histograms[i].updateEtaFEtaB(heaviside_on_patch, roi_column - patch_x, roi_row - patch_y);
                 }
             }
         }
 
         const cv::Mat1b& color = discretized_color(roi);
-        const cv::Mat1f& heaviside = maps.heaviside(roi);
 
         CircleWindow circle_window = CircleWindow(histogram_radius);
         unsigned int window_size = circle_window.getWindowSize();

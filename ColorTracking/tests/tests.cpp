@@ -10,7 +10,7 @@
 
 namespace histograms
 {
-float estimateEnergy(const Object3d &object, const cv::Mat &frame, const glm::mat4 &pose);
+float estimateEnergy(Object3d &object, const cv::Mat &frame, const glm::mat4 &pose);
 }
 
 histograms::Mesh Tests::getPyramidMesh()

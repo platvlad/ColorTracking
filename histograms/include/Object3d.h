@@ -34,7 +34,7 @@ namespace histograms
 
         const Renderer& getRenderer() const;
 
-        const std::vector<Histogram>& getHistograms() const;
+        std::vector<Histogram>& getHistograms();
 
         unsigned int getHistogramRadius() const;
     };

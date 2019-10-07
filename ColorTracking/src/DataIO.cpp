@@ -15,7 +15,7 @@ DataIO::DataIO(const std::string& directory_name) : directory_name(directory_nam
     boost::filesystem::path mesh_path(directory_name + "/mesh.obj");
     boost::filesystem::path camera_path(directory_name+ "/camera.yml");
     ground_truth_path = boost::filesystem::path(directory_name+ "/ground_truth.yml");
-    boost::filesystem::path video_path(directory_name + "/rgb.mov");
+    boost::filesystem::path video_path(directory_name + "/rgb");
     histograms::Mesh mesh = DataIO::getMesh(mesh_path);
     videoCapture = DataIO::getVideo(video_path);
     int height = videoCapture.get(cv::CAP_PROP_FRAME_HEIGHT);
@@ -109,7 +109,7 @@ float DataIO::getZNear(const glm::mat4& pose)
 
 void DataIO::writePositions()
 {
-    boost::filesystem::path output_yml_path(directory_name + "/output.yml");
+    boost::filesystem::path output_yml_path(directory_name + "/output_frames_circle_window.yml");
     testrunner::writePoses(estimated_poses, output_yml_path);
 }
 
@@ -140,5 +140,5 @@ void DataIO::writePng(cv::Mat3b frame, int frame_number)
     std::string frame_name = std::to_string(frame_number);
     frame_name = std::string(4 - frame_name.length(), '0') + frame_name;
 
-    cv::imwrite(directory_name + "/output_frames/" + frame_name + ".png", output);
+    cv::imwrite(directory_name + "/output_frames_circle_window/" + frame_name + ".png", output);
 }

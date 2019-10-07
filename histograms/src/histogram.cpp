@@ -78,4 +78,21 @@ namespace histograms
         //return -1;
     }
 
+    void Histogram::updateEtaFEtaB(const cv::Mat1f &heaviside, int center_x, int center_y)
+    {
+        eta_f = 0;
+        eta_b = 0;
+        for (int row = 0; row < heaviside.rows; ++row)
+        {
+            for (int col = 0; col < heaviside.cols; ++col)
+            {
+                if ((center_x - col) * (center_x - col) + (center_y - row) * (center_y - row) < radius * radius)
+                {
+                    eta_f += heaviside(row, col);
+                    eta_b += 1 - heaviside(row, col);
+                }
+            }
+        }
+    }
+
 }

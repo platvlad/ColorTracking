@@ -253,7 +253,7 @@ namespace histograms
         return renderer;
     }
 
-    const std::vector<Histogram>& Object3d::getHistograms() const
+    std::vector<Histogram>& Object3d::getHistograms()
     {
         return histograms;
     }

@@ -2,6 +2,7 @@
 #define HISTOGRAMS_HISTOGRAM_H
 
 #include <opencv2/core/hal/interface.h>
+#include <opencv2/core/mat.hpp>
 
 namespace histograms
 {
@@ -35,6 +36,8 @@ namespace histograms
         bool isVisited() const;
 
         float voteForeground(uchar blue, uchar green, uchar red) const;
+
+        void updateEtaFEtaB(const cv::Mat1f &heaviside, int center_on_heaviside_x, int center_on_heaviside_y);
 
     };
 }
