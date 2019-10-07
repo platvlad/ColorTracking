@@ -18,7 +18,6 @@ namespace histograms
         dist_to_contour = lambda * static_cast<float>(histogram_radius);
         size_t vertex_num = mesh.getVertices().size();
         histograms = std::vector<Histogram>(vertex_num, Histogram());
-        circle_window = CircleWindow(histogram_radius);
     }
 
     Object3d::Object3d() : mesh(Mesh()),
@@ -45,11 +44,6 @@ namespace histograms
         const cv::Mat1f& signed_distance = maps.signed_distance;
         const cv::Mat1b& mask = maps.mask;
         const cv::Mat1f& heaviside = maps.heaviside;
-
-        const std::vector<int>& circle_window_rows = circle_window.getRelRows();
-        const std::vector<int>& circle_window_cols = circle_window.getRelCols();
-        unsigned int window_size = circle_window.getWindowSize();
-        const std::vector<int>& edge_curve = circle_window.getEdgeCurve();
 
         //project vertices
         for (size_t i = 0; i < vertices.size(); ++i)

@@ -1,4 +1,3 @@
-#include <iostream>
 #include <boost/filesystem/operations.hpp>
 #include <opencv2/imgcodecs.hpp>
 
@@ -10,12 +9,19 @@
 
 #include "DataIO.h"
 
+namespace histograms
+{
+    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose);
+}
+
+glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params);
+
 DataIO::DataIO(const std::string& directory_name) : directory_name(directory_name)
 {
     boost::filesystem::path mesh_path(directory_name + "/mesh.obj");
     boost::filesystem::path camera_path(directory_name+ "/camera.yml");
     ground_truth_path = boost::filesystem::path(directory_name+ "/ground_truth.yml");
-    boost::filesystem::path video_path(directory_name + "/rgb.avi");
+    boost::filesystem::path video_path(directory_name + "/rgb_dark.mov");
     histograms::Mesh mesh = DataIO::getMesh(mesh_path);
     videoCapture = DataIO::getVideo(video_path);
     int height = videoCapture.get(cv::CAP_PROP_FRAME_HEIGHT);
@@ -24,8 +30,7 @@ DataIO::DataIO(const std::string& directory_name) : directory_name(directory_nam
     glm::mat4 pose = DataIO::getPose(ground_truth_path);
     float zNear = DataIO::getZNear(pose);
     Renderer renderer = Renderer(camera_matrix, zNear, zNear * 10000, width, height);
-    histograms::Object3d some_other_object = histograms::Object3d(mesh, renderer);
-    object3D = some_other_object;
+    object3D = histograms::Object3d(mesh, renderer);
 }
 
 histograms::Mesh DataIO::getMesh(const boost::filesystem::path& path)
@@ -109,7 +114,7 @@ float DataIO::getZNear(const glm::mat4& pose)
 
 void DataIO::writePositions()
 {
-    boost::filesystem::path output_yml_path(directory_name + "/output.yml");
+    boost::filesystem::path output_yml_path(directory_name + "/output_dark_strict.yml");
     testrunner::writePoses(estimated_poses, output_yml_path);
 }
 
@@ -141,5 +146,67 @@ void DataIO::writePng(cv::Mat3b frame, int frame_number)
     std::string frame_name = std::to_string(frame_number);
     frame_name = std::string(4 - frame_name.length(), '0') + frame_name;
 
-    cv::imwrite(directory_name + "/output_frames/" + frame_name + ".png", output);
+    cv::imwrite(directory_name + "/output_frames_dark_strict/" + frame_name + ".png", output);
+}
+
+void DataIO::writePlots(const cv::Mat3b &frame, int frame_number, const glm::mat4 &pose)
+{
+    int num_points = 100;
+    float max_rotation = 1;
+    float max_translation = 0.2f * object3D.getMesh().getBBDiameter();
+    float rotation_step = max_rotation / static_cast<float>(num_points);
+    float translation_step = max_translation / static_cast<float>(num_points);
+    std::string base_file_name = directory_name + "/plots/" + std::to_string(frame_number);
+    std::ofstream rot_x_file(base_file_name + "rot_x.yml");
+    std::ofstream rot_y_file(base_file_name + "rot_y.yml");
+    std::ofstream rot_z_file(base_file_name + "rot_z.yml");
+    std::ofstream tr_x_file(base_file_name + "tr_x.yml");
+    std::ofstream tr_y_file(base_file_name + "tr_y.yml");
+    std::ofstream tr_z_file(base_file_name + "tr_z.yml");
+    std::ofstream* output_files[6] = {
+            &rot_x_file,
+            &rot_y_file,
+            &rot_z_file,
+            &tr_x_file,
+            &tr_y_file,
+            &tr_z_file
+    };
+    for (int i = 0; i < 6; ++i)
+    {
+        *output_files[i] << "frames:" << std::endl;
+    }
+
+    for (int pt = -num_points; pt <= num_points; ++pt)
+    {
+        int pose_number = pt + num_points + 1;
+        float angle = rotation_step * static_cast<float>(pt);
+        float offset = translation_step * pt;
+        double transform_params[6][6] = { 0 };
+        for (int i = 0; i < 6; ++i) {
+            if (i < 3)
+            {
+                transform_params[i][i] = pt * rotation_step;
+            }
+            else
+            {
+                transform_params[i][i] = pt * translation_step;
+            }
+        }
+        glm::mat4 transforms[6];
+        for (int i = 0; i < 6; ++i)
+        {
+            transforms[i] = applyResultToPose(pose, transform_params[i]);
+        }
+
+        for (int i = 0; i < 6; ++i)
+        {
+            *output_files[i] << "  - frame: " << pose_number << std::endl;
+            *output_files[i] << "    error: " << histograms::estimateEnergy(object3D, frame, transforms[i]) << std::endl;
+        }
+
+    }
+    for (int i = 0; i < 6; ++i)
+    {
+        output_files[i]->close();
+    }
 }

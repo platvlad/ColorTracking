@@ -22,8 +22,6 @@ namespace histograms
         Mesh mesh;
         std::vector<Histogram> histograms;
 
-        CircleWindow circle_window;
-
     public:
         Object3d(const Mesh& mesh, const Renderer& renderer);
 

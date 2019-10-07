@@ -37,6 +37,7 @@ namespace histograms
                 }
             }
         }
+        bool strict_classification = false;
 
         for (int row = 0; row < local_square.mask.rows; ++row) {
             for (int col = 0; col < local_square.mask.cols; ++col) {
@@ -45,12 +46,32 @@ namespace histograms
                     uchar blue = local_square.color_map(row, col)[0] / binSize;
                     uchar green = local_square.color_map(row, col)[1] / binSize;
                     uchar red = local_square.color_map(row, col)[2] / binSize;
-                    prob_fg[blue][green][red] += visited ?
-                            local_square.heaviside(row, col) * Histogram::alpha_f / num_foreground :
-                            local_square.heaviside(row, col) / num_foreground;
-                    prob_bg[blue][green][red] += visited ?
-                            (1 - local_square.heaviside(row, col)) * Histogram::alpha_b / num_background :
-                            (1 - local_square.heaviside(row, col)) / num_background;
+                    if (strict_classification) {
+                        if (local_square.heaviside(row, col) > 0.5)
+                        {
+                            prob_fg[blue][green][red] += visited ?
+                                                         Histogram::alpha_f / num_foreground :
+                                                         1 / num_foreground;
+                        }
+                        else
+                            {
+                            prob_bg[blue][green][red] += visited ?
+                                                         Histogram::alpha_b / num_background :
+                                                         1 / num_background;
+                        }
+
+                    }
+                    else
+                    {
+                        prob_fg[blue][green][red] += visited ?
+                                                     local_square.heaviside(row, col) * Histogram::alpha_f /
+                                                     num_foreground :
+                                                     local_square.heaviside(row, col) / num_foreground;
+                        prob_bg[blue][green][red] += visited ?
+                                                     (1 - local_square.heaviside(row, col)) * Histogram::alpha_b /
+                                                     num_background :
+                                                     (1 - local_square.heaviside(row, col)) / num_background;
+                    }
                 }
             }
         }

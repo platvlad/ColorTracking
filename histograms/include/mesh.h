@@ -4,6 +4,7 @@
 #include <vector>
 #include <opencv2/core/mat.hpp>
 #include <glm/vec3.hpp>
+#include <glm/mat4x4.hpp>
 
 
 namespace histograms
@@ -25,6 +26,8 @@ namespace histograms
         const std::vector<glm::uvec3>& getFaces() const;
 
         float getBBDiameter() const;
+
+        void exportWithPose(const std::string &file_name, const glm::mat4 &pose) const;
 
     };
 }

@@ -6,6 +6,7 @@
 #include <renderer.h>
 #include <opencv2/imgcodecs.hpp>
 #include <Object3d.h>
+#include <DataIO.h>
 #include "tests.h"
 
 namespace histograms
@@ -262,5 +263,29 @@ void Tests::runTests()
     testHeaviside();
     testUpdateHistograms();
     testEvaluateEnergy();
+    testEvaluateEnergyHouse();
+}
 
+void Tests::testEvaluateEnergyHouse()
+{
+    std::string directory_name = "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/ho_fm_f";
+    std::string input_file = "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/ho_fm_f/mesh.obj";
+    DataIO data = DataIO(directory_name);
+    histograms::Object3d& object3D = data.object3D;
+    cv::VideoCapture& videoCapture = data.videoCapture;
+    boost::filesystem::path& gt_path = data.ground_truth_path;
+    glm::mat4 pose = DataIO::getPose(gt_path);
+    cv::Mat3b first_image;
+    videoCapture >> first_image;
+
+
+    object3D.updateHistograms(first_image, pose);
+    float energy = estimateEnergy(object3D, first_image, pose);
+    std::cout << "energy = " << energy << std::endl;
+    glm::mat4 translated = glm::translate(pose, glm::vec3(0, 0, 0.1));
+    float energy_translated = estimateEnergy(object3D, first_image, translated);
+    std::cout << "energy translated = " << energy_translated << std::endl;
+    glm::mat4 rotated = glm::rotate(pose, 1.0f, glm::vec3(0, 1, 0));
+    float energy_rotated = estimateEnergy(object3D, first_image, rotated);
+    std::cout << "energy rotated = " << energy_rotated << std::endl;
 }

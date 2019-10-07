@@ -23,6 +23,8 @@ public:
 
     static void testEvaluateEnergy();
 
+    static void testEvaluateEnergyHouse();
+
     static void runTests();
 };
 

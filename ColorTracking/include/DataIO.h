@@ -26,13 +26,16 @@ public:
 
     void writePng(cv::Mat3b frame, int frame_number);
 
-    static histograms::Mesh getMesh(const boost::filesystem::path& path);
-
-    static glm::mat4 getCamera(const boost::filesystem::path& path, int height = 512);
+    void writePlots(const cv::Mat3b &frame, int frame_number, const glm::mat4 &pose);
 
     static glm::mat4 getPose(const boost::filesystem::path& path, int frame_number=1);
 
     static int getNumFrames(const boost::filesystem::path& path);
+
+private:
+    static histograms::Mesh getMesh(const boost::filesystem::path& path);
+
+    static glm::mat4 getCamera(const boost::filesystem::path& path, int height = 512);
 
     static cv::VideoCapture getVideo(const boost::filesystem::path& filePath);
 

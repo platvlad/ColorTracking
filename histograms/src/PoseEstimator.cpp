@@ -68,8 +68,6 @@ namespace histograms
                 }
             }
         }
-        cv::imwrite("/Users/vladislav.platonov/repo/ColorTracking2/ColorTracking/output/votes.png", votes_foreground);
-        cv::imwrite("/Users/vladislav.platonov/repo/ColorTracking2/ColorTracking/output/num_voters.png", num_voters);
 
         if (num_error_estimators)
         {
