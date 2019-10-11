@@ -3,6 +3,7 @@
 
 #include <opencv2/core/hal/interface.h>
 #include <opencv2/imgproc.hpp>
+#include <map>
 #include "CircleWindow.h"
 
 namespace histograms
@@ -18,8 +19,7 @@ namespace histograms
         static float alpha_f;
         static float alpha_b;
 
-        static bool window_mask_initialized;
-        static cv::Mat1b window_mask;
+        static std::map<int, const cv::Mat1b> window_masks;
 
     public:
         static const unsigned int radius = 40;
@@ -28,11 +28,11 @@ namespace histograms
 
         void update(const Maps &local_square, int center_x, int center_y);
 
-        static std::pair<float, float> get_eta_f_eta_b(const Maps &local_square, int center_x, int center_y);
+        static std::pair<float, float> get_eta_f_eta_b(const Maps &local_square, int center_x, int center_y, int circle_radius = radius);
 
         bool isVisited() const;
 
-        void votePatch(const Maps &local_square, int center_x, int center_y, cv::Mat1f &votes, cv::Mat1i &numVoters) const;
+        void votePatch(const Maps &local_square, int center_x, int center_y, cv::Mat1f &votes, cv::Mat1i &numVoters, int circle_radius = radius) const;
 
         float voteColor(uchar blue, uchar green, uchar red, float eta_f, float eta_b) const;
 

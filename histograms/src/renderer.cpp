@@ -25,6 +25,21 @@ Renderer::Renderer()
     height = 0;
 }
 
+Renderer::Renderer(const Renderer &other, const cv::Size &size)
+{
+    float width_scale = static_cast<float>(size.width) / static_cast<float>(other.width);
+    float height_scale = static_cast<float>(size.height) / static_cast<float>(other.height);
+    const glm::mat4& s_cam = other.camera_matrix;
+    camera_matrix = glm::mat4(s_cam[0][0] * width_scale, s_cam[0][1] * height_scale, s_cam[0][2], s_cam[0][3],
+                              s_cam[1][0] * width_scale, s_cam[1][1] * height_scale, s_cam[1][2], s_cam[1][3],
+                              s_cam[2][0] * width_scale, s_cam[2][1] * height_scale, s_cam[2][2], s_cam[2][3],
+                              s_cam[3][0], s_cam[3][1], s_cam[3][2], s_cam[3][3]);
+    z_near = other.z_near;
+    z_far = other.z_far;
+    width = size.width;
+    height = size.height;
+}
+
 
 void Renderer::projectMesh(const histograms::Mesh& mesh, const glm::mat4& pose, Maps &maps) const
 {
@@ -311,3 +326,7 @@ void Renderer::computeHeaviside(cv::Mat1f& signed_distance, cv::Mat1f& heaviside
 
 }
 
+cv::Size Renderer::getSize() const
+{
+    return cv::Size(width, height);
+}

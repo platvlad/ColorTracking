@@ -1,21 +1,21 @@
 #include <maps.h>
 #include "histogram.h"
+#include <iostream>
 
 namespace histograms
 {
     float Histogram::alpha_f = 0.1;
     float Histogram::alpha_b = 0.2;
-    bool Histogram::window_mask_initialized = false;
-    cv::Mat1b Histogram::window_mask;
+    std::map<int, const cv::Mat1b> Histogram::window_masks;
 
     Histogram::Histogram() : prob_fg(),
                              prob_bg(),
                              visited(false)
     {
-        if (!window_mask_initialized)
+        if (Histogram::window_masks.find(radius) == Histogram::window_masks.end())
         {
-            Histogram::window_mask = CircleWindow(radius).getMask();
-            window_mask_initialized = true;
+            std::pair<std::map<int, const cv::Mat1b>::iterator, bool> insertion_result =
+                    Histogram::window_masks.insert(std::make_pair(radius, CircleWindow(radius).getMask()));
         }
     }
 
@@ -38,6 +38,7 @@ namespace histograms
             }
         }
         bool strict_classification = false;
+        const cv::Mat1b& window_mask = window_masks.at(radius);
 
         for (int row = 0; row < local_square.mask.rows; ++row) {
             for (int col = 0; col < local_square.mask.cols; ++col) {
@@ -84,12 +85,20 @@ namespace histograms
         return visited;
     }
 
-    std::pair<float, float> Histogram::get_eta_f_eta_b(const Maps &local_square, int center_x, int center_y)
+    std::pair<float, float> Histogram::get_eta_f_eta_b(const Maps &local_square, int center_x, int center_y, int circle_radius)
     {
+
         int col_offset = static_cast<int>(radius) - center_x;
         int row_offset = static_cast<int>(radius) - center_y;
         float eta_f = 0;
         float eta_b = 0;
+        std::map<int, const cv::Mat1b>::const_iterator window_mask_iter = window_masks.find(circle_radius);
+        if (window_mask_iter == window_masks.end())
+        {
+            window_mask_iter = window_masks.insert(std::make_pair(circle_radius, CircleWindow(circle_radius).getMask())).first;
+        }
+        const cv::Mat1b& window_mask = window_mask_iter->second;
+
         for (int row = 0; row < local_square.mask.rows; ++row) {
             for (int col = 0; col < local_square.mask.cols; ++col) {
                 if (window_mask(row + row_offset, col + col_offset)) {
@@ -114,7 +123,7 @@ namespace histograms
     }
 
     void
-    Histogram::votePatch(const Maps &local_square, int center_x, int center_y, cv::Mat1f &votes, cv::Mat1i &numVoters) const
+    Histogram::votePatch(const Maps &local_square, int center_x, int center_y, cv::Mat1f &votes, cv::Mat1i &numVoters, int circle_radius) const
     {
         std::pair<float, float> eta_f_eta_b = get_eta_f_eta_b(local_square, center_x, center_y);
         const cv::Mat3b& color_map = local_square.color_map;
@@ -123,6 +132,14 @@ namespace histograms
         int col_offset = static_cast<int>(radius) - center_x;
         int row_offset = static_cast<int>(radius) - center_y;
         int bin_size = ceil(256.0 / COLORS_PER_CHANNEL);
+
+        std::map<int, const cv::Mat1b>::const_iterator window_mask_iter = window_masks.find(circle_radius);
+        if (window_mask_iter == window_masks.end())
+        {
+            window_mask_iter = window_masks.insert(std::make_pair(circle_radius, CircleWindow(circle_radius).getMask())).first;
+        }
+        const cv::Mat1b& window_mask = window_mask_iter->second;
+
         for (int row = 0; row < local_square.mask.rows; ++row) {
             for (int col = 0; col < local_square.mask.cols; ++col) {
                 if (window_mask(row + row_offset, col + col_offset)) {

@@ -114,7 +114,7 @@ float DataIO::getZNear(const glm::mat4& pose)
 
 void DataIO::writePositions()
 {
-    boost::filesystem::path output_yml_path(directory_name + "/output_dark_strict.yml");
+    boost::filesystem::path output_yml_path(directory_name + "/output_dark_on_downsampled.yml");
     testrunner::writePoses(estimated_poses, output_yml_path);
 }
 
@@ -146,7 +146,7 @@ void DataIO::writePng(cv::Mat3b frame, int frame_number)
     std::string frame_name = std::to_string(frame_number);
     frame_name = std::string(4 - frame_name.length(), '0') + frame_name;
 
-    cv::imwrite(directory_name + "/output_frames_dark_strict/" + frame_name + ".png", output);
+    cv::imwrite(directory_name + "/output_frames_on_downsampled/" + frame_name + ".png", output);
 }
 
 void DataIO::writePlots(const cv::Mat3b &frame, int frame_number, const glm::mat4 &pose)

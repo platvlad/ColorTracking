@@ -41,23 +41,17 @@ public:
 
     Renderer();
 
+    Renderer(const Renderer &other, const cv::Size &size);
+
     void projectMesh(const histograms::Mesh& mesh, const glm::mat4& pose, Maps &maps) const;
 
     void renderMesh(const histograms::Mesh& mesh, cv::Mat3b& frame, const glm::mat4& pose) const;
 
     glm::vec3 projectVertex(const glm::vec3& vertex, const glm::mat4& pose) const;
 
-//    const cv::Mat1f& getDepthMap() const;
-//
-//    const cv::Mat1f& getSignedDistance() const;
-//
-//    const cv::Mat1f& getHeaviside() const;
-//
-//    const cv::Mat1b& getMask() const;
-//
-//    cv::Rect2i getROI(int frame_size = 0) const;
-
     size_t getWidth() const;
+
+    cv::Size getSize() const;
 
 };
 

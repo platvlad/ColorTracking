@@ -11,9 +11,14 @@
 struct PassToOptimization
 {
     cv::Mat frame;
+    cv::Mat downsampled2;
+    cv::Mat downsampled4;
+    cv::Mat downsampled8;
     glm::mat4 initial_pose;
     histograms::Object3d* object;
     float delta_step[6];
+    int num_iterations;
+    int iteration_number;
 };
 
 class SLSQPPoseGetter : public PoseGetter

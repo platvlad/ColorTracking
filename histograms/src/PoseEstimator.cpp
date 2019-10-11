@@ -8,10 +8,17 @@ namespace histograms
     float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose)
     {
         const Mesh& mesh = object.getMesh();
-        const Renderer& renderer = object.getRenderer();
+        const Renderer& object_renderer = object.getRenderer();
+        const Renderer& renderer = frame.size() == object_renderer.getSize() ?
+                object_renderer
+                : Renderer(object_renderer, frame.size());
+
+        float frame_size_scale = static_cast<float>(renderer.getWidth()) /
+                                 static_cast<float>(object_renderer.getWidth());
+
         Maps maps = Maps(frame);
         renderer.projectMesh(mesh, pose, maps);
-        int histogram_radius = static_cast<int>(object.getHistogramRadius());
+        int histogram_radius = std::ceil(static_cast<float>(object.getHistogramRadius()) * frame_size_scale);
         cv::Rect roi = maps.getExtendedROI(histogram_radius);
         Maps maps_on_roi = maps(roi);
         const cv::Mat1f& signed_distance = maps_on_roi.signed_distance;
