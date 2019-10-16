@@ -19,7 +19,7 @@ namespace histograms
         static float alpha_f;
         static float alpha_b;
 
-        static std::map<int, const cv::Mat1b> window_masks;
+        static std::map<int, const Mask> window_masks;
 
     public:
         static const unsigned int radius = 40;

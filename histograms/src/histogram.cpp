@@ -6,7 +6,7 @@ namespace histograms
 {
     float Histogram::alpha_f = 0.1;
     float Histogram::alpha_b = 0.2;
-    std::map<int, const cv::Mat1b> Histogram::window_masks;
+    std::map<int, const Mask> Histogram::window_masks;
 
     Histogram::Histogram() : prob_fg(),
                              prob_bg(),
@@ -14,7 +14,7 @@ namespace histograms
     {
         if (Histogram::window_masks.find(radius) == Histogram::window_masks.end())
         {
-            std::pair<std::map<int, const cv::Mat1b>::iterator, bool> insertion_result =
+            std::pair<std::map<int, const Mask>::iterator, bool> insertion_result =
                     Histogram::window_masks.insert(std::make_pair(radius, CircleWindow(radius).getMask()));
         }
     }
@@ -38,44 +38,84 @@ namespace histograms
             }
         }
         bool strict_classification = false;
-        const cv::Mat1b& window_mask = window_masks.at(radius);
+        const Mask& window_mask = window_masks.at(radius);
 
-        for (int row = 0; row < local_square.mask.rows; ++row) {
-            for (int col = 0; col < local_square.mask.cols; ++col) {
-                if (window_mask(row + row_offset, col + col_offset)) {
-                    int binSize = ceil(256.0 / COLORS_PER_CHANNEL);
-                    uchar blue = local_square.color_map(row, col)[0] / binSize;
-                    uchar green = local_square.color_map(row, col)[1] / binSize;
-                    uchar red = local_square.color_map(row, col)[2] / binSize;
-                    if (strict_classification) {
-                        if (local_square.heaviside(row, col) > 0.5)
-                        {
-                            prob_fg[blue][green][red] += visited ?
-                                                         Histogram::alpha_f / num_foreground :
-                                                         1 / num_foreground;
-                        }
-                        else
-                            {
-                            prob_bg[blue][green][red] += visited ?
-                                                         Histogram::alpha_b / num_background :
-                                                         1 / num_background;
-                        }
-
+        for (size_t i = 0; i < window_mask.first.size(); ++i) {
+            int row = window_mask.first[i];
+            int col = window_mask.second[i];
+            int row_on_local_square = row - row_offset;
+            int col_on_local_square = col - col_offset;
+            int binSize = ceil(256.0 / COLORS_PER_CHANNEL);
+            if (row_on_local_square >= 0 && row_on_local_square < local_square.mask.rows &&
+                col_on_local_square >= 0 && col_on_local_square < local_square.mask.cols)
+            {
+                uchar blue = local_square.color_map(row_on_local_square, col_on_local_square)[0] / binSize;
+                uchar green = local_square.color_map(row_on_local_square, col_on_local_square)[1] / binSize;
+                uchar red = local_square.color_map(row_on_local_square, col_on_local_square)[2] / binSize;
+                if (strict_classification) {
+                    if (local_square.heaviside(row_on_local_square, col_on_local_square) > 0.5)
+                    {
+                        prob_fg[blue][green][red] += visited ?
+                                                     Histogram::alpha_f / num_foreground :
+                                                     1 / num_foreground;
                     }
                     else
                     {
-                        prob_fg[blue][green][red] += visited ?
-                                                     local_square.heaviside(row, col) * Histogram::alpha_f /
-                                                     num_foreground :
-                                                     local_square.heaviside(row, col) / num_foreground;
                         prob_bg[blue][green][red] += visited ?
-                                                     (1 - local_square.heaviside(row, col)) * Histogram::alpha_b /
-                                                     num_background :
-                                                     (1 - local_square.heaviside(row, col)) / num_background;
+                                                     Histogram::alpha_b / num_background :
+                                                     1 / num_background;
                     }
+                }
+                else
+                {
+                    prob_fg[blue][green][red] += visited ?
+                            local_square.heaviside(row_on_local_square, col_on_local_square) * Histogram::alpha_f /
+                            num_foreground :
+                            local_square.heaviside(row_on_local_square, col_on_local_square) / num_foreground;
+                    prob_bg[blue][green][red] += visited ?
+                            (1 - local_square.heaviside(row_on_local_square, col_on_local_square)) * Histogram::alpha_b /
+                            num_background :
+                            (1 - local_square.heaviside(row_on_local_square, col_on_local_square)) / num_background;
                 }
             }
         }
+
+//        for (int row = 0; row < local_square.mask.rows; ++row) {
+//            for (int col = 0; col < local_square.mask.cols; ++col) {
+//                if (window_mask(row + row_offset, col + col_offset)) {
+//                    int binSize = ceil(256.0 / COLORS_PER_CHANNEL);
+//                    uchar blue = local_square.color_map(row, col)[0] / binSize;
+//                    uchar green = local_square.color_map(row, col)[1] / binSize;
+//                    uchar red = local_square.color_map(row, col)[2] / binSize;
+//                    if (strict_classification) {
+//                        if (local_square.heaviside(row, col) > 0.5)
+//                        {
+//                            prob_fg[blue][green][red] += visited ?
+//                                                         Histogram::alpha_f / num_foreground :
+//                                                         1 / num_foreground;
+//                        }
+//                        else
+//                            {
+//                            prob_bg[blue][green][red] += visited ?
+//                                                         Histogram::alpha_b / num_background :
+//                                                         1 / num_background;
+//                        }
+//
+//                    }
+//                    else
+//                    {
+//                        prob_fg[blue][green][red] += visited ?
+//                                                     local_square.heaviside(row, col) * Histogram::alpha_f /
+//                                                     num_foreground :
+//                                                     local_square.heaviside(row, col) / num_foreground;
+//                        prob_bg[blue][green][red] += visited ?
+//                                                     (1 - local_square.heaviside(row, col)) * Histogram::alpha_b /
+//                                                     num_background :
+//                                                     (1 - local_square.heaviside(row, col)) / num_background;
+//                    }
+//                }
+//            }
+//        }
         visited = true;
 
     }
@@ -92,21 +132,35 @@ namespace histograms
         int row_offset = static_cast<int>(radius) - center_y;
         float eta_f = 0;
         float eta_b = 0;
-        std::map<int, const cv::Mat1b>::const_iterator window_mask_iter = window_masks.find(circle_radius);
+        std::map<int, const Mask>::const_iterator window_mask_iter = window_masks.find(circle_radius);
         if (window_mask_iter == window_masks.end())
         {
             window_mask_iter = window_masks.insert(std::make_pair(circle_radius, CircleWindow(circle_radius).getMask())).first;
         }
-        const cv::Mat1b& window_mask = window_mask_iter->second;
+        const Mask& window_mask = window_mask_iter->second;
 
-        for (int row = 0; row < local_square.mask.rows; ++row) {
-            for (int col = 0; col < local_square.mask.cols; ++col) {
-                if (window_mask(row + row_offset, col + col_offset)) {
-                    eta_f += local_square.heaviside(row, col);
-                    eta_b += 1 - local_square.heaviside(row, col);
-                }
+        for (size_t i = 0; i < window_mask.first.size(); ++i)
+        {
+            int row = window_mask.first[i];
+            int col = window_mask.second[i];
+            int row_on_local_square = row - row_offset;
+            int col_on_local_square = col - col_offset;
+            if (row_on_local_square >= 0 && row_on_local_square < local_square.mask.rows &&
+                col_on_local_square >= 0 && col_on_local_square < local_square.mask.cols)
+            {
+                eta_f += local_square.heaviside(row_on_local_square, col_on_local_square);
+                eta_b += 1 - local_square.heaviside(row_on_local_square, col_on_local_square);
             }
         }
+
+//        for (int row = 0; row < local_square.mask.rows; ++row) {
+//            for (int col = 0; col < local_square.mask.cols; ++col) {
+//                if (window_mask(row + row_offset, col + col_offset)) {
+//                    eta_f += local_square.heaviside(row, col);
+//                    eta_b += 1 - local_square.heaviside(row, col);
+//                }
+//            }
+//        }
         return std::pair<float, float>(eta_f, eta_b);
     }
 
@@ -133,24 +187,41 @@ namespace histograms
         int row_offset = static_cast<int>(radius) - center_y;
         int bin_size = ceil(256.0 / COLORS_PER_CHANNEL);
 
-        std::map<int, const cv::Mat1b>::const_iterator window_mask_iter = window_masks.find(circle_radius);
+        std::map<int, const Mask>::const_iterator window_mask_iter = window_masks.find(circle_radius);
         if (window_mask_iter == window_masks.end())
         {
             window_mask_iter = window_masks.insert(std::make_pair(circle_radius, CircleWindow(circle_radius).getMask())).first;
         }
-        const cv::Mat1b& window_mask = window_mask_iter->second;
+        const Mask& window_mask = window_mask_iter->second;
 
-        for (int row = 0; row < local_square.mask.rows; ++row) {
-            for (int col = 0; col < local_square.mask.cols; ++col) {
-                if (window_mask(row + row_offset, col + col_offset)) {
-                    uchar blue = color_map(row, col)[0] / bin_size;
-                    uchar green = color_map(row, col)[1] / bin_size;
-                    uchar red = color_map(row, col)[2] / bin_size;
-                    votes(row, col) += voteColor(blue, green, red, eta_f, eta_b);
-                    ++numVoters(row, col);
-                }
+        for (size_t i = 0; i < window_mask.first.size(); ++i)
+        {
+            int row = window_mask.first[i];
+            int col = window_mask.second[i];
+            int row_on_local_square = row - row_offset;
+            int col_on_local_square = col - col_offset;
+            if (row_on_local_square >= 0 && row_on_local_square < local_square.mask.rows &&
+                col_on_local_square >= 0 && col_on_local_square < local_square.mask.cols)
+            {
+                uchar blue = color_map(row_on_local_square, col_on_local_square)[0] / bin_size;
+                uchar green = color_map(row_on_local_square, col_on_local_square)[1] / bin_size;
+                uchar red = color_map(row_on_local_square, col_on_local_square)[2] / bin_size;
+                votes(row_on_local_square, col_on_local_square) += voteColor(blue, green, red, eta_f, eta_b);
+                ++numVoters(row_on_local_square, col_on_local_square);
             }
         }
+
+//        for (int row = 0; row < local_square.mask.rows; ++row) {
+//            for (int col = 0; col < local_square.mask.cols; ++col) {
+//                if (window_mask(row + row_offset, col + col_offset)) {
+//                    uchar blue = color_map(row, col)[0] / bin_size;
+//                    uchar green = color_map(row, col)[1] / bin_size;
+//                    uchar red = color_map(row, col)[2] / bin_size;
+//                    votes(row, col) += voteColor(blue, green, red, eta_f, eta_b);
+//                    ++numVoters(row, col);
+//                }
+//            }
+//        }
     }
 
 

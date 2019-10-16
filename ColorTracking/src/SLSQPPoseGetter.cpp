@@ -4,33 +4,38 @@
 
 namespace histograms
 {
-    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose);
+    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, bool debug_info = false);
 }
+
+double SLSQPPoseGetter::previous[6] = { 0 };
 
 SLSQPPoseGetter::SLSQPPoseGetter(histograms::Object3d* object3d, const glm::mat4& initial_pose)
 {
     pass_to_optimization = PassToOptimization();
     pass_to_optimization.object = object3d;
     pass_to_optimization.initial_pose = initial_pose;
-    pass_to_optimization.num_iterations = 108;
+    pass_to_optimization.num_iterations = 96;
     pass_to_optimization.iteration_number = 0;
 
     const histograms::Mesh& mesh = object3d->getMesh();
     float mesh_diameter = mesh.getBBDiameter();
-    max_translation_shift = 0.2f * mesh_diameter;
+    max_translation_shift = /*0.2f*/0.5f * mesh_diameter;
     max_rotation_shift = 0.5f;
 
-    pass_to_optimization.delta_step[0] = 1e-5f * max_translation_shift;
-    pass_to_optimization.delta_step[1] = 1e-5f * max_translation_shift;
-    pass_to_optimization.delta_step[2] = 1e-5f * max_translation_shift;
-    pass_to_optimization.delta_step[3] = 1e-5f * max_rotation_shift;
-    pass_to_optimization.delta_step[4] = 1e-5f * max_rotation_shift;
-    pass_to_optimization.delta_step[5] = 1e-5f * max_rotation_shift;
+    float step_size = 1e-2;
 
-    //opt = nlopt_create(NLOPT_LD_SLSQP, 6);
-    opt = nlopt_create(NLOPT_LN_NELDERMEAD, 6);
+    pass_to_optimization.delta_step[0] = step_size * max_translation_shift;
+    pass_to_optimization.delta_step[1] = step_size * max_translation_shift;
+    pass_to_optimization.delta_step[2] = step_size * max_translation_shift;
+    pass_to_optimization.delta_step[3] = step_size * max_rotation_shift;
+    pass_to_optimization.delta_step[4] = step_size * max_rotation_shift;
+    pass_to_optimization.delta_step[5] = step_size * max_rotation_shift;
+
+    opt = nlopt_create(NLOPT_LD_SLSQP, 6);
+    //opt = nlopt_create(NLOPT_LN_NELDERMEAD, 6);
+    //opt = nlopt_create(NLOPT_LD_LBFGS, 6);
     nlopt_set_min_objective(opt, energy_function, &pass_to_optimization);
-    nlopt_set_ftol_rel(opt, 1e-5);
+    nlopt_set_ftol_rel(opt, 2e-4);
     nlopt_set_maxeval(opt, pass_to_optimization.num_iterations);
 }
 
@@ -70,24 +75,40 @@ glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params)
     return matr * difference;
 }
 
+void plotRodriguesDirection(const histograms::Object3d &object3d,
+                            const cv::Mat &frame,
+                            const glm::mat4 &estimated_pose,
+                            const glm::mat4 &real_pose,
+                            const std::string &base_file_name);
+
+glm::mat4 applyResultToParams(const glm::mat4& matr, double p0, double p1, double p2, double p3, double p4, double p5) {
+    double params[6] = { p0, p1, p2, p3, p4, p5 };
+    return applyResultToPose(matr, params);
+}
+
 double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *grad, void *my_func_data)
 {
+    double to_debug[6];
+    for (int i = 0; i < 6; ++i)
+    {
+        to_debug[i] = x[i];
+    }
+
     PassToOptimization* passed_data = reinterpret_cast<PassToOptimization*>(my_func_data);
     histograms::Object3d* object = passed_data->object;
     cv::Mat& frame = passed_data->frame;
-    float iteration_proportion = static_cast<float>(passed_data->iteration_number) /
-            static_cast<float>(passed_data->num_iterations);
-    if (iteration_proportion < 0.25) {
-        frame = passed_data->downsampled8;
-    }
-    else if (iteration_proportion < 0.5)
-    {
-        frame = passed_data->downsampled4;
-    }
-    else if (iteration_proportion < 0.25) {
-        frame = passed_data->downsampled2;
-    }
-
+//    float iteration_proportion = static_cast<float>(passed_data->iteration_number) /
+//            static_cast<float>(passed_data->num_iterations);
+//    if (iteration_proportion < 0.25) {
+//        frame = passed_data->downsampled8;
+//    }
+//    else if (iteration_proportion < 0.5)
+//    {
+//        frame = passed_data->downsampled4;
+//    }
+//    else if (iteration_proportion < 0.75) {
+//        frame = passed_data->downsampled2;
+//    }
     float* delta_step = passed_data->delta_step;
     glm::mat4& initial_pose = passed_data->initial_pose;
 
@@ -123,6 +144,10 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
         }
     }
     ++passed_data->iteration_number;
+    for (int i = 0; i < 6; ++i)
+    {
+        previous[i] = x[i];
+    }
     return current_value;
 }
 

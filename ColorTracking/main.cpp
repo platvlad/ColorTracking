@@ -15,7 +15,7 @@ using namespace histograms;
 
 namespace histograms
 {
-    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose);
+    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, bool debug_info = false);
 }
 
 glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params);
@@ -87,15 +87,32 @@ void plotRodriguesDirection(const Object3d &object3d,
                                        er_tr[0][2], er_tr[1][2], er_tr[2][2]);
     cv::Matx31f rot_vec = cv::Matx31f();
     cv::Rodrigues(rot_matr, rot_vec);
+    std::cout << "difference = " << rot_vec(0, 0) << ' ' << rot_vec(1, 0) << ' ' <<
+        rot_vec(2, 0) << ' ' << er_tr[3][0] << ' ' << er_tr[3][1] << ' ' << er_tr[3][2] << std::endl;
     float max_rot_x = 2 * rot_vec(0, 0);
     float max_rot_y = 2 * rot_vec(1, 0);
     float max_rot_z = 2 * rot_vec(2, 0);
     float max_tr_x = 2 * er_tr[3][0];
     float max_tr_y = 2 * er_tr[3][1];
     float max_tr_z = 2 * er_tr[3][2];
+
     int num_points = 100;
-    float steps[6] = { max_rot_x / num_points, max_rot_y / num_points, max_rot_z / num_points,
-                       max_tr_x / num_points, max_tr_y / num_points, max_tr_z / num_points };
+    float steps[6] = { max_rot_x, max_rot_y, max_rot_z,
+                       max_tr_x, max_tr_y, max_tr_z };
+    float err_size = 0;
+    for (int i = 0; i < 6; ++i)
+    {
+        err_size += steps[i] * steps[i];
+    }
+    err_size = sqrt(err_size);
+    float step_factor = 2e-4f / err_size;
+    std::cout << "steps to real on plot: " << 1 / (2 * step_factor) << std::endl;
+    for (int i = 0; i < 6; ++i)
+    {
+        steps[i] *= step_factor;
+    }
+//    double step_size = 2e-4f / sqrt(6);
+//    double steps[6] = { step_size, step_size, step_size, step_size, step_size, step_size };
     std::ofstream fout(base_file_name + "tr_dir.yml");
     fout << "frames:" << std::endl;
     for (int pt = -num_points; pt <= num_points; ++pt)
@@ -111,8 +128,8 @@ void plotRodriguesDirection(const Object3d &object3d,
 
 void slsqpOptimization()
 {
-    bool plot_energy = false;
-    std::string directory_name = "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/foxes";
+    bool plot_energy = true;
+    std::string directory_name = "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/cat";
     DataIO data = DataIO(directory_name);
     Object3d& object3D = data.object3D;
     cv::VideoCapture& videoCapture = data.videoCapture;
@@ -135,13 +152,14 @@ void slsqpOptimization()
             break;
         }
         pose = poseGetter.getPose(frame);
-        std::cout << frame_number << ' ' << estimateEnergy(object3D, frame, pose) << std::endl;
+        std::cout << frame_number << ' ' << estimateEnergy(object3D, frame, pose, true) << std::endl;
+        plot_energy = frame_number == 2;
         if (plot_energy)
         {
             GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(gt_path);
             glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
             std::cout << "real pose error: " << estimateEnergy(object3D, frame, real_pose) << std::endl;
-            //plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plots/" + std::to_string(frame_number));
+            //plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plot_on_downsampled/" + std::to_string(frame_number));
             data.writePlots(frame, frame_number, pose);
         }
     }

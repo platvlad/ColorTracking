@@ -2,14 +2,12 @@
 
 namespace histograms
 {
-    CircleWindow::CircleWindow(unsigned int radius) : radius(radius),
-                                                      area(0)
+    CircleWindow::CircleWindow(unsigned int radius) : radius(static_cast<int>(radius))
     {
-        window_size = 2 * radius + 1;
-        mask = cv::Mat1b(cv::Size(window_size, window_size));
-        edge_curve = std::vector<int>(window_size);
-        rel_rows = std::vector<int>();
-        rel_cols = std::vector<int>();
+        window_size = 2 * static_cast<int>(radius) + 1;
+        mask = std::pair<std::vector<int>, std::vector<int> >();
+        mask.first = std::vector<int>();
+        mask.second = std::vector<int>();
         fillCircleWindow();
     }
 
@@ -22,57 +20,16 @@ namespace histograms
             {
                 unsigned int sqr_dist = (radius - i) * (radius - i) +
                                         (radius - j) * (radius - j);
-                mask(i, j) = sqr_dist <= sqr_radius ? 1 : 0;
-                if (mask(i, j))
+                if (sqr_dist <= sqr_radius)
                 {
-                    ++area;
-                    rel_rows.push_back(radius - i);
-                    rel_cols.push_back(radius - j);
-                }
-                if (j > 0)
-                {
-                    if (!mask(i, j - 1) && mask(i, j))
-                    {
-                        edge_curve[i] = radius - j;
-                    }
-                }
-                else
-                {
-                    if (mask(i, j))
-                    {
-                        edge_curve[i] = radius;
-                    }
+                    mask.first.push_back(i);
+                    mask.second.push_back(j);
                 }
             }
         }
     }
 
-    unsigned int CircleWindow::getWindowSize() const
-    {
-        return window_size;
-    }
-
-    const std::vector<int> &CircleWindow::getEdgeCurve() const
-    {
-        return edge_curve;
-    }
-
-    unsigned int CircleWindow::getArea() const
-    {
-        return area;
-    }
-
-    const std::vector<int> &CircleWindow::getRelRows() const
-    {
-        return rel_rows;
-    }
-
-    const std::vector<int> &CircleWindow::getRelCols() const
-    {
-        return rel_cols;
-    }
-
-    const cv::Mat1b &CircleWindow::getMask() const
+    const Mask &CircleWindow::getMask() const
     {
         return mask;
     }

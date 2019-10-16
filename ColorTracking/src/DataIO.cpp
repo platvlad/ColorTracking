@@ -11,7 +11,7 @@
 
 namespace histograms
 {
-    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose);
+    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, bool debug_info = false);
 }
 
 glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params);
@@ -21,7 +21,7 @@ DataIO::DataIO(const std::string& directory_name) : directory_name(directory_nam
     boost::filesystem::path mesh_path(directory_name + "/mesh.obj");
     boost::filesystem::path camera_path(directory_name+ "/camera.yml");
     ground_truth_path = boost::filesystem::path(directory_name+ "/ground_truth.yml");
-    boost::filesystem::path video_path(directory_name + "/rgb_dark.mov");
+    boost::filesystem::path video_path(directory_name + "/rgb");
     histograms::Mesh mesh = DataIO::getMesh(mesh_path);
     videoCapture = DataIO::getVideo(video_path);
     int height = videoCapture.get(cv::CAP_PROP_FRAME_HEIGHT);
@@ -114,7 +114,7 @@ float DataIO::getZNear(const glm::mat4& pose)
 
 void DataIO::writePositions()
 {
-    boost::filesystem::path output_yml_path(directory_name + "/output_dark_on_downsampled.yml");
+    boost::filesystem::path output_yml_path(directory_name + "/output.yml");
     testrunner::writePoses(estimated_poses, output_yml_path);
 }
 
@@ -146,7 +146,7 @@ void DataIO::writePng(cv::Mat3b frame, int frame_number)
     std::string frame_name = std::to_string(frame_number);
     frame_name = std::string(4 - frame_name.length(), '0') + frame_name;
 
-    cv::imwrite(directory_name + "/output_frames_on_downsampled/" + frame_name + ".png", output);
+    cv::imwrite(directory_name + "/output_frames/" + frame_name + ".png", output);
 }
 
 void DataIO::writePlots(const cv::Mat3b &frame, int frame_number, const glm::mat4 &pose)
@@ -156,6 +156,8 @@ void DataIO::writePlots(const cv::Mat3b &frame, int frame_number, const glm::mat
     float max_translation = 0.2f * object3D.getMesh().getBBDiameter();
     float rotation_step = max_rotation / static_cast<float>(num_points);
     float translation_step = max_translation / static_cast<float>(num_points);
+    rotation_step = 1e-3f;
+    translation_step = 1e-3f;
     std::string base_file_name = directory_name + "/plots/" + std::to_string(frame_number);
     std::ofstream rot_x_file(base_file_name + "rot_x.yml");
     std::ofstream rot_y_file(base_file_name + "rot_y.yml");

@@ -28,6 +28,8 @@ class SLSQPPoseGetter : public PoseGetter
     float max_translation_shift;
     float max_rotation_shift;
 
+    static double previous[6];
+
     static glm::mat4 params_to_transform(const double *x);
 
     static double energy_function(unsigned n, const double *x, double *grad, void *my_func_data);
