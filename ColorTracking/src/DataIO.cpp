@@ -11,7 +11,7 @@
 
 namespace histograms
 {
-    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, bool debug_info = false);
+    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, int histo_part = 1, bool debug_info = false);
 }
 
 glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params);
@@ -21,7 +21,7 @@ DataIO::DataIO(const std::string& directory_name) : directory_name(directory_nam
     boost::filesystem::path mesh_path(directory_name + "/mesh.obj");
     boost::filesystem::path camera_path(directory_name+ "/camera.yml");
     ground_truth_path = boost::filesystem::path(directory_name+ "/ground_truth.yml");
-    boost::filesystem::path video_path(directory_name + "/rgb");
+    boost::filesystem::path video_path(directory_name + "/rgb.avi");
     histograms::Mesh mesh = DataIO::getMesh(mesh_path);
     videoCapture = DataIO::getVideo(video_path);
     int height = videoCapture.get(cv::CAP_PROP_FRAME_HEIGHT);

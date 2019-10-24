@@ -19,6 +19,7 @@ struct PassToOptimization
     float delta_step[6];
     int num_iterations;
     int iteration_number;
+    int mode;
 };
 
 class SLSQPPoseGetter : public PoseGetter
@@ -36,6 +37,7 @@ class SLSQPPoseGetter : public PoseGetter
 
 public:
     SLSQPPoseGetter(histograms::Object3d* object3d, const glm::mat4& initial_pose);
+    glm::mat4 getPose(const cv::Mat& frame, int mode);
     glm::mat4 getPose(const cv::Mat& frame);
 };
 

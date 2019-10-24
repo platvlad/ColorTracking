@@ -4,7 +4,7 @@
 
 namespace histograms
 {
-    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, bool debug_info = false);
+    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, int histo_part = 1, bool debug_info = false);
 }
 
 double SLSQPPoseGetter::previous[6] = { 0 };
@@ -14,28 +14,29 @@ SLSQPPoseGetter::SLSQPPoseGetter(histograms::Object3d* object3d, const glm::mat4
     pass_to_optimization = PassToOptimization();
     pass_to_optimization.object = object3d;
     pass_to_optimization.initial_pose = initial_pose;
-    pass_to_optimization.num_iterations = 96;
+    pass_to_optimization.num_iterations = 12;
     pass_to_optimization.iteration_number = 0;
 
     const histograms::Mesh& mesh = object3d->getMesh();
     float mesh_diameter = mesh.getBBDiameter();
-    max_translation_shift = /*0.2f*/0.5f * mesh_diameter;
+    max_translation_shift = 0.2f * mesh_diameter;
     max_rotation_shift = 0.5f;
 
     float step_size = 1e-2;
 
-    pass_to_optimization.delta_step[0] = step_size * max_translation_shift;
-    pass_to_optimization.delta_step[1] = step_size * max_translation_shift;
-    pass_to_optimization.delta_step[2] = step_size * max_translation_shift;
-    pass_to_optimization.delta_step[3] = step_size * max_rotation_shift;
-    pass_to_optimization.delta_step[4] = step_size * max_rotation_shift;
-    pass_to_optimization.delta_step[5] = step_size * max_rotation_shift;
+
+    pass_to_optimization.delta_step[0] = step_size * max_rotation_shift;
+    pass_to_optimization.delta_step[1] = step_size * max_rotation_shift;
+    pass_to_optimization.delta_step[2] = step_size * max_rotation_shift;
+    pass_to_optimization.delta_step[3] = step_size * max_translation_shift;
+    pass_to_optimization.delta_step[4] = step_size * max_translation_shift;
+    pass_to_optimization.delta_step[5] = step_size * max_translation_shift;
 
     opt = nlopt_create(NLOPT_LD_SLSQP, 6);
     //opt = nlopt_create(NLOPT_LN_NELDERMEAD, 6);
     //opt = nlopt_create(NLOPT_LD_LBFGS, 6);
     nlopt_set_min_objective(opt, energy_function, &pass_to_optimization);
-    nlopt_set_ftol_rel(opt, 2e-4);
+    nlopt_set_ftol_rel(opt, 1e-8);
     nlopt_set_maxeval(opt, pass_to_optimization.num_iterations);
 }
 
@@ -86,6 +87,9 @@ glm::mat4 applyResultToParams(const glm::mat4& matr, double p0, double p1, doubl
     return applyResultToPose(matr, params);
 }
 
+float best_value = 0;
+int best_iteration = 0;
+
 double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *grad, void *my_func_data)
 {
     double to_debug[6];
@@ -97,6 +101,8 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
     PassToOptimization* passed_data = reinterpret_cast<PassToOptimization*>(my_func_data);
     histograms::Object3d* object = passed_data->object;
     cv::Mat& frame = passed_data->frame;
+    int histo_part = (passed_data->mode == 0) ? 1 : 10;
+    histo_part = 10;
 //    float iteration_proportion = static_cast<float>(passed_data->iteration_number) /
 //            static_cast<float>(passed_data->num_iterations);
 //    if (iteration_proportion < 0.25) {
@@ -113,15 +119,42 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
     glm::mat4& initial_pose = passed_data->initial_pose;
 
     glm::mat4 transform_matrix = applyResultToPose(initial_pose, x);
-    float current_value = histograms::estimateEnergy(*object, frame, transform_matrix);
+    float current_value = histograms::estimateEnergy(*object, frame, transform_matrix, histo_part);
+
+    if (passed_data->iteration_number == 0)
+    {
+        best_value = current_value;
+        best_iteration = 0;
+    }
+    else
+    {
+        if (current_value < best_value)
+        {
+            best_value = current_value;
+            best_iteration = passed_data->iteration_number;
+        }
+    }
+
+    if (passed_data->iteration_number == 23)
+    {
+
+    }
+    if (passed_data->iteration_number == 19)
+    {
+
+    }
+    if (passed_data->iteration_number == 15)
+    {
+
+    }
+    if (passed_data->iteration_number == 11)
+    {
+
+    }
 
     if (grad)
     {
         double x_plus_delta[6];
-//        double x_plus_2delta[6];
-//        double x_plus_3delta[6];
-//        double x_plus_4delta[6];
-//        double x_plus_5delta[6];
         double x_minus_delta[6];
         for (int i = 0; i < 6; ++i)
         {
@@ -136,8 +169,8 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
             glm::mat4 plus_transform = applyResultToPose(initial_pose, x_plus_delta);
             glm::mat4 minus_transform = applyResultToPose(initial_pose, x_minus_delta);
 
-            float err_plus = histograms::estimateEnergy(*object, frame, plus_transform);
-            float err_minus = histograms::estimateEnergy(*object, frame, minus_transform);
+            float err_plus = histograms::estimateEnergy(*object, frame, plus_transform, histo_part);
+            float err_minus = histograms::estimateEnergy(*object, frame, minus_transform, histo_part);
             grad[i] = (err_plus - err_minus) / (2 * delta_step[i]);
             x_plus_delta[i] = x[i];
             x_minus_delta[i] = x[i];
@@ -153,10 +186,26 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
 
 
 
-glm::mat4 SLSQPPoseGetter::getPose(const cv::Mat& frame)
+glm::mat4 SLSQPPoseGetter::getPose(const cv::Mat& frame, int mode)
 {
+    switch (mode)
+    {
+        case 0:
+            nlopt_set_maxeval(opt, 600);
+            break;
+        case 1:
+            nlopt_set_maxeval(opt, 600);
+            break;
+        case 2:
+            nlopt_set_maxeval(opt, 600);
+            break;
+        default:
+            nlopt_set_maxeval(opt, 12);
+            break;
+    }
     pass_to_optimization.iteration_number = 0;
     pass_to_optimization.frame = frame;
+    pass_to_optimization.mode = mode;
     cv::pyrDown(pass_to_optimization.frame, pass_to_optimization.downsampled2);
     cv::pyrDown(pass_to_optimization.downsampled2, pass_to_optimization.downsampled4);
     cv::pyrDown(pass_to_optimization.downsampled4, pass_to_optimization.downsampled8);
@@ -177,4 +226,9 @@ glm::mat4 SLSQPPoseGetter::getPose(const cv::Mat& frame)
         return pass_to_optimization.initial_pose;
     }
     return glm::mat4();
+}
+
+glm::mat4 SLSQPPoseGetter::getPose(const cv::Mat &frame)
+{
+    return getPose(frame, 0);
 }

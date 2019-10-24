@@ -15,7 +15,7 @@ using namespace histograms;
 
 namespace histograms
 {
-    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, bool debug_info = false);
+    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, int histo_part = 1, bool debug_info = false);
 }
 
 glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params);
@@ -129,7 +129,7 @@ void plotRodriguesDirection(const Object3d &object3d,
 void slsqpOptimization()
 {
     bool plot_energy = true;
-    std::string directory_name = "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/cat";
+    std::string directory_name = "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/foxes";
     DataIO data = DataIO(directory_name);
     Object3d& object3D = data.object3D;
     cv::VideoCapture& videoCapture = data.videoCapture;
@@ -151,7 +151,17 @@ void slsqpOptimization()
         {
             break;
         }
-        pose = poseGetter.getPose(frame);
+        cv::Mat downsampled2;
+        cv::Mat downsampled4;
+        cv::Mat downsampled8;
+        cv::pyrDown(frame, downsampled2);
+        cv::pyrDown(downsampled2, downsampled4);
+        cv::pyrDown(downsampled4, downsampled8);
+        poseGetter.getPose(downsampled8, 3);
+        poseGetter.getPose(downsampled4, 2);
+        poseGetter.getPose(downsampled2, 1);
+
+        pose = poseGetter.getPose(frame, 0);
         std::cout << frame_number << ' ' << estimateEnergy(object3D, frame, pose, true) << std::endl;
         plot_energy = frame_number == 2;
         if (plot_energy)
@@ -160,7 +170,7 @@ void slsqpOptimization()
             glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
             std::cout << "real pose error: " << estimateEnergy(object3D, frame, real_pose) << std::endl;
             //plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plot_on_downsampled/" + std::to_string(frame_number));
-            data.writePlots(frame, frame_number, pose);
+            //data.writePlots(frame, frame_number, pose);
         }
     }
     data.writePositions();

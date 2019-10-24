@@ -6,7 +6,7 @@
 
 namespace histograms
 {
-    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, bool debug_info = false)
+    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, int histo_part = 1, bool debug_info = false)
     {
         const Mesh& mesh = object.getMesh();
         const Renderer& object_renderer = object.getRenderer();
@@ -33,7 +33,7 @@ namespace histograms
         {
             color_copy = maps_on_roi.color_map.clone();
         }
-        for (size_t i = 0; i < vertices.size(); ++i)
+        for (size_t i = 0; i < vertices.size(); i += histo_part)
         {
             glm::vec3 pixel = renderer.projectVertex(vertices[i], pose);
             int column = (int)round(pixel.x);
@@ -46,7 +46,7 @@ namespace histograms
 //                {
 //                    histogram_centers_on_image[roi_row][roi_column].push_back(&histograms[i]);
 //                }
-                if (abs(signed_distance(roi_row, roi_column)) < 5 && i % 10 == 0)
+                if (abs(signed_distance(roi_row, roi_column)) < 5)
                 {
                     if (debug_info) {
                         color_copy(roi_row, roi_column) = cv::Vec3b(0, 0, 0);
