@@ -3,7 +3,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <Object3d.h>
+#include <PoseEstimator.h>
 #include <GroundTruthPoseGetter.h>
 #include <SLSQPPoseGetter.h>
 #include <opencv/cv.hpp>
@@ -12,11 +12,6 @@
 #include "tests.h"
 
 using namespace histograms;
-
-namespace histograms
-{
-    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, int histo_part = 1, bool debug_info = false);
-}
 
 glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params);
 
@@ -52,18 +47,19 @@ void plotEnergy(const Object3d& object3d, const cv::Mat3b& frame, const glm::mat
         glm::mat4 tr_x = glm::translate(pose, glm::vec3(offset, 0, 0.0f));
         glm::mat4 tr_y = glm::translate(pose, glm::vec3(0, offset, 0.0f));
         glm::mat4 tr_z = glm::translate(pose, glm::vec3(0, 0, offset));
+        PoseEstimator estimator;
         fout_rot_x << "  - frame: " << pose_number << std::endl;
-        fout_rot_x << "    error: " << estimateEnergy(object3d, frame, rot_x) << std::endl;
+        fout_rot_x << "    error: " << estimator.estimateEnergy(object3d, frame, rot_x) << std::endl;
         fout_rot_y << "  - frame: " << pose_number << std::endl;
-        fout_rot_y << "    error: " << estimateEnergy(object3d, frame, rot_y) << std::endl;
+        fout_rot_y << "    error: " << estimator.estimateEnergy(object3d, frame, rot_y) << std::endl;
         fout_rot_z << "  - frame: " << pose_number << std::endl;
-        fout_rot_z << "    error: " << estimateEnergy(object3d, frame, rot_z) << std::endl;
+        fout_rot_z << "    error: " << estimator.estimateEnergy(object3d, frame, rot_z) << std::endl;
         fout_tr_x << "  - frame: " << pose_number << std::endl;
-        fout_tr_x << "    error: " << estimateEnergy(object3d, frame, tr_x) << std::endl;
+        fout_tr_x << "    error: " << estimator.estimateEnergy(object3d, frame, tr_x) << std::endl;
         fout_tr_y << "  - frame: " << pose_number << std::endl;
-        fout_tr_y << "    error: " << estimateEnergy(object3d, frame, tr_y) << std::endl;
+        fout_tr_y << "    error: " << estimator.estimateEnergy(object3d, frame, tr_y) << std::endl;
         fout_tr_z << "  - frame: " << pose_number << std::endl;
-        fout_tr_z << "    error: " << estimateEnergy(object3d, frame, tr_z) << std::endl;
+        fout_tr_z << "    error: " << estimator.estimateEnergy(object3d, frame, tr_z) << std::endl;
     }
     fout_rot_x.close();
     fout_rot_y.close();
@@ -115,13 +111,14 @@ void plotRodriguesDirection(const Object3d &object3d,
 //    double steps[6] = { step_size, step_size, step_size, step_size, step_size, step_size };
     std::ofstream fout(base_file_name + "tr_dir.yml");
     fout << "frames:" << std::endl;
+    PoseEstimator estimator;
     for (int pt = -num_points; pt <= num_points; ++pt)
     {
         int pose_number = pt + num_points + 1;
         double params[6] = { steps[0] * pt, steps[1] * pt, steps[2] * pt, steps[3] * pt, steps[4] * pt, steps[5] * pt };
         glm::mat4 transform = applyResultToPose(estimated_pose, params);
         fout << "  - frame: " << pose_number << std::endl;
-        fout << "    error: " << estimateEnergy(object3d, frame, transform) << std::endl;
+        fout << "    error: " << estimator.estimateEnergy(object3d, frame, transform) << std::endl;
     }
     fout.close();
 }
@@ -139,6 +136,7 @@ void slsqpOptimization()
     SLSQPPoseGetter poseGetter = SLSQPPoseGetter(&object3D, pose);
     cv::Mat3b frame;
     videoCapture >> frame;
+    PoseEstimator estimator;
     while (true)
     {
         object3D.updateHistograms(frame, pose);
@@ -162,13 +160,13 @@ void slsqpOptimization()
         poseGetter.getPose(downsampled2, 1);
 
         pose = poseGetter.getPose(frame, 0);
-        std::cout << frame_number << ' ' << estimateEnergy(object3D, frame, pose, true) << std::endl;
+        std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, frame, pose, true) << std::endl;
         plot_energy = frame_number == 2;
         if (plot_energy)
         {
             GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(gt_path);
             glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
-            std::cout << "real pose error: " << estimateEnergy(object3D, frame, real_pose) << std::endl;
+            std::cout << "real pose error: " << estimator.estimateEnergy(object3D, frame, real_pose) << std::endl;
             //plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plot_on_downsampled/" + std::to_string(frame_number));
             //data.writePlots(frame, frame_number, pose);
         }

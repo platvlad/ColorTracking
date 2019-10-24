@@ -1,5 +1,6 @@
 #include <boost/filesystem/operations.hpp>
 #include <opencv2/imgcodecs.hpp>
+#include <PoseEstimator.h>
 
 
 #define TINYOBJLOADER_IMPLEMENTATION
@@ -8,11 +9,6 @@
 #include "test_runner/io.hpp"
 
 #include "DataIO.h"
-
-namespace histograms
-{
-    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, int histo_part = 1, bool debug_info = false);
-}
 
 glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params);
 
@@ -200,10 +196,12 @@ void DataIO::writePlots(const cv::Mat3b &frame, int frame_number, const glm::mat
             transforms[i] = applyResultToPose(pose, transform_params[i]);
         }
 
+        histograms::PoseEstimator estimator;
+
         for (int i = 0; i < 6; ++i)
         {
             *output_files[i] << "  - frame: " << pose_number << std::endl;
-            *output_files[i] << "    error: " << histograms::estimateEnergy(object3D, frame, transforms[i]) << std::endl;
+            *output_files[i] << "    error: " << estimator.estimateEnergy(object3D, frame, transforms[i]) << std::endl;
         }
 
     }

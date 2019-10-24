@@ -14,6 +14,7 @@ public:
 
     explicit Maps(const cv::Mat3b &color_frame);
 
+    explicit Maps(const cv::Size& size);
 
     cv::Mat1f depth_map;
     const cv::Mat3b color_map;

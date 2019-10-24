@@ -5,14 +5,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <renderer.h>
 #include <opencv2/imgcodecs.hpp>
-#include <Object3d.h>
+#include <PoseEstimator.h>
 #include <DataIO.h>
 #include "tests.h"
-
-namespace histograms
-{
-float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, int histo_part = 1, bool debug_info = false);
-}
 
 histograms::Mesh Tests::getPyramidMesh()
 {
@@ -237,14 +232,15 @@ void Tests::testEvaluateEnergy()
     glm::mat4 pose = getPyramidPose();
     histograms::Object3d object3D = histograms::Object3d(mesh, renderer);
     cv::Mat blue_image = cv::imread("/Users/vladislav.platonov/repo/RBOT2/RBOT/data/primitive/rgb/0002.png");
+    histograms::PoseEstimator estimator;
     object3D.updateHistograms(blue_image, pose);
-    float err = estimateEnergy(object3D, blue_image, pose);
+    float err = estimator.estimateEnergy(object3D, blue_image, pose);
     std::cout << err << std::endl;
     glm::mat4 translated = glm::translate(pose, glm::vec3(0, 0, 1));
     glm::mat4 rotated = glm::rotate(pose, 0.5f, glm::vec3(0, 1, 0));
-    float err2 = estimateEnergy(object3D, blue_image, translated);
+    float err2 = estimator.estimateEnergy(object3D, blue_image, translated);
     std::cout << err2 << std::endl;
-    float err3 = estimateEnergy(object3D, blue_image, rotated);
+    float err3 = estimator.estimateEnergy(object3D, blue_image, rotated);
     std::cout << err3 << std::endl;
     if (err < 0.05 && err < err2 && err < err3)
     {
@@ -278,14 +274,14 @@ void Tests::testEvaluateEnergyHouse()
     cv::Mat3b first_image;
     videoCapture >> first_image;
 
-
+    histograms::PoseEstimator estimator;
     object3D.updateHistograms(first_image, pose);
-    float energy = estimateEnergy(object3D, first_image, pose);
+    float energy = estimator.estimateEnergy(object3D, first_image, pose);
     std::cout << "energy = " << energy << std::endl;
     glm::mat4 translated = glm::translate(pose, glm::vec3(0, 0, 0.1));
-    float energy_translated = estimateEnergy(object3D, first_image, translated);
+    float energy_translated = estimator.estimateEnergy(object3D, first_image, translated);
     std::cout << "energy translated = " << energy_translated << std::endl;
     glm::mat4 rotated = glm::rotate(pose, 1.0f, glm::vec3(0, 1, 0));
-    float energy_rotated = estimateEnergy(object3D, first_image, rotated);
+    float energy_rotated = estimator.estimateEnergy(object3D, first_image, rotated);
     std::cout << "energy rotated = " << energy_rotated << std::endl;
 }

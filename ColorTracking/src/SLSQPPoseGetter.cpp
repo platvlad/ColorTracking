@@ -1,11 +1,8 @@
 #include "SLSQPPoseGetter.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <opencv/cv.hpp>
+#include "PoseEstimator.h"
 
-namespace histograms
-{
-    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, int histo_part = 1, bool debug_info = false);
-}
 
 double SLSQPPoseGetter::previous[6] = { 0 };
 
@@ -90,6 +87,43 @@ glm::mat4 applyResultToParams(const glm::mat4& matr, double p0, double p1, doubl
 float best_value = 0;
 int best_iteration = 0;
 
+double SLSQPPoseGetter::getDerivativeInDirection(const histograms::Object3d &object3D,
+                                                 histograms::PoseEstimator& estimator,
+                                                 const glm::mat4 &minus_transform,
+                                                 const glm::mat4 &plus_transform)
+{
+    const Renderer* renderer = estimator.getRenderer();
+    cv::Size frame_size = renderer->getSize();
+    Maps minus_maps = Maps(frame_size);
+    renderer->projectMesh(object3D.getMesh(), minus_transform, minus_maps);
+    Maps plus_maps = Maps(frame_size);
+    renderer->projectMesh(object3D.getMesh(), plus_transform, plus_maps);
+    const cv::Rect& currentROI = estimator.getROI();
+    Maps minus_maps_on_roi = minus_maps(currentROI);
+    Maps plus_maps_on_roi = plus_maps(currentROI);
+    const cv::Mat1i& num_voters = estimator.getNumVoters();
+    float grad_sum = 0;
+    int non_zero_pixels = 0;
+    const cv::Mat1f& derivative_const_part = estimator.getDerivativeConstPart();
+    for (int row = 0; row < num_voters.rows; ++row)
+    {
+        for (int col = 0; col < num_voters.cols; ++col)
+        {
+            if (num_voters(row, col) > 0)
+            {
+                grad_sum += (plus_maps_on_roi.signed_distance(row, col) - minus_maps_on_roi.signed_distance(row, col)) *
+                        derivative_const_part(row, col);
+                ++non_zero_pixels;
+            }
+        }
+    }
+    if (non_zero_pixels > 0)
+    {
+        return grad_sum / static_cast<float>(non_zero_pixels);
+    }
+    return 0;
+}
+
 double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *grad, void *my_func_data)
 {
     double to_debug[6];
@@ -119,7 +153,8 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
     glm::mat4& initial_pose = passed_data->initial_pose;
 
     glm::mat4 transform_matrix = applyResultToPose(initial_pose, x);
-    float current_value = histograms::estimateEnergy(*object, frame, transform_matrix, histo_part);
+    histograms::PoseEstimator estimator;
+    float current_value = estimator.estimateEnergy(*object, frame, transform_matrix, histo_part);
 
     if (passed_data->iteration_number == 0)
     {
@@ -133,23 +168,6 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
             best_value = current_value;
             best_iteration = passed_data->iteration_number;
         }
-    }
-
-    if (passed_data->iteration_number == 23)
-    {
-
-    }
-    if (passed_data->iteration_number == 19)
-    {
-
-    }
-    if (passed_data->iteration_number == 15)
-    {
-
-    }
-    if (passed_data->iteration_number == 11)
-    {
-
     }
 
     if (grad)
@@ -166,12 +184,18 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
         {
             x_plus_delta[i] += delta_step[i];
             x_minus_delta[i] -= delta_step[i];
+
             glm::mat4 plus_transform = applyResultToPose(initial_pose, x_plus_delta);
             glm::mat4 minus_transform = applyResultToPose(initial_pose, x_minus_delta);
 
-            float err_plus = histograms::estimateEnergy(*object, frame, plus_transform, histo_part);
-            float err_minus = histograms::estimateEnergy(*object, frame, minus_transform, histo_part);
-            grad[i] = (err_plus - err_minus) / (2 * delta_step[i]);
+            grad[i] = getDerivativeInDirection(*object,
+                                               estimator,
+                                               minus_transform,
+                                               plus_transform);
+
+//            float err_plus = histograms::estimateEnergy(*object, frame, plus_transform, histo_part);
+//            float err_minus = histograms::estimateEnergy(*object, frame, minus_transform, histo_part);
+//            grad[i] = (err_plus - err_minus) / (2 * delta_step[i]);
             x_plus_delta[i] = x[i];
             x_minus_delta[i] = x[i];
         }

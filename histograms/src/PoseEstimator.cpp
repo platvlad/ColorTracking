@@ -1,30 +1,30 @@
 #include <set>
 #include <opencv2/imgcodecs.hpp>
-#include <iostream>
+#include <PoseEstimator.h>
 
-#include "Object3d.h"
 
 namespace histograms
 {
-    float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, int histo_part = 1, bool debug_info = false)
+    float PoseEstimator::estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, int histo_part, bool debug_info)
     {
         const Mesh& mesh = object.getMesh();
         const Renderer& object_renderer = object.getRenderer();
-        const Renderer& renderer = frame.size() == object_renderer.getSize() ?
-                object_renderer
-                : Renderer(object_renderer, frame.size());
+        on_downsampled_frame = frame.size() != object_renderer.getSize();
+        renderer = on_downsampled_frame ?
+                new Renderer(object_renderer, frame.size())
+                : &object_renderer;
 
-        float frame_size_scale = static_cast<float>(renderer.getWidth()) /
+        float frame_size_scale = static_cast<float>(renderer->getWidth()) /
                                  static_cast<float>(object_renderer.getWidth());
 
         Maps maps = Maps(frame);
-        renderer.projectMesh(mesh, pose, maps);
+        renderer->projectMesh(mesh, pose, maps);
         int histogram_radius = std::ceil(static_cast<float>(object.getHistogramRadius()) * frame_size_scale);
-        cv::Rect roi = maps.getExtendedROI(histogram_radius);
+        roi = maps.getExtendedROI(histogram_radius);
         Maps maps_on_roi = maps(roi);
-        const cv::Mat1f& signed_distance = maps_on_roi.signed_distance;
-        cv::Mat1f votes_foreground = cv::Mat1f::zeros(maps_on_roi.heaviside.size());
-        cv::Mat1i num_voters = cv::Mat1i::zeros(votes_foreground.size());
+        signed_distance = maps_on_roi.signed_distance;
+        votes_foreground = cv::Mat1f::zeros(roi.size());
+        num_voters = cv::Mat1i::zeros(roi.size());
 
         const std::vector<glm::vec3>& vertices = mesh.getVertices();
         const std::vector<Histogram>& histograms = object.getHistograms();
@@ -35,7 +35,7 @@ namespace histograms
         }
         for (size_t i = 0; i < vertices.size(); i += histo_part)
         {
-            glm::vec3 pixel = renderer.projectVertex(vertices[i], pose);
+            glm::vec3 pixel = renderer->projectVertex(vertices[i], pose);
             int column = (int)round(pixel.x);
             int row = (int)round(pixel.y);
             int roi_column = column - roi.x;
@@ -68,7 +68,7 @@ namespace histograms
         }
         float error_sum = 0;
         int num_error_estimators = 0;
-        const cv::Mat1f& heaviside = maps_on_roi.heaviside;
+        heaviside = maps_on_roi.heaviside;
 
         cv::Mat1f errors;
         if (debug_info)
@@ -115,4 +115,57 @@ namespace histograms
         }
         return std::numeric_limits<float>::max();
     }
+
+    double PoseEstimator::getDirac(int row, int col) const
+    {
+        float s = 1.2;
+        return s / (M_PI * signed_distance(row, col) * signed_distance(row, col) * s * s + M_PI);
+    }
+
+    const cv::Mat1f& PoseEstimator::getDerivativeConstPart()
+    {
+        if (derivative_const_part.empty())
+        {
+            derivative_const_part = cv::Mat1f(heaviside.size(), -1);
+            for (int row = 0; row < derivative_const_part.rows; ++row)
+            {
+                for (int col = 0; col < derivative_const_part.cols; ++col)
+                {
+                    if (!num_voters(row, col))
+                    {
+                        derivative_const_part(row, col) = 0;
+                    }
+                    float pf = votes_foreground(row, col) / num_voters(row, col);
+                    derivative_const_part(row, col) =
+                            (2 * pf - 1) * getDirac(row, col) / (heaviside(row, col) * (2 * pf - 1) + 1 - pf);
+                }
+            }
+        }
+        return derivative_const_part;
+    }
+
+    const cv::Rect& PoseEstimator::getROI() const
+    {
+        return roi;
+    }
+
+    PoseEstimator::~PoseEstimator()
+    {
+        if (on_downsampled_frame)
+        {
+            delete renderer;
+        }
+    }
+
+    const Renderer* PoseEstimator::getRenderer() const
+    {
+        return renderer;
+    }
+
+    const cv::Mat1i &PoseEstimator::getNumVoters() const
+    {
+        return num_voters;
+    }
+
+
 }

@@ -245,39 +245,6 @@ void Renderer::updateROI(cv::Rect& roi, int x, int y)
     }
 }
 
-//cv::Rect2i Renderer::computeROI()
-//{
-//    size_t left = width - 1;
-//    size_t right = 0;
-//    size_t top = height - 1;
-//    size_t bottom = 0;
-//
-//    const float* depth_ptr = depth_map.ptr<float>();
-//    size_t row = 0;
-//    size_t column = 0;
-//    size_t numPixels = width * height;
-//    for (size_t i = 0; i < numPixels; ++i)
-//    {
-//        if (depth_ptr[i] != std::numeric_limits<float>::max())
-//        {
-//            if (column < left) left = column;
-//            if (column > right) right = column;
-//            if (row < top) top = row;
-//            if (row > bottom) bottom = row;
-//        }
-//    }
-//    if (right < left)
-//    {
-//        return cv::Rect2i();
-//    }
-//    left = (left > 8) ? left - 8 : 0;
-//    right = (right + 8 < width) ? right + 8 : width - 1;
-//    top = (top > 8) ? top - 8 : 0;
-//    bottom = (bottom + 8 < height) ? bottom + 8 : height - 1;
-//
-//    return cv::Rect2i(left, top, right - left + 1, bottom - top + 1);
-//}
-
 void Renderer::invertMask(cv::Mat1b& mask)
 {
     uchar* mask_ptr = mask.ptr<uchar>();

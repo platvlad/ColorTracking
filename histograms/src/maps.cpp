@@ -22,6 +22,18 @@ Maps::Maps(const cv::Mat3b &color_frame) : color_map(color_frame),
     roi = cv::Rect();
 }
 
+Maps::Maps(const cv::Size &size) : color_map(cv::Mat3b::zeros(size)),
+                                   height(size.height),
+                                   width(size.width)
+{
+    depth_map = cv::Mat(size, depth_map.type(), cv::Scalar(std::numeric_limits<float>::max()));
+    signed_distance = cv::Mat1f(size);
+    heaviside = cv::Mat1f(size);
+    mask = cv::Mat1b::zeros(size);
+    roi = cv::Rect();
+}
+
+
 cv::Rect2i Maps::getExtendedROI(int offset) const
 {
     if (roi.empty())
@@ -69,3 +81,4 @@ cv::Rect Maps::getPatchSquare(int center_x, int center_y, int radius)
     int down = std::min(center_y + radius + 1, height);
     return cv::Rect(left, up, right - left, down - up);
 }
+
