@@ -1,6 +1,7 @@
 #include<opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <algorithm>
+#include <iostream>
 
 #include "renderer.h"
 
@@ -255,15 +256,101 @@ void Renderer::invertMask(cv::Mat1b& mask)
     }
 }
 
+
+void Renderer::computePixelBoardsMask(cv::Mat1b &origin_mask, cv::Mat1b &board_mask)
+{
+//    for (int row = 0; row < board_mask.rows; ++row)
+//    {
+//        for (int col = 0; col < board_mask.cols; ++col)
+//        {
+//            int half_row = row / 2;
+//            int half_col = col / 2;
+//            bool on_foreground = false;
+//            if (origin_mask( half_row, half_col) > 0)
+//            {
+//                on_foreground = true;
+//            }
+//            else
+//            {
+//                bool horizontal_border = row % 2 == 0 && half_row > 0;
+//                if (horizontal_border)
+//                {
+//                    if (origin_mask(half_row - 1, half_col))
+//                    {
+//                        on_foreground = true;
+//                    }
+//                    else if (col % 2 == 0 && half_col > 0)   // vertical border
+//                    {
+//                        on_foreground = origin_mask(half_row, half_col - 1) || origin_mask(half_row - 1, half_col - 1);
+//                    }
+//                }
+//                else if (col % 2 == 0 && half_col > 0)    // vertical border
+//                {
+//                    on_foreground = origin_mask(half_row, half_col - 1);
+//                }
+//            }
+//            board_mask = (on_foreground) ? 1 : 0;
+//        }
+//    }
+    for (int row = 0; row < origin_mask.rows; ++row)
+    {
+        for (int col = 0;  col < origin_mask.cols; ++col)
+        {
+            if (origin_mask(row, col))
+            {
+                for (int i = 0; i < 3; ++i)
+                {
+                    for (int j = 0; j < 3; ++j)
+                    {
+                        board_mask(2 * row + i, 2 * col + j) = 1;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void Renderer::computeDistanceOnUpsampled(cv::Mat1b &mask, cv::Mat1f &distance)
+{
+    cv::Size double_size = cv::Size(distance.size().width * 2 + 1, distance.size().height * 2 + 1);
+    cv::Mat1f pixel_boards_distance = cv::Mat1f::zeros(double_size);
+    cv::Mat1b pixel_boards_mask = cv::Mat1b::zeros(double_size);
+    computePixelBoardsMask(mask, pixel_boards_mask);
+    cv::distanceTransform(pixel_boards_mask,
+                          pixel_boards_distance,
+                          cv::DIST_L2,
+                          cv::DIST_MASK_PRECISE,
+                          CV_32F);
+    for (int row = 0; row < distance.rows; ++row)
+    {
+        for (int col = 0; col < distance.cols; ++col)
+        {
+            distance(row, col) = pixel_boards_distance(2 * row + 1, 2 * col + 1);
+        }
+    }
+}
+
+
+
 void Renderer::computeSignedDistance(cv::Mat1b& mask, cv::Mat1f& signed_distance)
 {
+    clock_t start = clock();
+//    computeDistanceOnUpsampled(mask, signed_distance);
+//    cv::Mat1f internal_signed_distance = cv::Mat::zeros(signed_distance.size(), signed_distance.type());
+//    cv::Mat1f external_signed_distance = cv::Mat::zeros(signed_distance.size(), signed_distance.type());
+//    computeDistanceOnUpsampled(mask, internal_signed_distance);
+//    internal_signed_distance = -internal_signed_distance;
+//    invertMask(mask);
+//    computeDistanceOnUpsampled(mask, external_signed_distance);
+//    invertMask(mask);
+//    signed_distance = internal_signed_distance + external_signed_distance;
     cv::Mat1f internal_signed_distance = cv::Mat::zeros(signed_distance.size(), signed_distance.type());
     cv::Mat1f external_signed_distance = cv::Mat::zeros(signed_distance.size(), signed_distance.type());
     cv::distanceTransform(mask,
                           internal_signed_distance,
                           cv::DIST_L2,
                           cv::DIST_MASK_PRECISE,
-                           CV_32F);
+                          CV_32F);
     internal_signed_distance = -internal_signed_distance;
     invertMask(mask);
     cv::distanceTransform(mask,
@@ -273,7 +360,8 @@ void Renderer::computeSignedDistance(cv::Mat1b& mask, cv::Mat1f& signed_distance
                           CV_32F);
     invertMask(mask);
     signed_distance = internal_signed_distance + external_signed_distance;
-
+    clock_t finish = clock();
+    std::cout << (double) (finish - start) / CLOCKS_PER_SEC << std::endl;
 }
 
 float heaviside_parametrized(float x, float s)

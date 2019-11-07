@@ -30,6 +30,10 @@ private:
 
     static void invertMask(cv::Mat1b& mask);
 
+    static void computePixelBoardsMask(cv::Mat1b& origin_mask, cv::Mat1b& board_mask);
+
+    static void computeDistanceOnUpsampled(cv::Mat1b& mask, cv::Mat1f& distance);
+
     static void computeSignedDistance(cv::Mat1b& mask, cv::Mat1f& signed_distance);
 
     static void computeHeaviside(cv::Mat1f& signed_distance, cv::Mat1f& heaviside);
