@@ -1,4 +1,4 @@
-#include <maps.h>
+#include <projection.h>
 #include "histogram.h"
 #include <iostream>
 
@@ -19,7 +19,7 @@ namespace histograms
         }
     }
 
-    void Histogram::update(const Maps &local_square, int center_x, int center_y) {
+    void Histogram::update(const Projection &local_square, int center_x, int center_y) {
         std::pair<float, float> eta_f_eta_b = get_eta_f_eta_b(local_square, center_x, center_y);
         int col_offset = static_cast<int>(radius) - center_x;
         int row_offset = static_cast<int>(radius) - center_y;
@@ -125,7 +125,7 @@ namespace histograms
         return visited;
     }
 
-    std::pair<float, float> Histogram::get_eta_f_eta_b(const Maps &local_square, int center_x, int center_y, int circle_radius)
+    std::pair<float, float> Histogram::get_eta_f_eta_b(const Projection &local_square, int center_x, int center_y, int circle_radius)
     {
 
         int col_offset = static_cast<int>(radius) - center_x;
@@ -177,7 +177,7 @@ namespace histograms
     }
 
     void
-    Histogram::votePatch(const Maps &local_square, int center_x, int center_y, cv::Mat1f &votes, cv::Mat1i &numVoters, int circle_radius) const
+    Histogram::votePatch(const Projection &local_square, int center_x, int center_y, cv::Mat1f &votes, cv::Mat1i &numVoters, int circle_radius) const
     {
         std::pair<float, float> eta_f_eta_b = get_eta_f_eta_b(local_square, center_x, center_y);
         const cv::Mat3b& color_map = local_square.color_map;

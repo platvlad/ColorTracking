@@ -1,6 +1,7 @@
 #include<opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <algorithm>
+#include <fstream>
 
 #include "renderer.h"
 
@@ -41,10 +42,10 @@ Renderer::Renderer(const Renderer &other, const cv::Size &size)
 }
 
 
-void Renderer::projectMesh(const histograms::Mesh& mesh, const glm::mat4& pose, Maps &maps) const
+void Renderer::projectMesh(const histograms::Mesh& mesh, const glm::mat4& pose, Projection &maps) const
 {
 
-    //Maps maps(width, height);
+    //Projection maps(width, height);
     const std::vector<glm::uvec3>& faces = mesh.getFaces();
     const std::vector<glm::vec3>& vertices = mesh.getVertices();
     for (size_t i = 0; i < faces.size(); ++i)
@@ -53,25 +54,29 @@ void Renderer::projectMesh(const histograms::Mesh& mesh, const glm::mat4& pose, 
         glm::vec3 v0 = vertices[face[0]];
         glm::vec3 v1 = vertices[face[1]];
         glm::vec3 v2 = vertices[face[2]];
-        glm::vec3 p0 = projectVertex(v0, pose);
-        glm::vec3 p1 = projectVertex(v1, pose);
-        glm::vec3 p2 = projectVertex(v2, pose);
+        glm::vec4 p0 = transformVertex(v0, pose);
+        glm::vec4 p1 = transformVertex(v1, pose);
+        glm::vec4 p2 = transformVertex(v2, pose);
 
-        if (p0 != glm::vec3() && p1 != glm::vec3() && p2 != glm::vec3())
+        if (p0.z != 0 && p1.z != 0 && p2.z != 0)
         {
             renderTriangle(maps, p0, p1, p2);
         }
 
     }
-    computeSignedDistance(maps.mask, maps.signed_distance);
+    computeSignedDistance(maps);
     computeHeaviside(maps.signed_distance, maps.heaviside);
 }
 
-glm::vec3 Renderer::projectVertex(const glm::vec3& vertex, const glm::mat4& pose) const
+glm::vec4 Renderer::transformVertex(const glm::vec3 &vertex, const glm::mat4 &pose) const
 {
     glm::vec4 v_hom = glm::vec4(vertex, 1);
-    v_hom = pose * v_hom;
-    glm::vec4 p_hom = camera_matrix * v_hom;
+    return pose * v_hom;
+}
+
+glm::vec3 Renderer::projectTransformedVertex(const glm::vec4& vertex) const
+{
+    glm::vec4 p_hom = camera_matrix * vertex;
     if (p_hom[3] != 0.0f)
     {
         return glm::vec3(p_hom[0] / p_hom[3], -2 * camera_matrix[2][1] - (p_hom[1] / p_hom[3]), p_hom[3]);
@@ -92,17 +97,34 @@ void Renderer::roundXY(glm::vec3& point)
 
 // z -- depth
 // x, y are in screen coordinates
+// x, y, z -- transformed point before projection to camera
 // before: depth[:, :] = std::numeric_limits<float>::max()
-void Renderer::renderTriangle(Maps& maps, glm::vec3& p0, glm::vec3& p1, glm::vec3& p2) const
+void Renderer::renderTriangle(Projection& maps, glm::vec4& tx0, glm::vec4& tx1, glm::vec4& tx2) const
 {
+    glm::vec3 p0 = projectTransformedVertex(tx0);
+    glm::vec3 p1 = projectTransformedVertex(tx1);
+    glm::vec3 p2 = projectTransformedVertex(tx2);
+
     roundXY(p0);  // inplace
     roundXY(p1);
     roundXY(p2);
     if (p0.y == p1.y && p0.y == p2.y) return;
 
-    if (p0.y > p1.y) std::swap(p0, p1);
-    if (p0.y > p2.y) std::swap(p0, p2);
-    if (p1.y > p2.y) std::swap(p1, p2);
+    if (p0.y > p1.y)
+    {
+        std::swap(p0, p1);
+        std::swap(tx0, tx1);
+    }
+    if (p0.y > p2.y)
+    {
+        std::swap(p0, p2);
+        std::swap(tx0, tx2);
+    }
+    if (p1.y > p2.y)
+    {
+        std::swap(p1, p2);
+        std::swap(tx1, tx2);
+    }
 
     int const yMin = static_cast<int>(p0.y);
     bool const secondHalfPrecalc = p1.y == p0.y;
@@ -117,9 +139,15 @@ void Renderer::renderTriangle(Maps& maps, glm::vec3& p0, glm::vec3& p1, glm::vec
                            / segmentHeight;
 
         glm::vec3 a(p0 + (p2 - p0) * alpha);
+        glm::vec4 tx_a(tx0 + (tx2 - tx0) * alpha);
         glm::vec3 b(secondHalf ? (p1 + (p2 - p1) * beta)
                                : (p0 + (p1 - p0) * beta));
-        if (a.x > b.x) std::swap(a, b);
+        glm::vec4 tx_b(secondHalf ? (tx1 + (tx2 - tx1) * beta)
+                                  : (tx0 + (tx1 - tx0) * beta));
+        if (a.x > b.x) {
+            std::swap(a, b);
+            std::swap(tx_a, tx_b);
+        }
 
         int const jMin = static_cast<int>(ceil(a.x));
         int const jMax = static_cast<int>(floor(b.x));
@@ -128,14 +156,17 @@ void Renderer::renderTriangle(Maps& maps, glm::vec3& p0, glm::vec3& p1, glm::vec
             int const x = j;
             float const phi = thinLine ? 1.0f : (j - a.x) / (b.x - a.x);
             glm::vec3 const p(a * 1.0f + (b - a) * phi);
+            glm::vec4 const tx_p(tx_a * 1.0f + (tx_b - tx_a) * phi);
 
             if (x < 0 || y < 0
                 || static_cast<size_t>(x) >= width
                 || static_cast<size_t>(y) >= height) {
                 continue;
             }
-            if (maps.depth_map.at<float>(y, x) > p.z) {  // cv::Mat1f
-                maps.depth_map.at<float>(y, x) = p.z;
+            if (maps.depth_map.at<cv::Vec3f>(y, x)[2] > p.z) {  // cv::Mat1f
+                maps.depth_map.at<cv::Vec3f>(y, x)[0] = tx_p.x;
+                maps.depth_map.at<cv::Vec3f>(y, x)[1] = tx_p.y;
+                maps.depth_map.at<cv::Vec3f>(y, x)[2] = p.z;
                 maps.mask.at<uchar>(y, x) = 255;
                 updateROI(maps.roi, x, y);
             }
@@ -153,9 +184,13 @@ void Renderer::renderMesh(const histograms::Mesh &mesh, cv::Mat3b& frame, const 
         glm::vec3 v0 = vertices[face[0]];
         glm::vec3 v1 = vertices[face[1]];
         glm::vec3 v2 = vertices[face[2]];
-        glm::vec3 p0 = projectVertex(v0, pose);
-        glm::vec3 p1 = projectVertex(v1, pose);
-        glm::vec3 p2 = projectVertex(v2, pose);
+        glm::vec4 tx0 = transformVertex(v0, pose);
+        glm::vec4 tx1 = transformVertex(v1, pose);
+        glm::vec4 tx2 = transformVertex(v2, pose);
+
+        glm::vec3 p0 = projectTransformedVertex(tx0);
+        glm::vec3 p1 = projectTransformedVertex(tx1);
+        glm::vec3 p2 = projectTransformedVertex(tx2);
 
         if (p0 != glm::vec3() && p1 != glm::vec3() && p2 != glm::vec3())
         {
@@ -255,24 +290,33 @@ void Renderer::invertMask(cv::Mat1b& mask)
     }
 }
 
-void Renderer::computeSignedDistance(cv::Mat1b& mask, cv::Mat1f& signed_distance)
+void Renderer::computeSignedDistance(Projection& maps)
 {
-    cv::Mat1f internal_signed_distance = cv::Mat::zeros(signed_distance.size(), signed_distance.type());
-    cv::Mat1f external_signed_distance = cv::Mat::zeros(signed_distance.size(), signed_distance.type());
-    cv::distanceTransform(mask,
+    cv::Mat1f internal_signed_distance = cv::Mat::zeros(maps.signed_distance.size(), maps.signed_distance.type());
+    cv::Mat1f external_signed_distance = cv::Mat::zeros(maps.signed_distance.size(), maps.signed_distance.type());
+    cv::distanceTransform(maps.mask,
                           internal_signed_distance,
                           cv::DIST_L2,
                           cv::DIST_MASK_PRECISE,
                            CV_32F);
     internal_signed_distance = -internal_signed_distance;
-    invertMask(mask);
-    cv::distanceTransform(mask,
+    invertMask(maps.mask);
+//    cv::distanceTransform(mask,
+//                          external_signed_distance,
+//                          cv::DIST_L2,
+//                          cv::DIST_MASK_PRECISE,
+//                          CV_32F);
+
+    cv::distanceTransform(maps.mask,
                           external_signed_distance,
+                          maps.nearest_labels,
                           cv::DIST_L2,
                           cv::DIST_MASK_PRECISE,
-                          CV_32F);
-    invertMask(mask);
-    signed_distance = internal_signed_distance + external_signed_distance;
+                          cv::DIST_LABEL_PIXEL);
+
+
+    invertMask(maps.mask);
+    maps.signed_distance = internal_signed_distance + external_signed_distance;
 
 }
 
@@ -296,4 +340,15 @@ void Renderer::computeHeaviside(cv::Mat1f& signed_distance, cv::Mat1f& heaviside
 cv::Size Renderer::getSize() const
 {
     return cv::Size(width, height);
+}
+
+glm::vec2 Renderer::getFocal() const
+{
+    return glm::vec2(camera_matrix[0][0], camera_matrix[1][1]);
+}
+
+glm::vec3 Renderer::projectVertex(const glm::vec3 &vertex, const glm::mat4 &pose) const
+{
+    glm::vec4 tx = transformVertex(vertex, pose);
+    return projectTransformedVertex(tx);
 }

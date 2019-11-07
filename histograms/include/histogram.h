@@ -26,13 +26,13 @@ namespace histograms
 
         explicit Histogram();
 
-        void update(const Maps &local_square, int center_x, int center_y);
+        void update(const Projection &local_square, int center_x, int center_y);
 
-        static std::pair<float, float> get_eta_f_eta_b(const Maps &local_square, int center_x, int center_y, int circle_radius = radius);
+        static std::pair<float, float> get_eta_f_eta_b(const Projection &local_square, int center_x, int center_y, int circle_radius = radius);
 
         bool isVisited() const;
 
-        void votePatch(const Maps &local_square, int center_x, int center_y, cv::Mat1f &votes, cv::Mat1i &numVoters, int circle_radius = radius) const;
+        void votePatch(const Projection &local_square, int center_x, int center_y, cv::Mat1f &votes, cv::Mat1i &numVoters, int circle_radius = radius) const;
 
         float voteColor(uchar blue, uchar green, uchar red, float eta_f, float eta_b) const;
 

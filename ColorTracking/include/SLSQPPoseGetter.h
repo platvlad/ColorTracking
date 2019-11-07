@@ -34,9 +34,19 @@ class SLSQPPoseGetter : public PoseGetter
     static glm::mat4 params_to_transform(const double *x);
 
     static double getDerivativeInDirection(const histograms::Object3d &object3D,
-                                           histograms::PoseEstimator& estimator,
+                                           histograms::PoseEstimator &estimator,
                                            const glm::mat4 &minus_transform,
                                            const glm::mat4 &plus_transform);
+
+    static double getDerivativeSemiAnalytically(const histograms::Object3d &object3D,
+                                                histograms::PoseEstimator &estimator,
+                                                const glm::mat4 &minus_transform,
+                                                const glm::mat4 &plus_transform);
+
+    static void getGradientAnalytically(const histograms::Object3d &object3D,
+                                        const glm::mat4 &initial_pose,
+                                        histograms::PoseEstimator &estimator,
+                                        double* grad);
 
     static double energy_function(unsigned n, const double *x, double *grad, void *my_func_data);
 

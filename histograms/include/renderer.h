@@ -7,7 +7,7 @@
 #include <opencv2/core/mat.hpp>
 
 #include "mesh.h"
-#include "maps.h"
+#include "projection.h"
 
 
 class Renderer
@@ -22,7 +22,7 @@ private:
     int height;
 
 
-    void renderTriangle(Maps& maps, glm::vec3& p0, glm::vec3& p1, glm::vec3& p2) const;
+    void renderTriangle(Projection& maps, glm::vec4& tx0, glm::vec4& tx1, glm::vec4& tx2) const;
 
     static void renderTriangleWireframe(cv::Mat3b& color_map, glm::vec3& p0, glm::vec3& p1, glm::vec3& p2);
 
@@ -30,7 +30,7 @@ private:
 
     static void invertMask(cv::Mat1b& mask);
 
-    static void computeSignedDistance(cv::Mat1b& mask, cv::Mat1f& signed_distance);
+    static void computeSignedDistance(Projection& maps);
 
     static void computeHeaviside(cv::Mat1f& signed_distance, cv::Mat1f& heaviside);
 
@@ -43,15 +43,21 @@ public:
 
     Renderer(const Renderer &other, const cv::Size &size);
 
-    void projectMesh(const histograms::Mesh& mesh, const glm::mat4& pose, Maps &maps) const;
+    void projectMesh(const histograms::Mesh& mesh, const glm::mat4& pose, Projection &maps) const;
 
     void renderMesh(const histograms::Mesh& mesh, cv::Mat3b& frame, const glm::mat4& pose) const;
+
+    glm::vec4 transformVertex(const glm::vec3& vertex, const glm::mat4& pose) const;
+
+    glm::vec3 projectTransformedVertex(const glm::vec4& vertex) const;
 
     glm::vec3 projectVertex(const glm::vec3& vertex, const glm::mat4& pose) const;
 
     size_t getWidth() const;
 
     cv::Size getSize() const;
+
+    glm::vec2 getFocal() const;
 
 };
 

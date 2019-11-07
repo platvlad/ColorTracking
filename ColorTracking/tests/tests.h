@@ -3,7 +3,7 @@
 
 class Tests
 {
-    static Maps projectPyramid();
+    static Projection projectPyramid();
 
     static histograms::Mesh getPyramidMesh();
 

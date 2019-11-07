@@ -1,32 +1,34 @@
-#include "maps.h"
+#include "projection.h"
 
-Maps::Maps(int width, int height) : width(width), height(height), color_map(cv::Mat3b(height, width))
+Projection::Projection(int width, int height) : width(width),
+                                                height(height),
+                                                color_map(cv::Mat3b(height, width))
 {
     cv::Size frame_size(width, height);
-    depth_map = cv::Mat(frame_size, depth_map.type(), cv::Scalar(std::numeric_limits<float>::max()));
+    depth_map = cv::Mat(frame_size, depth_map.type(), cv::Vec3f(0, 0, std::numeric_limits<float>::max()));
     signed_distance = cv::Mat1f(height, width);
     heaviside = cv::Mat1f(height, width);
     mask = cv::Mat::zeros(frame_size, mask.type());
     roi = cv::Rect();
 }
 
-Maps::Maps(const cv::Mat3b &color_frame) : color_map(color_frame),
-                                           height(color_frame.rows),
-                                           width(color_frame.cols)
+Projection::Projection(const cv::Mat3b &color_frame) : color_map(color_frame),
+                                                       height(color_frame.rows),
+                                                       width(color_frame.cols)
 {
     cv::Size frame_size = color_frame.size();
-    depth_map = cv::Mat(frame_size, depth_map.type(), cv::Scalar(std::numeric_limits<float>::max()));
+    depth_map = cv::Mat(frame_size, depth_map.type(), cv::Vec3f(0, 0, std::numeric_limits<float>::max()));
     signed_distance = cv::Mat1f(height, width);
     heaviside = cv::Mat1f(height, width);
     mask = cv::Mat::zeros(frame_size, mask.type());
     roi = cv::Rect();
 }
 
-Maps::Maps(const cv::Size &size) : color_map(cv::Mat3b::zeros(size)),
-                                   height(size.height),
-                                   width(size.width)
+Projection::Projection(const cv::Size &size) : color_map(cv::Mat3b::zeros(size)),
+                                               height(size.height),
+                                               width(size.width)
 {
-    depth_map = cv::Mat(size, depth_map.type(), cv::Scalar(std::numeric_limits<float>::max()));
+    depth_map = cv::Mat(size, depth_map.type(), cv::Vec3f(0, 0, std::numeric_limits<float>::max()));
     signed_distance = cv::Mat1f(size);
     heaviside = cv::Mat1f(size);
     mask = cv::Mat1b::zeros(size);
@@ -34,7 +36,7 @@ Maps::Maps(const cv::Size &size) : color_map(cv::Mat3b::zeros(size)),
 }
 
 
-cv::Rect2i Maps::getExtendedROI(int offset) const
+cv::Rect2i Projection::getExtendedROI(int offset) const
 {
     if (roi.empty())
     {
@@ -47,13 +49,14 @@ cv::Rect2i Maps::getExtendedROI(int offset) const
     return cv::Rect2i(left, top, right - left, bottom - top);
 }
 
-Maps Maps::operator()(const cv::Rect &req_roi) const
+Projection Projection::operator()(const cv::Rect &req_roi) const
 {
-    Maps maps_on_roi =  Maps(color_map(req_roi));
+    Projection maps_on_roi =  Projection(color_map(req_roi));
     maps_on_roi.depth_map = depth_map(req_roi);
     maps_on_roi.mask = mask(req_roi);
     maps_on_roi.signed_distance = signed_distance(req_roi);
     maps_on_roi.heaviside = heaviside(req_roi);
+    maps_on_roi.nearest_labels = nearest_labels(req_roi);
     int roi_left = std::max(0, roi.x - req_roi.x);
     int roi_right = std::min(req_roi.width, roi.x + roi.width - req_roi.x);
     int roi_up = std::max(0, roi.y - req_roi.y);
@@ -62,18 +65,12 @@ Maps Maps::operator()(const cv::Rect &req_roi) const
     return maps_on_roi;
 }
 
-bool Maps::hasEmptyProjection() const
+bool Projection::hasEmptyProjection() const
 {
     return roi.empty();
 }
 
-
-bool Maps::isEmpty() const
-{
-    return !width && !height;
-}
-
-cv::Rect Maps::getPatchSquare(int center_x, int center_y, int radius)
+cv::Rect Projection::getPatchSquare(int center_x, int center_y, int radius)
 {
     int left = std::max(0, center_x - radius);
     int up = std::max(0, center_y - radius);

@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <maps.h>
+#include <projection.h>
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <renderer.h>
@@ -58,7 +58,7 @@ glm::mat4 Tests::getPyramidPose()
     );
 }
 
-Maps Tests::projectPyramid()
+Projection Tests::projectPyramid()
 {
     histograms::Mesh mesh = getPyramidMesh();
     glm::mat4 camera_matrix = getPyramidCameraMatrix();
@@ -67,14 +67,14 @@ Maps Tests::projectPyramid()
     Renderer renderer(camera_matrix, 16, 160000, width, height);
     glm::mat4 pose = getPyramidPose();
     cv::Mat3b color = cv::Mat3b::zeros(height, width);
-    Maps maps = Maps(color);
-    renderer.projectMesh(mesh, pose, maps);
-    return maps;
+    Projection projection = Projection(color);
+    renderer.projectMesh(mesh, pose, projection);
+    return projection;
 }
 
 void Tests::testProjection()
 {
-    Maps maps = projectPyramid();
+    Projection maps = projectPyramid();
     const cv::Mat& depth = maps.depth_map;
     bool ok = true;
     for (int row = 0; row < depth.rows; ++row)
@@ -103,7 +103,7 @@ void Tests::testProjection()
 
 void Tests::testGetROI()
 {
-    Maps maps = projectPyramid();
+    Projection maps = projectPyramid();
 
     cv::Rect roi = maps.getExtendedROI(40);
     if (roi.x == 252 && roi.y == 185 && roi.width == 146 && roi.height == 145)
@@ -118,7 +118,7 @@ void Tests::testGetROI()
 
 void Tests::testHeaviside()
 {
-    Maps maps = projectPyramid();
+    Projection maps = projectPyramid();
     const cv::Mat& heaviside = maps.heaviside;
     const cv::Mat& signed_distance = maps.signed_distance;
     bool ok = true;

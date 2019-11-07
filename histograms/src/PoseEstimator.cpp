@@ -1,4 +1,5 @@
 #include <set>
+#include <fstream>
 #include <opencv2/imgcodecs.hpp>
 #include <PoseEstimator.h>
 
@@ -7,6 +8,7 @@ namespace histograms
 {
     float PoseEstimator::estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, int histo_part, bool debug_info)
     {
+        object_pose = pose;
         const Mesh& mesh = object.getMesh();
         const Renderer& object_renderer = object.getRenderer();
         on_downsampled_frame = frame.size() != object_renderer.getSize();
@@ -17,12 +19,12 @@ namespace histograms
         float frame_size_scale = static_cast<float>(renderer->getWidth()) /
                                  static_cast<float>(object_renderer.getWidth());
 
-        Maps maps = Maps(frame);
+        Projection maps = Projection(frame);
         renderer->projectMesh(mesh, pose, maps);
         int histogram_radius = std::ceil(static_cast<float>(object.getHistogramRadius()) * frame_size_scale);
         roi = maps.getExtendedROI(histogram_radius);
-        Maps maps_on_roi = maps(roi);
-        signed_distance = maps_on_roi.signed_distance;
+        projection = maps(roi);
+        cv::Mat1f& signed_distance = projection.signed_distance;
         votes_foreground = cv::Mat1f::zeros(roi.size());
         num_voters = cv::Mat1i::zeros(roi.size());
 
@@ -31,10 +33,14 @@ namespace histograms
         cv::Mat3b color_copy;
         if (debug_info)
         {
-            color_copy = maps_on_roi.color_map.clone();
+            color_copy = projection.color_map.clone();
         }
         for (size_t i = 0; i < vertices.size(); i += histo_part)
         {
+            if (i == 9230)
+            {
+
+            }
             glm::vec3 pixel = renderer->projectVertex(vertices[i], pose);
             int column = (int)round(pixel.x);
             int row = (int)round(pixel.y);
@@ -53,9 +59,9 @@ namespace histograms
                     }
                     int center_on_patch_x = std::min(roi_column, histogram_radius);
                     int center_on_patch_y = std::min(roi_row, histogram_radius);
-                    cv::Rect patch_square = maps_on_roi.getPatchSquare(roi_column, roi_row, histogram_radius);
-                    Maps patch = maps_on_roi(patch_square);
-                    //Maps square_patch = maps.getSquarePatch(column, row, histogram_radius);
+                    cv::Rect patch_square = projection.getPatchSquare(roi_column, roi_row, histogram_radius);
+                    Projection patch = projection(patch_square);
+                    //Projection square_patch = maps.getSquarePatch(column, row, histogram_radius);
                     cv::Mat1f votes_on_patch = votes_foreground(patch_square);
                     cv::Mat1i num_voters_on_patch = num_voters(patch_square);
                     if (histograms[i].isVisited())
@@ -68,7 +74,7 @@ namespace histograms
         }
         float error_sum = 0;
         int num_error_estimators = 0;
-        heaviside = maps_on_roi.heaviside;
+        cv::Mat1f& heaviside = projection.heaviside;
 
         cv::Mat1f errors;
         if (debug_info)
@@ -105,8 +111,18 @@ namespace histograms
             cv::imwrite("/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/debug_frames/errors.png",
                         errors);
             cv::imwrite("/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/debug_frames/color.png",
-                        maps_on_roi.color_map);
+                        projection.color_map);
             cv::imwrite("/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/debug_frames/color_copy.png", color_copy);
+            cv::imwrite("/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/debug_frames/signed_distance.png", projection.signed_distance);
+            std::ofstream fout("/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/debug_frames/signed_distance.txt");
+            for (int row = 0; row < projection.signed_distance.rows; ++row)
+            {
+                for (int col = 0; col < projection.signed_distance.cols; ++col)
+                {
+                    fout << projection.signed_distance(row, col) << ' ';
+                }
+                fout << std::endl;
+            }
         }
 
         if (num_error_estimators)
@@ -119,6 +135,7 @@ namespace histograms
     double PoseEstimator::getDirac(int row, int col) const
     {
         float s = 1.2;
+        const cv::Mat1f& signed_distance = projection.signed_distance;
         return s / (M_PI * signed_distance(row, col) * signed_distance(row, col) * s * s + M_PI);
     }
 
@@ -126,6 +143,7 @@ namespace histograms
     {
         if (derivative_const_part.empty())
         {
+            const cv::Mat1f& heaviside = projection.heaviside;
             derivative_const_part = cv::Mat1f(heaviside.size(), -1);
             for (int row = 0; row < derivative_const_part.rows; ++row)
             {
@@ -166,6 +184,47 @@ namespace histograms
     {
         return num_voters;
     }
+
+    const Projection &PoseEstimator::getProjection() const
+    {
+        return projection;
+    }
+
+    PoseEstimator::PoseEstimator() : projection(0, 0),
+                                     renderer(nullptr),
+                                     on_downsampled_frame(false)
+    {
+    }
+
+    const glm::mat4 &PoseEstimator::getPose() const
+    {
+        return object_pose;
+    }
+
+//    const cv::Mat1f &PoseEstimator::getSignedDistance() const
+//    {
+//        return signed_distance;
+//    }
+//
+//    const cv::Mat1f &PoseEstimator::getHeaviside() const
+//    {
+//        return heaviside;
+//    }
+//
+//    const cv::Mat &PoseEstimator::getNearestLabels() const
+//    {
+//        return nearest_labels;
+//    }
+//
+//    const std::vector<cv::Vec2i> &PoseEstimator::getMaskPoints() const
+//    {
+//        return mask_points;
+//    }
+//
+//    const cv::Mat3f &PoseEstimator::getDepthMap() const
+//    {
+//        return depth_map;
+//    }
 
 
 }

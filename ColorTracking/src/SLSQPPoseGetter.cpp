@@ -1,6 +1,7 @@
 #include "SLSQPPoseGetter.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <opencv/cv.hpp>
+#include <iostream>
 #include "PoseEstimator.h"
 
 
@@ -94,13 +95,13 @@ double SLSQPPoseGetter::getDerivativeInDirection(const histograms::Object3d &obj
 {
     const Renderer* renderer = estimator.getRenderer();
     cv::Size frame_size = renderer->getSize();
-    Maps minus_maps = Maps(frame_size);
+    Projection minus_maps = Projection(frame_size);
     renderer->projectMesh(object3D.getMesh(), minus_transform, minus_maps);
-    Maps plus_maps = Maps(frame_size);
+    Projection plus_maps = Projection(frame_size);
     renderer->projectMesh(object3D.getMesh(), plus_transform, plus_maps);
     const cv::Rect& currentROI = estimator.getROI();
-    Maps minus_maps_on_roi = minus_maps(currentROI);
-    Maps plus_maps_on_roi = plus_maps(currentROI);
+    Projection minus_maps_on_roi = minus_maps(currentROI);
+    Projection plus_maps_on_roi = plus_maps(currentROI);
     const cv::Mat1i& num_voters = estimator.getNumVoters();
     float grad_sum = 0;
     int non_zero_pixels = 0;
@@ -122,6 +123,280 @@ double SLSQPPoseGetter::getDerivativeInDirection(const histograms::Object3d &obj
         return grad_sum / static_cast<float>(non_zero_pixels);
     }
     return 0;
+}
+
+double SLSQPPoseGetter::getDerivativeSemiAnalytically(const histograms::Object3d &object3D,
+                                                      histograms::PoseEstimator &estimator,
+                                                      const glm::mat4 &minus_transform, const glm::mat4 &plus_transform)
+{
+    const cv::Mat1f& derivative_const_part = estimator.getDerivativeConstPart();
+    const cv::Mat1i& num_voters = estimator.getNumVoters();
+    const Projection& projection = estimator.getProjection();
+    const cv::Mat1f& signed_distance = projection.signed_distance;
+    const cv::Mat3f& depth_map = projection.depth_map;
+    const Renderer* renderer = estimator.getRenderer();
+    const glm::mat4& transform = estimator.getPose();
+    glm::mat4 transform_inverted = glm::inverse(transform);
+
+    cv::Size frame_size = renderer->getSize();
+    Projection minus_maps = Projection(frame_size);
+    renderer->projectMesh(object3D.getMesh(), minus_transform, minus_maps);
+    Projection plus_maps = Projection(frame_size);
+    renderer->projectMesh(object3D.getMesh(), plus_transform, plus_maps);
+    const cv::Rect& currentROI = estimator.getROI();
+    Projection minus_maps_on_roi = minus_maps(currentROI);
+    Projection plus_maps_on_roi = plus_maps(currentROI);
+
+    std::vector<cv::Vec2i> mask_points;
+    mask_points.push_back(cv::Vec2i(0, 0));
+
+    const cv::Mat1i& nearest_labels = projection.nearest_labels;
+    for (int row = 0; row < projection.mask.rows; ++row)
+    {
+        for (int col = 0; col < projection.mask.cols; ++col)
+        {
+            if (projection.mask(row, col) != 0)
+            {
+                int label = nearest_labels(row, col);
+                mask_points.insert(mask_points.begin() + label, cv::Vec2i(row, col));
+                if (label != mask_points.size() - 1)
+                {
+                    std::cout << "Achtung!" << std::endl;
+                }
+            }
+        }
+    }
+    double sum = 0;
+    int num_pixels = 0;
+
+    int zero_der = 0;
+    int zero_alter_der = 0;
+    int what777 = 0;
+    int num_foreground = 0;
+    int num_background = 0;
+
+    for (int row = 0; row < num_voters.rows; ++row)
+    {
+        for (int col = 0; col < num_voters.cols; ++col)
+        {
+            if (num_voters(row, col) > 0)
+            {
+                double dPhi_dx = 0;
+                double dPhi_dy = 0;
+
+                if (col == 0)
+                {
+                    dPhi_dx = signed_distance(row, col + 1) - signed_distance(row, col);
+                }
+                else if (col == num_voters.cols - 1)
+                {
+                    dPhi_dx = signed_distance(row, col) - signed_distance(row, col - 1);
+                }
+                else
+                {
+                    dPhi_dx = (signed_distance(row, col + 1) - signed_distance(row, col - 1)) / 2;
+                }
+                if (row == 0)
+                {
+                    dPhi_dy = signed_distance(row, col) - signed_distance(row + 1, col);
+                }
+                else if (row == num_voters.rows - 1)
+                {
+                    dPhi_dy = signed_distance(row - 1, col) - signed_distance(row, col);
+                }
+                else
+                {
+                    dPhi_dy = (signed_distance(row - 1, col) - signed_distance(row + 1, col)) / 2;
+                }
+
+                cv::Vec2i pixel_on_mask = mask_points[nearest_labels.at<int>(row, col)];
+                cv::Vec3f pt_in_3d = depth_map(pixel_on_mask[0],pixel_on_mask[1]);
+                pt_in_3d[2] = -pt_in_3d[2];
+                glm::vec4 vec_in_3d = glm::vec4(pt_in_3d[0], pt_in_3d[1], pt_in_3d[2], 1);
+                glm::vec4 init_vec_pose = transform_inverted * vec_in_3d;
+                glm::vec3 minus_pixel = renderer->projectVertex(glm::vec3(init_vec_pose[0],
+                                                                                    init_vec_pose[1],
+                                                                                    init_vec_pose[2]),
+                                                                                            minus_transform);
+                glm::vec3 plus_pixel = renderer->projectVertex(glm::vec3(init_vec_pose[0],
+                                                                            init_vec_pose[1],
+                                                                            init_vec_pose[2]),
+                                                                                    plus_transform);
+                glm::vec3 init_pixel = renderer->projectVertex(glm::vec3(init_vec_pose[0],
+                                                                         init_vec_pose[1],
+                                                                         init_vec_pose[2]),
+                                                                                 transform);
+                double minus_column = minus_pixel.x;
+                double minus_row = minus_pixel.y;
+                double plus_column = plus_pixel.x;
+                double plus_row = plus_pixel.y;
+
+                double derivative_in_pt = derivative_const_part(row, col)
+                                          * (dPhi_dx * (plus_column - minus_column) + dPhi_dy * (minus_row - plus_row ))
+                                          / 2;
+
+                double delta_sd = (dPhi_dx * (plus_column - minus_column) + dPhi_dy * (minus_row - plus_row ))
+                                  / 2;
+
+                if (!projection.mask(row, col))
+                {
+                    derivative_in_pt = -derivative_in_pt;
+                    delta_sd = -delta_sd;
+                    ++num_background;
+                }
+                else
+                {
+                    ++num_foreground;
+                }
+
+
+
+                double alternative_delta_sd =
+                        plus_maps_on_roi.signed_distance(row, col) - minus_maps_on_roi.signed_distance(row, col);
+                if (alternative_delta_sd * delta_sd == 0)
+                {
+                    if (alternative_delta_sd == 0)
+                    {
+                        ++zero_alter_der;
+                    }
+                    else if (delta_sd == 0)
+                    {
+                        ++zero_der;
+                    }
+                    else
+                    {
+                        ++what777;
+                    }
+                }
+                sum += derivative_in_pt;
+                ++num_pixels;
+            }
+        }
+    }
+    return sum / num_pixels;
+}
+
+
+void
+SLSQPPoseGetter::getGradientAnalytically(const histograms::Object3d &object3D,
+                                         const glm::mat4 &initial_pose,
+                                         histograms::PoseEstimator &estimator,
+                                         double* grad)
+{
+    const cv::Mat1f& derivative_const_part = estimator.getDerivativeConstPart();
+    const cv::Mat1i& num_voters = estimator.getNumVoters();
+    const Projection& projection = estimator.getProjection();
+    const cv::Mat1f& signed_distance = projection.signed_distance;
+    const cv::Mat3f& depth_map = projection.depth_map;
+    const Renderer* renderer = estimator.getRenderer();
+    glm::vec2 focal = renderer->getFocal();
+
+    std::vector<cv::Vec2i> mask_points;
+    mask_points.push_back(cv::Vec2i(0, 0));
+
+    const cv::Mat1i& nearest_labels = projection.nearest_labels;
+    for (int row = 0; row < projection.mask.rows; ++row)
+    {
+        for (int col = 0; col < projection.mask.cols; ++col)
+        {
+            if (projection.mask(row, col) != 0)
+            {
+                int label = nearest_labels(row, col);
+                mask_points.insert(mask_points.begin() + label, cv::Vec2i(row, col));
+                if (label != mask_points.size() - 1)
+                {
+                    std::cout << "Achtung!" << std::endl;
+                }
+            }
+        }
+    }
+
+    int non_zero_pixels = 0;
+
+    for (int row = 0; row < num_voters.rows; ++row)
+    {
+        if (row == 208)
+        {
+
+        }
+        if (row == 104)
+        {
+
+        }
+        for (int col = 0; col < num_voters.cols; ++col)
+        {
+            if (col == 170)
+            {
+
+            }
+            if (num_voters(row, col) > 0)
+            {
+                double dPhi_dx = 0;
+                double dPhi_dy = 0;
+                if (col == 0)
+                {
+                    dPhi_dx = signed_distance(row, col + 1) - signed_distance(row, col);
+                }
+                else if (col == num_voters.cols - 1)
+                {
+                    dPhi_dx = signed_distance(row, col) - signed_distance(row, col - 1);
+                }
+                else
+                {
+                    dPhi_dx = (signed_distance(row, col + 1) - signed_distance(row, col - 1)) / 2;
+                }
+                if (row == 0)
+                {
+                    dPhi_dy = signed_distance(row, col) - signed_distance(row + 1, col);
+                }
+                else if (row == num_voters.rows - 1)
+                {
+                    dPhi_dy = signed_distance(row - 1, col) - signed_distance(row, col);
+                }
+                else
+                {
+                    dPhi_dy = (signed_distance(row - 1, col) - signed_distance(row + 1, col)) / 2;
+                }
+                cv::Matx12d dPhi(dPhi_dx, dPhi_dy);
+
+                cv::Vec2i pixel_on_mask = mask_points[nearest_labels.at<int>(row, col)];
+
+                cv::Vec3f pt_in_3d = depth_map(pixel_on_mask[0],pixel_on_mask[1]);
+                pt_in_3d[2] = -pt_in_3d[2];
+
+//                cv::Matx23d dPi(-focal.x / pt_in_3d[2], 0,
+//                                0, focal.y / pt_in_3d[2],
+//                                pt_in_3d[0] * focal.x / (pt_in_3d[2] * pt_in_3d[2]),
+//                                - pt_in_3d[1] * focal.y / (pt_in_3d[2] * pt_in_3d[2]));
+                cv::Matx23d dPi(-focal.x / pt_in_3d[2], 0, pt_in_3d[0] * focal.x / (pt_in_3d[2] * pt_in_3d[2]),
+                                0, focal.y / pt_in_3d[2], - pt_in_3d[1] * focal.y / (pt_in_3d[2] * pt_in_3d[2]));
+                cv::Matx33d dInitF = cv::Matx33d(initial_pose[0][0], initial_pose[1][0], initial_pose[2][0],
+                                               initial_pose[0][1], initial_pose[1][1], initial_pose[2][1],
+                                               initial_pose[0][2], initial_pose[1][2], initial_pose[2][2]);
+                cv::Mat1d dX = cv::Mat1d::zeros(3, 6);
+                dX(0, 1) = pt_in_3d[2];
+                dX(0, 2) = -pt_in_3d[1];
+                dX(0, 3) = 1;
+                dX(1, 0) = -pt_in_3d[2];
+                dX(1, 2) = pt_in_3d[0];
+                dX(1, 4) = 1;
+                dX(2, 0) = pt_in_3d[1];
+                dX(2, 1) = -pt_in_3d[0];
+                dX(2, 5) = 1;
+                cv::Mat1d non_const_part = dPhi * dPi * dInitF * dX;
+
+                for (int i = 0; i < 6; ++i)
+                {
+                    grad[i] += non_const_part(0, i) * derivative_const_part(row, col);
+                }
+                ++non_zero_pixels;
+            }
+        }
+    }
+    for (int i = 0; i < 6; ++i)
+    {
+        grad[i] /= non_zero_pixels;
+    }
 }
 
 double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *grad, void *my_func_data)
@@ -154,7 +429,7 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
 
     glm::mat4 transform_matrix = applyResultToPose(initial_pose, x);
     histograms::PoseEstimator estimator;
-    float current_value = estimator.estimateEnergy(*object, frame, transform_matrix, histo_part);
+    float current_value = estimator.estimateEnergy(*object, frame, transform_matrix, histo_part, frame.cols == 1920);
 
     if (passed_data->iteration_number == 0)
     {
@@ -172,6 +447,11 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
 
     if (grad)
     {
+        //getGradientAnalytically(*object, initial_pose, estimator, grad);
+
+
+        //old method
+        double grad2[6] = { 0.0 };
         double x_plus_delta[6];
         double x_minus_delta[6];
         for (int i = 0; i < 6; ++i)
@@ -188,17 +468,21 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
             glm::mat4 plus_transform = applyResultToPose(initial_pose, x_plus_delta);
             glm::mat4 minus_transform = applyResultToPose(initial_pose, x_minus_delta);
 
-            grad[i] = getDerivativeInDirection(*object,
+            grad2[i] = getDerivativeInDirection(*object,
                                                estimator,
                                                minus_transform,
                                                plus_transform);
+            grad[i] = getDerivativeSemiAnalytically(*object,
+                                                    estimator,
+                                                    minus_transform,
+                                                    plus_transform);
 
-//            float err_plus = histograms::estimateEnergy(*object, frame, plus_transform, histo_part);
-//            float err_minus = histograms::estimateEnergy(*object, frame, minus_transform, histo_part);
-//            grad[i] = (err_plus - err_minus) / (2 * delta_step[i]);
             x_plus_delta[i] = x[i];
             x_minus_delta[i] = x[i];
         }
+        //end old method
+
+
     }
     ++passed_data->iteration_number;
     for (int i = 0; i < 6; ++i)
@@ -256,3 +540,4 @@ glm::mat4 SLSQPPoseGetter::getPose(const cv::Mat &frame)
 {
     return getPose(frame, 0);
 }
+

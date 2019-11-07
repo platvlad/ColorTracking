@@ -29,14 +29,14 @@ namespace histograms
 
     void Object3d::updateHistograms(const cv::Mat3b& frame, const glm::mat4& pose)
     {
-        Maps maps = Maps(frame);
+        Projection maps = Projection(frame);
         renderer.projectMesh(mesh, pose, maps);
 
         const std::vector<glm::vec3>& vertices = mesh.getVertices();
 
         cv::Rect roi = maps.getExtendedROI(histogram_radius);
 
-        const Maps maps_on_roi = maps(roi);
+        const Projection maps_on_roi = maps(roi);
         if (maps_on_roi.hasEmptyProjection())
         {
             return;
@@ -63,7 +63,7 @@ namespace histograms
                     int center_on_patch_x = std::min(roi_column, histogram_radius);
                     int center_on_patch_y = std::min(roi_row, histogram_radius);
                     cv::Rect patch_square = maps.getPatchSquare(column, row, histogram_radius);
-                    Maps patch = maps(patch_square);
+                    Projection patch = maps(patch_square);
 
                     histograms[i].update(patch, center_on_patch_x, center_on_patch_y);
 
