@@ -155,7 +155,7 @@ double SLSQPPoseGetter::getDerivativeSemiAnalytically(const histograms::Object3d
     {
         for (int col = 0; col < projection.mask.cols; ++col)
         {
-            if (projection.mask(row, col) != 0)
+            if (projection.signed_distance(row, col) >= -1.5 && projection.signed_distance(row, col) < 0)
             {
                 int label = nearest_labels(row, col);
                 mask_points.insert(mask_points.begin() + label, cv::Vec2i(row, col));
@@ -169,9 +169,8 @@ double SLSQPPoseGetter::getDerivativeSemiAnalytically(const histograms::Object3d
     double sum = 0;
     int num_pixels = 0;
 
-    int zero_der = 0;
-    int zero_alter_der = 0;
-    int what777 = 0;
+    int wrong_foreground = 0;
+    int wrong_background = 0;
     int num_foreground = 0;
     int num_background = 0;
 
@@ -232,16 +231,15 @@ double SLSQPPoseGetter::getDerivativeSemiAnalytically(const histograms::Object3d
                 double plus_row = plus_pixel.y;
 
                 double derivative_in_pt = derivative_const_part(row, col)
-                                          * (dPhi_dx * (plus_column - minus_column) + dPhi_dy * (minus_row - plus_row ))
+                                          * (dPhi_dx * (minus_column - plus_column) + dPhi_dy * (plus_row - minus_row ))
                                           / 2;
 
-                double delta_sd = (dPhi_dx * (plus_column - minus_column) + dPhi_dy * (minus_row - plus_row ))
+                double delta_sd = (dPhi_dx * (minus_column - plus_column) + dPhi_dy * (plus_row - minus_row))
                                   / 2;
+
 
                 if (!projection.mask(row, col))
                 {
-                    derivative_in_pt = -derivative_in_pt;
-                    delta_sd = -delta_sd;
                     ++num_background;
                 }
                 else
@@ -249,23 +247,17 @@ double SLSQPPoseGetter::getDerivativeSemiAnalytically(const histograms::Object3d
                     ++num_foreground;
                 }
 
-
-
                 double alternative_delta_sd =
                         plus_maps_on_roi.signed_distance(row, col) - minus_maps_on_roi.signed_distance(row, col);
-                if (alternative_delta_sd * delta_sd == 0)
+                if (delta_sd * alternative_delta_sd < 0)
                 {
-                    if (alternative_delta_sd == 0)
+                    if (projection.mask(row, col))
                     {
-                        ++zero_alter_der;
-                    }
-                    else if (delta_sd == 0)
-                    {
-                        ++zero_der;
+                        ++wrong_foreground;
                     }
                     else
                     {
-                        ++what777;
+                        ++wrong_background;
                     }
                 }
                 sum += derivative_in_pt;
@@ -299,7 +291,7 @@ SLSQPPoseGetter::getGradientAnalytically(const histograms::Object3d &object3D,
     {
         for (int col = 0; col < projection.mask.cols; ++col)
         {
-            if (projection.mask(row, col) != 0)
+            if (projection.signed_distance(row, col) >= -1.5 && projection.signed_distance(row, col) < 0)
             {
                 int label = nearest_labels(row, col);
                 mask_points.insert(mask_points.begin() + label, cv::Vec2i(row, col));
@@ -315,20 +307,8 @@ SLSQPPoseGetter::getGradientAnalytically(const histograms::Object3d &object3D,
 
     for (int row = 0; row < num_voters.rows; ++row)
     {
-        if (row == 208)
-        {
-
-        }
-        if (row == 104)
-        {
-
-        }
         for (int col = 0; col < num_voters.cols; ++col)
         {
-            if (col == 170)
-            {
-
-            }
             if (num_voters(row, col) > 0)
             {
                 double dPhi_dx = 0;
@@ -387,7 +367,7 @@ SLSQPPoseGetter::getGradientAnalytically(const histograms::Object3d &object3D,
 
                 for (int i = 0; i < 6; ++i)
                 {
-                    grad[i] += non_const_part(0, i) * derivative_const_part(row, col);
+                    grad[i] -= non_const_part(0, i) * derivative_const_part(row, col);
                 }
                 ++non_zero_pixels;
             }

@@ -309,6 +309,14 @@ void Renderer::computeSignedDistance(Projection& maps)
 
     cv::distanceTransform(maps.mask,
                           external_signed_distance,
+                          cv::DIST_L2,
+                          cv::DIST_MASK_PRECISE,
+                          CV_32F);
+
+    cv::Mat1b contour = (internal_signed_distance < -1.5 | internal_signed_distance >= 0);
+    cv::Mat1f dist_to_contour = cv::Mat1f::zeros(internal_signed_distance.size());
+    cv::distanceTransform(contour,
+                          dist_to_contour,
                           maps.nearest_labels,
                           cv::DIST_L2,
                           cv::DIST_MASK_PRECISE,
