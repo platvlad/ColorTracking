@@ -127,7 +127,8 @@ double SLSQPPoseGetter::getDerivativeInDirection(const histograms::Object3d &obj
 
 double SLSQPPoseGetter::getDerivativeSemiAnalytically(const histograms::Object3d &object3D,
                                                       histograms::PoseEstimator &estimator,
-                                                      const glm::mat4 &minus_transform, const glm::mat4 &plus_transform)
+                                                      const glm::mat4 &initial_pose,
+                                                      const double* minus_params, const double* plus_params)
 {
     const cv::Mat1f& derivative_const_part = estimator.getDerivativeConstPart();
     const cv::Mat1i& num_voters = estimator.getNumVoters();
@@ -138,6 +139,9 @@ double SLSQPPoseGetter::getDerivativeSemiAnalytically(const histograms::Object3d
     const glm::mat4& transform = estimator.getPose();
     glm::mat4 transform_inverted = glm::inverse(transform);
 
+    glm::mat4 plus_transform = applyResultToPose(initial_pose, plus_params);
+    glm::mat4 minus_transform = applyResultToPose(initial_pose, minus_params);
+
     cv::Size frame_size = renderer->getSize();
     Projection minus_maps = Projection(frame_size);
     renderer->projectMesh(object3D.getMesh(), minus_transform, minus_maps);
@@ -146,6 +150,10 @@ double SLSQPPoseGetter::getDerivativeSemiAnalytically(const histograms::Object3d
     const cv::Rect& currentROI = estimator.getROI();
     Projection minus_maps_on_roi = minus_maps(currentROI);
     Projection plus_maps_on_roi = plus_maps(currentROI);
+    glm::vec2 focal = renderer->getFocal();
+
+//    applyResultToPose(initial_pose, minus_params);
+//    applyResultToPose(initial_pose, plus_params);
 
     std::vector<cv::Vec2i> mask_points;
     mask_points.push_back(cv::Vec2i(0, 0));
@@ -237,6 +245,47 @@ double SLSQPPoseGetter::getDerivativeSemiAnalytically(const histograms::Object3d
                 double delta_sd = (dPhi_dx * (minus_column - plus_column) + dPhi_dy * (plus_row - minus_row))
                                   / 2;
 
+                double delta_dx = plus_column - minus_column;
+                double delta_dy = minus_row - plus_row;
+
+//                cv::Matx31d minus_diff_pt = cv::Matx33d(1, 0, 0,
+//                                                      0, 0.999987483, 0.00499997893,
+//                                                      0, -0.00499997893, 0.999987483) * pt_in_3d;
+//                cv::Matx31d plus_diff_pt = cv::Matx33d(1, 0, 0,
+//                                                      0, 0.999987483, -0.00499997893,
+//                                                      0, 0.00499997893, 0.999987483) * pt_in_3d;
+//
+//                cv::Matx31d diff_diff_pt = plus_diff_pt - minus_diff_pt;
+
+                cv::Matx23d dPi(-focal.x / pt_in_3d[2], 0, pt_in_3d[0] * focal.x / (pt_in_3d[2] * pt_in_3d[2]),
+                                0, -focal.y / pt_in_3d[2], pt_in_3d[1] * focal.y / (pt_in_3d[2] * pt_in_3d[2]));
+                cv::Matx33d dInitF = cv::Matx33d(initial_pose[0][0], initial_pose[1][0], initial_pose[2][0],
+                                                 initial_pose[0][1], initial_pose[1][1], initial_pose[2][1],
+                                                 initial_pose[0][2], initial_pose[1][2], initial_pose[2][2]);
+                cv::Mat1d dX = cv::Mat1d::zeros(3, 6);
+                dX(0, 1) = init_vec_pose[2];
+                dX(0, 2) = -init_vec_pose[1];
+                dX(0, 3) = 1;
+                dX(1, 0) = -init_vec_pose[2];
+                dX(1, 2) = init_vec_pose[0];
+                dX(1, 4) = 1;
+                dX(2, 0) = init_vec_pose[1];
+                dX(2, 1) = -init_vec_pose[0];
+                dX(2, 5) = 1;
+
+                cv::Mat1d dInitFdX = dInitF * dX;
+                glm::vec4 minus_transformed = minus_transform * glm::vec4(pt_in_3d[0], pt_in_3d[1], pt_in_3d[2], 1);
+                glm::vec4 plus_transformed = plus_transform * glm::vec4(pt_in_3d[0], pt_in_3d[1], pt_in_3d[2], 1);
+                glm::vec4 transf_diff = plus_transformed - minus_transformed;
+
+                cv::Mat1d dPixel = dPi * dInitF * dX;
+                cv::Mat1d dPixel2 = dPi * dInitFdX;
+                cv::Mat1d dPixelDiff = dPixel - dPixel2;
+                glm::vec4 glm_pt_in_3d_plus = glm::vec4(pt_in_3d[0], pt_in_3d[1] + 1, pt_in_3d[2], 1);
+                glm::vec4 glm_pt_in_3d_minus = glm::vec4(pt_in_3d[0], pt_in_3d[1] - 1, pt_in_3d[2], 1);
+                glm::vec3 pt_in_2d_plus = renderer->projectTransformedVertex(glm_pt_in_3d_plus);
+                glm::vec3 pt_in_2d_minus = renderer->projectTransformedVertex(glm_pt_in_3d_minus);
+                glm::vec3 pt_in_2d_diff = (pt_in_2d_plus - pt_in_2d_minus) * 0.5f;
 
                 if (!projection.mask(row, col))
                 {
@@ -303,6 +352,8 @@ SLSQPPoseGetter::getGradientAnalytically(const histograms::Object3d &object3D,
         }
     }
 
+    glm::mat4 transform = estimator.getPose();
+    glm::mat4 transform_inverted = glm::inverse(transform);
     int non_zero_pixels = 0;
 
     for (int row = 0; row < num_voters.rows; ++row)
@@ -342,26 +393,30 @@ SLSQPPoseGetter::getGradientAnalytically(const histograms::Object3d &object3D,
                 cv::Vec2i pixel_on_mask = mask_points[nearest_labels.at<int>(row, col)];
 
                 cv::Vec3f pt_in_3d = depth_map(pixel_on_mask[0],pixel_on_mask[1]);
+
                 pt_in_3d[2] = -pt_in_3d[2];
+
+                glm::vec4 vec_in_3d = glm::vec4(pt_in_3d[0], pt_in_3d[1], pt_in_3d[2], 1);
+                glm::vec4 vec_on_model = transform_inverted * vec_in_3d;
 
 //                cv::Matx23d dPi(-focal.x / pt_in_3d[2], 0,
 //                                0, focal.y / pt_in_3d[2],
 //                                pt_in_3d[0] * focal.x / (pt_in_3d[2] * pt_in_3d[2]),
 //                                - pt_in_3d[1] * focal.y / (pt_in_3d[2] * pt_in_3d[2]));
                 cv::Matx23d dPi(-focal.x / pt_in_3d[2], 0, pt_in_3d[0] * focal.x / (pt_in_3d[2] * pt_in_3d[2]),
-                                0, focal.y / pt_in_3d[2], - pt_in_3d[1] * focal.y / (pt_in_3d[2] * pt_in_3d[2]));
+                                0, -focal.y / pt_in_3d[2], pt_in_3d[1] * focal.y / (pt_in_3d[2] * pt_in_3d[2]));
                 cv::Matx33d dInitF = cv::Matx33d(initial_pose[0][0], initial_pose[1][0], initial_pose[2][0],
                                                initial_pose[0][1], initial_pose[1][1], initial_pose[2][1],
                                                initial_pose[0][2], initial_pose[1][2], initial_pose[2][2]);
                 cv::Mat1d dX = cv::Mat1d::zeros(3, 6);
-                dX(0, 1) = pt_in_3d[2];
-                dX(0, 2) = -pt_in_3d[1];
+                dX(0, 1) = vec_on_model[2];
+                dX(0, 2) = -vec_on_model[1];
                 dX(0, 3) = 1;
-                dX(1, 0) = -pt_in_3d[2];
-                dX(1, 2) = pt_in_3d[0];
+                dX(1, 0) = -vec_on_model[2];
+                dX(1, 2) = vec_on_model[0];
                 dX(1, 4) = 1;
-                dX(2, 0) = pt_in_3d[1];
-                dX(2, 1) = -pt_in_3d[0];
+                dX(2, 0) = vec_on_model[1];
+                dX(2, 1) = -vec_on_model[0];
                 dX(2, 5) = 1;
                 cv::Mat1d non_const_part = dPhi * dPi * dInitF * dX;
 
@@ -427,39 +482,40 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
 
     if (grad)
     {
-        //getGradientAnalytically(*object, initial_pose, estimator, grad);
+        getGradientAnalytically(*object, initial_pose, estimator, grad);
 
 
         //old method
-        double grad2[6] = { 0.0 };
-        double x_plus_delta[6];
-        double x_minus_delta[6];
-        for (int i = 0; i < 6; ++i)
-        {
-            x_plus_delta[i] = x[i];
-            x_minus_delta[i] = x[i];
-        }
-
-        for (int i = 0; i < 6; ++i)
-        {
-            x_plus_delta[i] += delta_step[i];
-            x_minus_delta[i] -= delta_step[i];
-
-            glm::mat4 plus_transform = applyResultToPose(initial_pose, x_plus_delta);
-            glm::mat4 minus_transform = applyResultToPose(initial_pose, x_minus_delta);
-
-            grad2[i] = getDerivativeInDirection(*object,
-                                               estimator,
-                                               minus_transform,
-                                               plus_transform);
-            grad[i] = getDerivativeSemiAnalytically(*object,
-                                                    estimator,
-                                                    minus_transform,
-                                                    plus_transform);
-
-            x_plus_delta[i] = x[i];
-            x_minus_delta[i] = x[i];
-        }
+//        double grad2[6] = { 0.0 };
+//        double x_plus_delta[6];
+//        double x_minus_delta[6];
+//        for (int i = 0; i < 6; ++i)
+//        {
+//            x_plus_delta[i] = x[i];
+//            x_minus_delta[i] = x[i];
+//        }
+//
+//        for (int i = 0; i < 6; ++i)
+//        {
+//            x_plus_delta[i] += delta_step[i];
+//            x_minus_delta[i] -= delta_step[i];
+//
+//            glm::mat4 plus_transform = applyResultToPose(initial_pose, x_plus_delta);
+//            glm::mat4 minus_transform = applyResultToPose(initial_pose, x_minus_delta);
+//
+////            grad2[i] = getDerivativeInDirection(*object,
+////                                               estimator,
+////                                               minus_transform,
+////                                               plus_transform);
+//            grad[i] = getDerivativeSemiAnalytically(*object,
+//                                                    estimator,
+//                                                    initial_pose,
+//                                                    x_minus_delta,
+//                                                    x_plus_delta);
+//
+//            x_plus_delta[i] = x[i];
+//            x_minus_delta[i] = x[i];
+//        }
         //end old method
 
 

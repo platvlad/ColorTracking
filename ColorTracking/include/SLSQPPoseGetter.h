@@ -40,8 +40,9 @@ class SLSQPPoseGetter : public PoseGetter
 
     static double getDerivativeSemiAnalytically(const histograms::Object3d &object3D,
                                                 histograms::PoseEstimator &estimator,
-                                                const glm::mat4 &minus_transform,
-                                                const glm::mat4 &plus_transform);
+                                                const glm::mat4 &initial_pose,
+                                                const double* minus_params,
+                                                const double* plus_params);
 
     static void getGradientAnalytically(const histograms::Object3d &object3D,
                                         const glm::mat4 &initial_pose,
