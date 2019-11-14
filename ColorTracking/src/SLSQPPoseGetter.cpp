@@ -34,7 +34,7 @@ SLSQPPoseGetter::SLSQPPoseGetter(histograms::Object3d* object3d, const glm::mat4
     //opt = nlopt_create(NLOPT_LN_NELDERMEAD, 6);
     //opt = nlopt_create(NLOPT_LD_LBFGS, 6);
     nlopt_set_min_objective(opt, energy_function, &pass_to_optimization);
-    nlopt_set_ftol_rel(opt, 1e-8);
+    nlopt_set_ftol_rel(opt, 1e-5);
     nlopt_set_maxeval(opt, pass_to_optimization.num_iterations);
 }
 
@@ -394,10 +394,16 @@ SLSQPPoseGetter::getGradientAnalytically(const histograms::Object3d &object3D,
 
                 cv::Vec3f pt_in_3d = depth_map(pixel_on_mask[0],pixel_on_mask[1]);
 
+                if (pt_in_3d[2] < 0.001)
+                {
+                    int for_debug = 1;
+                }
+
                 pt_in_3d[2] = -pt_in_3d[2];
 
                 glm::vec4 vec_in_3d = glm::vec4(pt_in_3d[0], pt_in_3d[1], pt_in_3d[2], 1);
                 glm::vec4 vec_on_model = transform_inverted * vec_in_3d;
+
 
 //                cv::Matx23d dPi(-focal.x / pt_in_3d[2], 0,
 //                                0, focal.y / pt_in_3d[2],
@@ -423,14 +429,25 @@ SLSQPPoseGetter::getGradientAnalytically(const histograms::Object3d &object3D,
                 for (int i = 0; i < 6; ++i)
                 {
                     grad[i] -= non_const_part(0, i) * derivative_const_part(row, col);
+                    if (abs(non_const_part(0, i)) > 1e10 || abs(derivative_const_part(row, col)) > 1e10)
+                    {
+                        int for_debug = 1;
+                    }
                 }
                 ++non_zero_pixels;
             }
         }
     }
-    for (int i = 0; i < 6; ++i)
+    if (non_zero_pixels > 0)
     {
-        grad[i] /= non_zero_pixels;
+        for (int i = 0; i < 6; ++i)
+        {
+            grad[i] /= non_zero_pixels;
+            if (grad[i] > 1e5)
+            {
+                int for_break_point = 1;
+            }
+        }
     }
 }
 
@@ -465,7 +482,7 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
     glm::mat4 transform_matrix = applyResultToPose(initial_pose, x);
     histograms::PoseEstimator estimator;
     float current_value = estimator.estimateEnergy(*object, frame, transform_matrix, histo_part, frame.cols == 1920);
-
+    //std::cout << "current value = " << current_value << std::endl;
     if (passed_data->iteration_number == 0)
     {
         best_value = current_value;
@@ -483,8 +500,12 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
     if (grad)
     {
         getGradientAnalytically(*object, initial_pose, estimator, grad);
-
-
+        std::cout << "gradient = ";
+        for (int i = 0; i < 6; ++i)
+        {
+            std::cout << grad[i] << ' ';
+        }
+        std::cout << std::endl;
         //old method
 //        double grad2[6] = { 0.0 };
 //        double x_plus_delta[6];
@@ -532,6 +553,7 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
 
 glm::mat4 SLSQPPoseGetter::getPose(const cv::Mat& frame, int mode)
 {
+    std::cout << "mode " << mode << std::endl;
     switch (mode)
     {
         case 0:
@@ -564,10 +586,16 @@ glm::mat4 SLSQPPoseGetter::getPose(const cv::Mat& frame, int mode)
     nlopt_set_lower_bounds(opt, lower_bounds);
     nlopt_set_upper_bounds(opt, upper_bounds);
     double minf;
-    if (nlopt_optimize(opt, x, &minf) >= 0)
+
+    nlopt_result status = nlopt_optimize(opt, x, &minf);
+    if (status >= 0)
     {
         pass_to_optimization.initial_pose = applyResultToPose(pass_to_optimization.initial_pose, x);
         return pass_to_optimization.initial_pose;
+    }
+    else
+    {
+        std::cout << "error " <<  status << ' ' << mode << std::endl;
     }
     return glm::mat4();
 }
