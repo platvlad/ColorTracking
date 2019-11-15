@@ -284,7 +284,7 @@ glm::mat4 SLSQPPoseGetter::getPose(const cv::Mat& frame, int mode)
     switch (mode)
     {
         case 0:
-            nlopt_set_maxeval(opt, 24);
+            nlopt_set_maxeval(opt, 100);
             break;
         case 1:
             nlopt_set_maxeval(opt, 600);
