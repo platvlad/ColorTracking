@@ -11,9 +11,6 @@
 struct PassToOptimization
 {
     cv::Mat frame;
-    cv::Mat downsampled2;
-    cv::Mat downsampled4;
-    cv::Mat downsampled8;
     glm::mat4 initial_pose;
     histograms::Object3d* object;
     float delta_step[6];
@@ -33,19 +30,12 @@ class SLSQPPoseGetter : public PoseGetter
 
     static glm::mat4 params_to_transform(const double *x);
 
-    static double getDerivativeInDirection(const histograms::Object3d &object3D,
-                                           histograms::PoseEstimator &estimator,
-                                           const glm::mat4 &minus_transform,
-                                           const glm::mat4 &plus_transform);
+    static std::vector<cv::Mat1d> getGradientInPoint(const glm::mat4 &initial_pose,
+                                                     const histograms::PoseEstimator &estimator);
 
-    static double getDerivativeSemiAnalytically(const histograms::Object3d &object3D,
-                                                histograms::PoseEstimator &estimator,
-                                                const glm::mat4 &initial_pose,
-                                                const double* minus_params,
-                                                const double* plus_params);
+    static cv::Matx12d getSignedDistanceGradient(const cv::Mat1f &signed_distance, int row, int col);
 
-    static void getGradientAnalytically(const histograms::Object3d &object3D,
-                                        const glm::mat4 &initial_pose,
+    static void getGradientAnalytically(const glm::mat4 &initial_pose,
                                         histograms::PoseEstimator &estimator,
                                         double* grad);
 
