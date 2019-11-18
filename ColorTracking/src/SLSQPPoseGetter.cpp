@@ -247,26 +247,15 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
     int histo_part = (passed_data->mode == 0) ? 1 : 10;
     histo_part = 10;
 
-    float* delta_step = passed_data->delta_step;
     glm::mat4& initial_pose = passed_data->initial_pose;
 
     glm::mat4 transform_matrix = applyResultToPose(initial_pose, x);
     histograms::PoseEstimator estimator;
     float current_value = estimator.estimateEnergy(*object, frame, transform_matrix, histo_part, frame.cols == 1920);
-    //std::cout << "current value = " << current_value << std::endl;
 
     if (grad)
     {
         getGradientAnalytically(initial_pose, estimator, grad);
-//        std::cout << "gradient = ";
-//        for (int i = 0; i < 6; ++i)
-//        {
-//            std::cout << grad[i] << ' ';
-//        }
-//        std::cout << std::endl;
-
-
-
     }
     ++passed_data->iteration_number;
     for (int i = 0; i < 6; ++i)
@@ -284,7 +273,7 @@ glm::mat4 SLSQPPoseGetter::getPose(const cv::Mat& frame, int mode)
     switch (mode)
     {
         case 0:
-            nlopt_set_maxeval(opt, 100);
+            nlopt_set_maxeval(opt, 600);
             break;
         case 1:
             nlopt_set_maxeval(opt, 600);
@@ -293,7 +282,7 @@ glm::mat4 SLSQPPoseGetter::getPose(const cv::Mat& frame, int mode)
             nlopt_set_maxeval(opt, 600);
             break;
         default:
-            nlopt_set_maxeval(opt, 600);
+            nlopt_set_maxeval(opt, 12);
             break;
     }
     pass_to_optimization.iteration_number = 0;

@@ -1,8 +1,9 @@
+#include <opencv2/imgproc.hpp>
 #include "projection.h"
 
-Projection::Projection(int width, int height) : width(width),
-                                                height(height),
-                                                color_map(cv::Mat3b(height, width))
+const float Projection::s_heaviside = 1.2f;
+
+Projection::Projection() : width(0), height(0), frame_offset(0), color_map(cv::Mat3b(0, 0))
 {
     cv::Size frame_size(width, height);
     depth_map = cv::Mat(frame_size, depth_map.type(), cv::Vec3f(0, 0, std::numeric_limits<float>::max()));
@@ -10,11 +11,13 @@ Projection::Projection(int width, int height) : width(width),
     heaviside = cv::Mat1f(height, width);
     mask = cv::Mat::zeros(frame_size, mask.type());
     roi = cv::Rect();
+    nearest_labels = cv::Mat1i(height, width);
 }
 
-Projection::Projection(const cv::Mat3b &color_frame) : color_map(color_frame),
-                                                       height(color_frame.rows),
-                                                       width(color_frame.cols)
+Projection::Projection(const cv::Mat3b &color_frame, int frame_offset) : color_map(color_frame),
+                                                                         height(color_frame.rows),
+                                                                         width(color_frame.cols),
+                                                                         frame_offset(frame_offset)
 {
     cv::Size frame_size = color_frame.size();
     depth_map = cv::Mat(frame_size, depth_map.type(), cv::Vec3f(0, 0, std::numeric_limits<float>::max()));
@@ -22,6 +25,7 @@ Projection::Projection(const cv::Mat3b &color_frame) : color_map(color_frame),
     heaviside = cv::Mat1f(height, width);
     mask = cv::Mat::zeros(frame_size, mask.type());
     roi = cv::Rect();
+    nearest_labels = cv::Mat1i(height, width);
 }
 
 Projection::Projection(const cv::Size &size) : color_map(cv::Mat3b::zeros(size)),
@@ -33,6 +37,7 @@ Projection::Projection(const cv::Size &size) : color_map(cv::Mat3b::zeros(size))
     heaviside = cv::Mat1f(size);
     mask = cv::Mat1b::zeros(size);
     roi = cv::Rect();
+    nearest_labels = cv::Mat1i(height, width);
 }
 
 
@@ -51,7 +56,7 @@ cv::Rect2i Projection::getExtendedROI(int offset) const
 
 Projection Projection::operator()(const cv::Rect &req_roi) const
 {
-    Projection maps_on_roi =  Projection(color_map(req_roi));
+    Projection maps_on_roi = Projection(color_map(req_roi), frame_offset);
     maps_on_roi.depth_map = depth_map(req_roi);
     maps_on_roi.mask = mask(req_roi);
     maps_on_roi.signed_distance = signed_distance(req_roi);
@@ -70,12 +75,111 @@ bool Projection::hasEmptyProjection() const
     return roi.empty();
 }
 
-cv::Rect Projection::getPatchSquare(int center_x, int center_y, int radius)
+cv::Rect Projection::getPatchSquare(int center_x, int center_y)
 {
-    int left = std::max(0, center_x - radius);
-    int up = std::max(0, center_y - radius);
-    int right = std::min(center_x + radius + 1, width);
-    int down = std::min(center_y + radius + 1, height);
+    int left = std::max(0, center_x - frame_offset);
+    int up = std::max(0, center_y - frame_offset);
+    int right = std::min(center_x + frame_offset + 1, width);
+    int down = std::min(center_y + frame_offset + 1, height);
     return cv::Rect(left, up, right - left, down - up);
 }
 
+void Projection::trimToExtendedROI(){
+    cv::Rect2i extendedROI = getExtendedROI(frame_offset);
+    for (int i = 0; i < vertex_projections.size(); ++i)
+    {
+        glm::vec3& pixel = vertex_projections[i];
+        pixel = glm::vec3(pixel.x - extendedROI.x, pixel.y - extendedROI.y, pixel.z);
+    }
+    width = extendedROI.width;
+    height = extendedROI.height;
+    depth_map = depth_map(extendedROI);
+    color_map = color_map(extendedROI);
+    mask = mask(extendedROI);
+    signed_distance = signed_distance(extendedROI);
+    heaviside = heaviside(extendedROI);
+    roi = cv::Rect2i(roi.x - extendedROI.x, roi.y - extendedROI.y, roi.width, roi.height);
+    nearest_labels = nearest_labels(extendedROI);
+}
+
+void Projection::invertMask()
+{
+    uchar* mask_ptr = mask.ptr<uchar>();
+    int i = 0;
+    size_t elems_to_jump = mask.step1() - mask.cols;
+    for (size_t row = 0; row < signed_distance.rows; ++row)
+    {
+        for (size_t col = 0; col < signed_distance.cols; ++col)
+        {
+            mask_ptr[i] = mask_ptr[i] ? 0 : 1;
+            ++i;
+        }
+        i += elems_to_jump;
+    }
+//    size_t pixel_count = mask.rows * mask.cols;
+//    for (size_t i = 0; i < pixel_count; ++i)
+//    {
+//        mask_ptr[i] = mask_ptr[i] ? 0 : 1;
+//    }
+}
+
+void Projection::computeSignedDistance()
+{
+    cv::Size projection_size = cv::Size(width, height);
+    cv::Mat1f internal_signed_distance = cv::Mat1f::zeros(projection_size);
+    cv::Mat1f external_signed_distance = cv::Mat1f::zeros(projection_size);
+    cv::distanceTransform(mask,
+                          internal_signed_distance,
+                          cv::DIST_L2,
+                          cv::DIST_MASK_PRECISE,
+                          CV_32F);
+    internal_signed_distance = -internal_signed_distance;
+    invertMask();
+
+    cv::distanceTransform(mask,
+                          external_signed_distance,
+                          cv::DIST_L2,
+                          cv::DIST_MASK_PRECISE,
+                          CV_32F);
+
+    cv::Mat1b contour = (internal_signed_distance < -1.5 | internal_signed_distance >= 0);
+    cv::Mat1f dist_to_contour = cv::Mat1f::zeros(internal_signed_distance.size());
+    cv::distanceTransform(contour,
+                          dist_to_contour,
+                          nearest_labels,
+                          cv::DIST_L2,
+                          cv::DIST_MASK_PRECISE,
+                          cv::DIST_LABEL_PIXEL);
+
+
+    invertMask();
+    signed_distance = internal_signed_distance + external_signed_distance;
+
+}
+
+float heaviside_parametrized(float x, float s)
+{
+    return (0.5 -atan(x * s) / M_PI);
+}
+
+void Projection::computeHeaviside()
+{
+    float* signed_distance_ptr = signed_distance.ptr<float>();
+    float* heaviside_ptr = heaviside.ptr<float>();
+    int i = 0;
+    size_t elems_to_jump = heaviside.step1() - signed_distance.cols;
+    for (size_t row = 0; row < signed_distance.rows; ++row)
+    {
+        for (size_t col = 0; col < signed_distance.cols; ++col)
+        {
+            heaviside_ptr[i] = heaviside_parametrized(signed_distance_ptr[i], Projection::s_heaviside);
+            ++i;
+        }
+        i += elems_to_jump;
+    }
+}
+
+cv::Size Projection::getSize()
+{
+    return cv::Size(width, height);
+}

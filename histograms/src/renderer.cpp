@@ -1,11 +1,8 @@
 #include<opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <algorithm>
-#include <fstream>
 
 #include "renderer.h"
-
-const float Renderer::s_heaviside = 1.2f;
 
 Renderer::Renderer(const glm::mat4 &camera_matrix, float z_near, float z_far, size_t width, size_t height) :
                       camera_matrix(camera_matrix),
@@ -42,30 +39,39 @@ Renderer::Renderer(const Renderer &other, const cv::Size &size)
 }
 
 
-void Renderer::projectMesh(const histograms::Mesh& mesh, const glm::mat4& pose, Projection &maps) const
+Projection Renderer::projectMesh(const histograms::Mesh& mesh,
+                           const glm::mat4& pose,
+                           const cv::Mat3b &frame,
+                           int frame_offset,
+                           bool compute_signed_distance) const
 {
-
-    //Projection maps(width, height);
+    Projection maps(frame, frame_offset);
     const std::vector<glm::uvec3>& faces = mesh.getFaces();
     const std::vector<glm::vec3>& vertices = mesh.getVertices();
+    maps.vertex_projections = std::vector<glm::vec3>(vertices.size());
+    std::vector<glm::vec4> vertex_transforms = std::vector<glm::vec4>(vertices.size());
+    for (size_t i = 0; i < vertices.size(); ++i)
+    {
+        vertex_transforms[i] = transformVertex(vertices[i], pose);
+        maps.vertex_projections[i] = projectTransformedVertex(vertex_transforms[i]);
+        roundXY(maps.vertex_projections[i]);  // inplace
+    }
+
     for (size_t i = 0; i < faces.size(); ++i)
     {
         glm::uvec3 face = faces[i];
-        glm::vec3 v0 = vertices[face[0]];
-        glm::vec3 v1 = vertices[face[1]];
-        glm::vec3 v2 = vertices[face[2]];
-        glm::vec4 p0 = transformVertex(v0, pose);
-        glm::vec4 p1 = transformVertex(v1, pose);
-        glm::vec4 p2 = transformVertex(v2, pose);
-
-        if (p0.z != 0 && p1.z != 0 && p2.z != 0)
-        {
-            renderTriangle(maps, p0, p1, p2);
-        }
-
+        renderTriangle(maps, vertex_transforms, face);
     }
-    computeSignedDistance(maps);
-    computeHeaviside(maps.signed_distance, maps.heaviside);
+    if (frame_offset >= 0)
+    {
+        maps.trimToExtendedROI();
+    }
+    if (compute_signed_distance)
+    {
+        maps.computeSignedDistance();
+        maps.computeHeaviside();
+    }
+    return maps;
 }
 
 glm::vec4 Renderer::transformVertex(const glm::vec3 &vertex, const glm::mat4 &pose) const
@@ -99,15 +105,22 @@ void Renderer::roundXY(glm::vec3& point)
 // x, y are in screen coordinates
 // x, y, z -- transformed point before projection to camera
 // before: depth[:, :] = std::numeric_limits<float>::max()
-void Renderer::renderTriangle(Projection& maps, glm::vec4& tx0, glm::vec4& tx1, glm::vec4& tx2) const
+void Renderer::renderTriangle(Projection& maps, const std::vector<glm::vec4> &vertex_transforms, glm::uvec3& face) const
 {
-    glm::vec3 p0 = projectTransformedVertex(tx0);
-    glm::vec3 p1 = projectTransformedVertex(tx1);
-    glm::vec3 p2 = projectTransformedVertex(tx2);
+    int i0 = face[0];
+    int i1 = face[1];
+    int i2 = face[2];
+    glm::vec3 p0 = maps.vertex_projections[i0];
+    glm::vec3 p1 = maps.vertex_projections[i1];
+    glm::vec3 p2 = maps.vertex_projections[i2];
+    if (p0.z == 0.0 || p1.z == 0 || p2.z == 0)
+    {
+        return;
+    }
+    glm::vec4 tx0 = vertex_transforms[i0];
+    glm::vec4 tx1 = vertex_transforms[i1];
+    glm::vec4 tx2 = vertex_transforms[i2];
 
-    roundXY(p0);  // inplace
-    roundXY(p1);
-    roundXY(p2);
     if (p0.y == p1.y && p0.y == p2.y) return;
 
     if (p0.y > p1.y)
@@ -290,61 +303,6 @@ void Renderer::invertMask(cv::Mat1b& mask)
     }
 }
 
-void Renderer::computeSignedDistance(Projection& maps)
-{
-    cv::Mat1f internal_signed_distance = cv::Mat::zeros(maps.signed_distance.size(), maps.signed_distance.type());
-    cv::Mat1f external_signed_distance = cv::Mat::zeros(maps.signed_distance.size(), maps.signed_distance.type());
-    cv::distanceTransform(maps.mask,
-                          internal_signed_distance,
-                          cv::DIST_L2,
-                          cv::DIST_MASK_PRECISE,
-                           CV_32F);
-    internal_signed_distance = -internal_signed_distance;
-    invertMask(maps.mask);
-//    cv::distanceTransform(mask,
-//                          external_signed_distance,
-//                          cv::DIST_L2,
-//                          cv::DIST_MASK_PRECISE,
-//                          CV_32F);
-
-    cv::distanceTransform(maps.mask,
-                          external_signed_distance,
-                          cv::DIST_L2,
-                          cv::DIST_MASK_PRECISE,
-                          CV_32F);
-
-    cv::Mat1b contour = (internal_signed_distance < -1.5 | internal_signed_distance >= 0);
-    cv::Mat1f dist_to_contour = cv::Mat1f::zeros(internal_signed_distance.size());
-    cv::distanceTransform(contour,
-                          dist_to_contour,
-                          maps.nearest_labels,
-                          cv::DIST_L2,
-                          cv::DIST_MASK_PRECISE,
-                          cv::DIST_LABEL_PIXEL);
-
-
-    invertMask(maps.mask);
-    maps.signed_distance = internal_signed_distance + external_signed_distance;
-
-}
-
-float heaviside_parametrized(float x, float s)
-{
-    return (0.5 -atan(x * s) / M_PI);
-}
-
-void Renderer::computeHeaviside(cv::Mat1f& signed_distance, cv::Mat1f& heaviside)
-{
-    size_t num_pixels = signed_distance.rows * signed_distance.cols;
-    float* signed_distance_ptr = signed_distance.ptr<float>();
-    float* heaviside_ptr = heaviside.ptr<float>();
-    for (size_t i = 0; i < num_pixels; ++i)
-    {
-        heaviside_ptr[i] = heaviside_parametrized(signed_distance_ptr[i], Renderer::s_heaviside);
-    }
-
-}
-
 cv::Size Renderer::getSize() const
 {
     return cv::Size(width, height);
@@ -355,8 +313,3 @@ glm::vec2 Renderer::getFocal() const
     return glm::vec2(camera_matrix[0][0], camera_matrix[1][1]);
 }
 
-glm::vec3 Renderer::projectVertex(const glm::vec3 &vertex, const glm::mat4 &pose) const
-{
-    glm::vec4 tx = transformVertex(vertex, pose);
-    return projectTransformedVertex(tx);
-}

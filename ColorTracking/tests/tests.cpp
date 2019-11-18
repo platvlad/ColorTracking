@@ -67,8 +67,7 @@ Projection Tests::projectPyramid()
     Renderer renderer(camera_matrix, 16, 160000, width, height);
     glm::mat4 pose = getPyramidPose();
     cv::Mat3b color = cv::Mat3b::zeros(height, width);
-    Projection projection = Projection(color);
-    renderer.projectMesh(mesh, pose, projection);
+    Projection projection = renderer.projectMesh(mesh, pose, color, 40);
     return projection;
 }
 

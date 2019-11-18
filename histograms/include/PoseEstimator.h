@@ -12,14 +12,8 @@ namespace histograms
         cv::Mat1f derivative_const_part;
         Projection projection;
         glm::mat4 object_pose;
-//        cv::Mat1f heaviside;
-//        cv::Mat1f signed_distance;
-//        cv::Mat3f depth_map;
-//        cv::Mat nearest_labels;
-//        std::vector<cv::Vec2i> mask_points;
 
         const Renderer* renderer;
-        cv::Rect roi;
         bool on_downsampled_frame;
         double getDirac(int row, int col) const;
 
@@ -31,21 +25,9 @@ namespace histograms
 
         const cv::Mat1f& getDerivativeConstPart();
 
-        const cv::Rect& getROI() const;
-
         const Renderer* getRenderer() const;
 
         const cv::Mat1i& getNumVoters() const;
-
-//        const cv::Mat1f& getSignedDistance() const;
-//
-//        const cv::Mat3f& getDepthMap() const;
-//
-//        const cv::Mat1f& getHeaviside() const;
-//
-//        const cv::Mat& getNearestLabels() const;
-//
-//        const std::vector<cv::Vec2i>& getMaskPoints() const;
 
         const Projection& getProjection() const;
 

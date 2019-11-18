@@ -121,8 +121,7 @@ void DataIO::writePng(cv::Mat3b frame, int frame_number)
     const histograms::Mesh& mesh = object3D.getMesh();
     glm::mat4 pose = estimated_poses[frame_number].pose;
 //    renderer.renderMesh(mesh, output, pose);
-    Projection maps = Projection(output);
-    renderer.projectMesh(mesh, pose, maps);
+    Projection maps = renderer.projectMesh(mesh, pose, output, -1, false);
     cv::Mat1b& mask = maps.mask;
     cv::Rect roi =  maps.roi;
     for (int row = 0; row < output.rows; ++row)

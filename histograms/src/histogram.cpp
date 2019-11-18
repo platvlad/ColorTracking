@@ -128,8 +128,8 @@ namespace histograms
     std::pair<float, float> Histogram::get_eta_f_eta_b(const Projection &local_square, int center_x, int center_y, int circle_radius)
     {
 
-        int col_offset = static_cast<int>(radius) - center_x;
-        int row_offset = static_cast<int>(radius) - center_y;
+        int col_offset = static_cast<int>(circle_radius) - center_x;
+        int row_offset = static_cast<int>(circle_radius) - center_y;
         float eta_f = 0;
         float eta_b = 0;
         std::map<int, const Mask>::const_iterator window_mask_iter = window_masks.find(circle_radius);
@@ -177,14 +177,19 @@ namespace histograms
     }
 
     void
-    Histogram::votePatch(const Projection &local_square, int center_x, int center_y, cv::Mat1f &votes, cv::Mat1i &numVoters, int circle_radius) const
+    Histogram::votePatch(const Projection &local_square,
+                         int center_x,
+                         int center_y,
+                         cv::Mat1f &votes,
+                         cv::Mat1i &numVoters,
+                         int circle_radius) const
     {
-        std::pair<float, float> eta_f_eta_b = get_eta_f_eta_b(local_square, center_x, center_y);
+        std::pair<float, float> eta_f_eta_b = get_eta_f_eta_b(local_square, center_x, center_y, circle_radius);
         const cv::Mat3b& color_map = local_square.color_map;
         float eta_f = eta_f_eta_b.first;
         float eta_b = eta_f_eta_b.second;
-        int col_offset = static_cast<int>(radius) - center_x;
-        int row_offset = static_cast<int>(radius) - center_y;
+        int col_offset = static_cast<int>(circle_radius) - center_x;
+        int row_offset = static_cast<int>(circle_radius) - center_y;
         int bin_size = ceil(256.0 / COLORS_PER_CHANNEL);
 
         std::map<int, const Mask>::const_iterator window_mask_iter = window_masks.find(circle_radius);

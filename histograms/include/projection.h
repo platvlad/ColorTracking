@@ -3,16 +3,22 @@
 
 
 #include <opencv2/core/mat.hpp>
+#include <glm/vec3.hpp>
 
 class Projection
 {
+    static const float s_heaviside;
+
     int width;
     int height;
+    int frame_offset;
+
+    void invertMask();
 
 public:
-    Projection(int width, int height);
+    Projection();
 
-    explicit Projection(const cv::Mat3b &color_frame);
+    explicit Projection(const cv::Mat3b &color_frame, int frame_offset);
 
     explicit Projection(const cv::Size& size);
 
@@ -23,16 +29,23 @@ public:
     cv::Mat1f heaviside;
     cv::Rect roi;
     cv::Mat1i nearest_labels;
+    std::vector<glm::vec3> vertex_projections;
 
     cv::Rect getExtendedROI(int offset = 0) const;
 
     Projection operator()(const cv::Rect &req_roi) const;
 
-    cv::Rect getPatchSquare(int center_x, int center_y, int radius);
+    cv::Rect getPatchSquare(int center_x, int center_y);
 
     bool hasEmptyProjection() const;
 
+    void trimToExtendedROI();
 
+    void computeSignedDistance();
+
+    void computeHeaviside();
+
+    cv::Size getSize();
 };
 
 

@@ -29,41 +29,36 @@ namespace histograms
 
     void Object3d::updateHistograms(const cv::Mat3b& frame, const glm::mat4& pose)
     {
-        Projection maps = Projection(frame);
-        renderer.projectMesh(mesh, pose, maps);
+        Projection projection = renderer.projectMesh(mesh, pose, frame, histogram_radius);
 
         const std::vector<glm::vec3>& vertices = mesh.getVertices();
 
-        cv::Rect roi = maps.getExtendedROI(histogram_radius);
-
-        const Projection maps_on_roi = maps(roi);
-        if (maps_on_roi.hasEmptyProjection())
+        if (projection.hasEmptyProjection())
         {
             return;
         }
-        const cv::Mat1f& signed_distance = maps.signed_distance;
-        const cv::Mat1b& mask = maps.mask;
-        const cv::Mat1f& heaviside = maps.heaviside;
+        const cv::Mat1f& signed_distance = projection.signed_distance;
+        const cv::Mat1b& mask = projection.mask;
+        const cv::Mat1f& heaviside = projection.heaviside;
+        cv::Size projection_size = projection.getSize();
 
         //project vertices
         for (size_t i = 0; i < vertices.size(); ++i)
         {
-            glm::vec3 pixel = renderer.projectVertex(vertices[i], pose);
-            int column = static_cast<int>(round(pixel.x));
-            int row = static_cast<int>(round(pixel.y));
+            glm::vec3 pixel = projection.vertex_projections[i];
+            int column = static_cast<int>(pixel.x);
+            int row = static_cast<int>(pixel.y);
             if (abs(signed_distance.at<float>(row, column)) < dist_to_contour + 0.5f)
             {
                 // check visibility?
-                int roi_column = column - roi.x;
-                int roi_row = row - roi.y;
                 // signed distance computed is a bit larger since it is distance from exterior pixels, not from real curve
                 // therefore real distance is smaller up to 0.5 px
-                if (roi_row >= 0 && roi_row < roi.height && roi_column >= 0 && roi_column < roi.width)
+                if (row >= 0 && row < projection_size.height && column >= 0 && column < projection_size.width)
                 {
-                    int center_on_patch_x = std::min(roi_column, histogram_radius);
-                    int center_on_patch_y = std::min(roi_row, histogram_radius);
-                    cv::Rect patch_square = maps.getPatchSquare(column, row, histogram_radius);
-                    Projection patch = maps(patch_square);
+                    int center_on_patch_x = std::min(column, histogram_radius);
+                    int center_on_patch_y = std::min(row, histogram_radius);
+                    cv::Rect patch_square = projection.getPatchSquare(column, row);
+                    Projection patch = projection(patch_square);
 
                     histograms[i].update(patch, center_on_patch_x, center_on_patch_y);
 
