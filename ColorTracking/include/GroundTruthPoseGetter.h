@@ -1,4 +1,4 @@
-#ifndef COLORTRACKING_GROUNDTRUTHPOSEGETTER_H
+    #ifndef COLORTRACKING_GROUNDTRUTHPOSEGETTER_H
 #define COLORTRACKING_GROUNDTRUTHPOSEGETTER_H
 #include <glm/mat4x4.hpp>
 #include <boost/filesystem/path.hpp>

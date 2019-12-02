@@ -7,7 +7,7 @@
 
 class Projection
 {
-    static const float s_heaviside;
+
 
     int width;
     int height;
@@ -16,6 +16,8 @@ class Projection
     void invertMask();
 
 public:
+    static const float s_heaviside;
+
     Projection();
 
     explicit Projection(const cv::Mat3b &color_frame, int frame_offset);

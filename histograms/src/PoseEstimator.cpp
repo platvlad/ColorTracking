@@ -189,4 +189,9 @@ namespace histograms
         return object_pose;
     }
 
+    const cv::Mat1f &PoseEstimator::getVotesForeground() const
+    {
+        return votes_foreground;
+    }
+
 }

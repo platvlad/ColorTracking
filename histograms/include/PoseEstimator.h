@@ -8,6 +8,8 @@ namespace histograms
     class PoseEstimator
     {
         cv::Mat1f votes_foreground;
+
+    private:
         cv::Mat1i num_voters;
         cv::Mat1f derivative_const_part;
         Projection projection;
@@ -26,6 +28,8 @@ namespace histograms
         const cv::Mat1f& getDerivativeConstPart();
 
         const Renderer* getRenderer() const;
+
+        const cv::Mat1f &getVotesForeground() const;
 
         const cv::Mat1i& getNumVoters() const;
 

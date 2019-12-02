@@ -30,15 +30,6 @@ class SLSQPPoseGetter : public PoseGetter
 
     static glm::mat4 params_to_transform(const double *x);
 
-    static std::vector<cv::Mat1d> getGradientInPoint(const glm::mat4 &initial_pose,
-                                                     const histograms::PoseEstimator &estimator);
-
-    static cv::Matx12d getSignedDistanceGradient(const cv::Mat1f &signed_distance, int row, int col);
-
-    static void getGradientAnalytically(const glm::mat4 &initial_pose,
-                                        histograms::PoseEstimator &estimator,
-                                        double* grad);
-
     static double energy_function(unsigned n, const double *x, double *grad, void *my_func_data);
 
 public:

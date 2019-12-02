@@ -46,8 +46,10 @@ namespace histograms
         for (size_t i = 0; i < vertices.size(); ++i)
         {
             glm::vec3 pixel = projection.vertex_projections[i];
-            int column = static_cast<int>(pixel.x);
-            int row = static_cast<int>(pixel.y);
+//            int column = static_cast<int>(pixel.x);
+//            int row = static_cast<int>(pixel.y);
+            int column = floor(pixel.x);
+            int row = floor(pixel.y);
             if (abs(signed_distance.at<float>(row, column)) < dist_to_contour + 0.5f)
             {
                 // check visibility?

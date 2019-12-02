@@ -126,6 +126,10 @@ void Projection::invertMask()
 void Projection::computeSignedDistance()
 {
     cv::Size projection_size = cv::Size(width, height);
+    if (projection_size.empty())
+    {
+        return;
+    }
     cv::Mat1f internal_signed_distance = cv::Mat1f::zeros(projection_size);
     cv::Mat1f external_signed_distance = cv::Mat1f::zeros(projection_size);
     cv::distanceTransform(mask,
