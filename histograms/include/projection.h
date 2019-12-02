@@ -28,6 +28,7 @@ public:
     cv::Mat1f signed_distance;
     cv::Mat1f heaviside;
     cv::Rect roi;
+    cv::Vec2i pos_on_image;
     cv::Mat1i nearest_labels;
     std::vector<glm::vec3> vertex_projections;
 

@@ -1,4 +1,5 @@
 #include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs.hpp>
 #include "projection.h"
 
 const float Projection::s_heaviside = 1.2f;
@@ -11,6 +12,7 @@ Projection::Projection() : width(0), height(0), frame_offset(0), color_map(cv::M
     heaviside = cv::Mat1f(height, width);
     mask = cv::Mat::zeros(frame_size, mask.type());
     roi = cv::Rect();
+    pos_on_image = cv::Vec2i();
     nearest_labels = cv::Mat1i(height, width);
 }
 
@@ -25,6 +27,7 @@ Projection::Projection(const cv::Mat3b &color_frame, int frame_offset) : color_m
     heaviside = cv::Mat1f(height, width);
     mask = cv::Mat::zeros(frame_size, mask.type());
     roi = cv::Rect();
+    pos_on_image = cv::Vec2i();
     nearest_labels = cv::Mat1i(height, width);
 }
 
@@ -37,6 +40,7 @@ Projection::Projection(const cv::Size &size) : color_map(cv::Mat3b::zeros(size))
     heaviside = cv::Mat1f(size);
     mask = cv::Mat1b::zeros(size);
     roi = cv::Rect();
+    pos_on_image = cv::Vec2i();
     nearest_labels = cv::Mat1i(height, width);
 }
 
@@ -67,6 +71,7 @@ Projection Projection::operator()(const cv::Rect &req_roi) const
     int roi_up = std::max(0, roi.y - req_roi.y);
     int roi_down = std::min(req_roi.height, roi.y + roi.height - req_roi.y);
     maps_on_roi.roi = cv::Rect(roi_left, roi_up, roi_right - roi_left, roi_down - roi_up);
+    maps_on_roi.pos_on_image = cv::Vec2i(pos_on_image[0] + req_roi.x, pos_on_image[1] + req_roi.y);
     return maps_on_roi;
 }
 
@@ -99,6 +104,7 @@ void Projection::trimToExtendedROI(){
     signed_distance = signed_distance(extendedROI);
     heaviside = heaviside(extendedROI);
     roi = cv::Rect2i(roi.x - extendedROI.x, roi.y - extendedROI.y, roi.width, roi.height);
+    pos_on_image += cv::Vec2i(extendedROI.x, extendedROI.y);
     nearest_labels = nearest_labels(extendedROI);
 }
 

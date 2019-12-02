@@ -85,7 +85,9 @@ glm::mat4 applyResultToParams(const glm::mat4& matr, double p0, double p1, doubl
     return applyResultToPose(matr, params);
 }
 
-std::vector<cv::Mat1d> SLSQPPoseGetter::getGradientInPoint(const glm::mat4 &initial_pose, const histograms::PoseEstimator &estimator)
+std::vector<cv::Mat1d> SLSQPPoseGetter::getGradientInPoint(const glm::mat4 &initial_pose,
+                                                           const histograms::PoseEstimator &estimator,
+                                                           std::vector<cv::Vec2i>& depth_values)
 {
     const Projection& projection = estimator.getProjection();
     const cv::Mat1i& nearest_labels = projection.nearest_labels;
@@ -103,6 +105,7 @@ std::vector<cv::Mat1d> SLSQPPoseGetter::getGradientInPoint(const glm::mat4 &init
 
     std::vector<cv::Mat1d> gradients;
     gradients.push_back(cv::Mat1d());
+    depth_values.push_back(cv::Vec2i());
 
     for (int row = 0; row < projection.mask.rows; ++row)
     {
@@ -136,6 +139,12 @@ std::vector<cv::Mat1d> SLSQPPoseGetter::getGradientInPoint(const glm::mat4 &init
                 dX(2, 5) = 1;
 
                 gradients.insert(gradients.begin() + label, dPi * dInitF * dX);
+
+                //for real signed distance
+//                glm::vec3 px_vec_on_image = renderer->projectTransformedVertex(vec_in_3d);
+//                cv::Vec2f px_on_image = cv::Vec2f(px_vec_on_image.x, px_vec_on_image.y);
+//                px_on_image -= projection.pos_on_image;
+                depth_values.insert(depth_values.begin() + label, cv::Vec2i(col, row));
             }
         }
     }
@@ -187,8 +196,10 @@ SLSQPPoseGetter::getGradientAnalytically(const glm::mat4 &initial_pose,
     const Projection& projection = estimator.getProjection();
     const cv::Mat1f& signed_distance = projection.signed_distance;
     const cv::Mat1i& nearest_labels = projection.nearest_labels;
+    const cv::Mat3f& depth = projection.depth_map;
 
-    std::vector<cv::Mat1d> on_border_gradients = getGradientInPoint(initial_pose, estimator);
+    std::vector<cv::Vec2i> border_pixels;
+    std::vector<cv::Mat1d> on_border_gradients = getGradientInPoint(initial_pose, estimator, border_pixels);
 
     int non_zero_pixels = 0;
 
@@ -198,9 +209,22 @@ SLSQPPoseGetter::getGradientAnalytically(const glm::mat4 &initial_pose,
         {
             if (num_voters(row, col) > 0)
             {
-                cv::Matx12d dPhi = getSignedDistanceGradient(signed_distance, row, col);
+                int nearest_on_border = nearest_labels.at<int>(row, col);
+                cv::Matx12d dPhi;
+                cv::Vec2i border_pixel = border_pixels[nearest_on_border];
+                int delta_x = border_pixel[0] - col;
+                int delta_y = row - border_pixel[1];
 
-                cv::Mat1d on_border_gradient = on_border_gradients[nearest_labels.at<int>(row, col)];
+                //I do not know why minus here
+                dPhi(0, 0) = -static_cast<float>(delta_x) / signed_distance(row, col);
+                dPhi(0, 1) = -static_cast<float>(delta_y) / signed_distance(row, col);
+                if (delta_x == 0 || delta_y == 0)
+                {
+                    dPhi = getSignedDistanceGradient(signed_distance, row, col);
+                }
+//                cv::Matx12d dPhi = getSignedDistanceGradient(signed_distance, row, col);
+
+                cv::Mat1d on_border_gradient = on_border_gradients[nearest_on_border];
 
                 cv::Mat1d non_const_part = dPhi * on_border_gradient;
 

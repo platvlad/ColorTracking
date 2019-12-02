@@ -165,8 +165,8 @@ void slsqpOptimization()
         if (plot_energy)
         {
             GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(gt_path);
-            glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
-            std::cout << "real pose error: " << estimator.estimateEnergy(object3D, frame, real_pose) << std::endl;
+            //glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
+            //std::cout << "real pose error: " << estimator.estimateEnergy(object3D, frame, real_pose) << std::endl;
             //plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plot_on_downsampled/" + std::to_string(frame_number));
             //data.writePlots(frame, frame_number, pose);
         }
