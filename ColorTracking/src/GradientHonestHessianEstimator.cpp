@@ -161,7 +161,7 @@ void GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
 
             cv::Mat1d on_border_gradient = on_border_gradients[nearest_labels.at<int>(row, col)];
 
-            cv::Mat1d non_const_part = dPhi * on_border_gradient;   // = B
+            cv::Mat1d B = dPhi * on_border_gradient;   // = B
 
 
             int near_pt_index = nearest_labels.at<int>(row, col);
@@ -176,13 +176,7 @@ void GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
                 double grad_here[6];
                 for (int i = 0; i < 6; ++i)
                 {
-                    grad_here[i] = non_const_part(0, i) * derivative_const_part(row, col);
-                    //grad[i] += grad_here[i];
-
-                    if (abs(non_const_part(0, i)) > 1e5 || abs(derivative_const_part(row, col)) > 1e5)
-                    {
-                        int for_debug = 1;
-                    }
+                    grad_here[i] = B(0, i) * A;
 
                 }
 
@@ -193,8 +187,8 @@ void GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
                     non_const_part_on_previous_row[col] = dPhi_on_prev_row[col] * on_border_gradient;
 
                     cv::Mat1d B_partial_derivatives[2];
-                    B_partial_derivatives[0] = non_const_part_on_previous_col - non_const_part;
-                    B_partial_derivatives[1] = non_const_part - non_const_part_on_previous_row[col];
+                    B_partial_derivatives[0] = non_const_part_on_previous_col - B;
+                    B_partial_derivatives[1] = B - non_const_part_on_previous_row[col];
                     cv::Mat1d B_gradient = cv::Mat1b::zeros(6, 2);
                     cv::vconcat(B_partial_derivatives, 2, B_gradient);
                     cv::Mat1d B_gradient_transposed = cv::Mat1d::zeros(6, 2);
@@ -238,7 +232,7 @@ void GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
                     {
                         for (int j = 0; j < 6; ++j)
                         {
-                            H0(i, j) += H0_scale_part * non_const_part(0, i) * non_const_part(0, j);
+                            H0(i, j) += H0_scale_part * B(0, i) * B(0, j);
                         }
                     }
                     if (abs(H11(0, 1) - H11(1, 0)) > 0.001)
@@ -262,8 +256,8 @@ void GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
                 }
                 ++non_zero_pixels;
             }
-            non_const_part_on_previous_col = non_const_part;
-            non_const_part_on_previous_row[col] = non_const_part;
+            non_const_part_on_previous_col = B;
+            non_const_part_on_previous_row[col] = B;
             dPhi_on_prev_col = dPhi;
             dPhi_on_prev_row[col] = dPhi;
         }
