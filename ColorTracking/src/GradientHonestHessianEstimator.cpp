@@ -104,29 +104,19 @@ cv::Matx12d GradientHonestHessianEstimator::getSignedDistanceGradient(const cv::
     double dPhi_dy = 0;
     if (col == 0)
     {
-        dPhi_dx = signed_distance(row, col + 1) - signed_distance(row, col);
-    }
-    else if (col == signed_distance.cols - 1)
-    {
-        dPhi_dx = signed_distance(row, col) - signed_distance(row, col - 1);
+        dPhi_dx = signed_distance(row, col) - signed_distance(row, col + 1);
     }
     else
     {
-        //dPhi_dx = (signed_distance(row, col + 1) - signed_distance(row, col - 1)) / 2;
-        dPhi_dx = signed_distance(row, col) - signed_distance(row, col - 1);
+        dPhi_dx = signed_distance(row, col - 1) - signed_distance(row, col);
     }
     if (row == 0)
     {
-        dPhi_dy = signed_distance(row, col) - signed_distance(row + 1, col);
-    }
-    else if (row == signed_distance.rows - 1)
-    {
-        dPhi_dy = signed_distance(row - 1, col) - signed_distance(row, col);
+        dPhi_dy = signed_distance(row + 1, col) - signed_distance(row, col);
     }
     else
     {
-        //dPhi_dy = (signed_distance(row - 1, col) - signed_distance(row + 1, col)) / 2;
-        dPhi_dy = signed_distance(row - 1, col) - signed_distance(row, col);
+        dPhi_dy = signed_distance(row, col) - signed_distance(row - 1, col);
     }
     return cv::Matx12d(dPhi_dx, dPhi_dy);
 }
@@ -186,7 +176,7 @@ void GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
                 double grad_here[6];
                 for (int i = 0; i < 6; ++i)
                 {
-                    grad_here[i] = - non_const_part(0, i) * derivative_const_part(row, col);
+                    grad_here[i] = non_const_part(0, i) * derivative_const_part(row, col);
                     //grad[i] += grad_here[i];
 
                     if (abs(non_const_part(0, i)) > 1e5 || abs(derivative_const_part(row, col)) > 1e5)
@@ -203,8 +193,8 @@ void GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
                     non_const_part_on_previous_row[col] = dPhi_on_prev_row[col] * on_border_gradient;
 
                     cv::Mat1d B_partial_derivatives[2];
-                    B_partial_derivatives[0] = non_const_part - non_const_part_on_previous_col;
-                    B_partial_derivatives[1] = non_const_part_on_previous_row[col] - non_const_part;
+                    B_partial_derivatives[0] = non_const_part_on_previous_col - non_const_part;
+                    B_partial_derivatives[1] = non_const_part - non_const_part_on_previous_row[col];
                     cv::Mat1d B_gradient = cv::Mat1b::zeros(6, 2);
                     cv::vconcat(B_partial_derivatives, 2, B_gradient);
                     cv::Mat1d B_gradient_transposed = cv::Mat1d::zeros(6, 2);

@@ -66,27 +66,27 @@ cv::Matx12d GradientEstimator::getSignedDistanceGradient(const cv::Mat1f &signed
     double dPhi_dy = 0;
     if (col == 0)
     {
-        dPhi_dx = signed_distance(row, col + 1) - signed_distance(row, col);
+        dPhi_dx = signed_distance(row, col) - signed_distance(row, col + 1);
     }
     else if (col == signed_distance.cols - 1)
     {
-        dPhi_dx = signed_distance(row, col) - signed_distance(row, col - 1);
+        dPhi_dx = signed_distance(row, col - 1) - signed_distance(row, col);
     }
     else
     {
-        dPhi_dx = (signed_distance(row, col + 1) - signed_distance(row, col - 1)) / 2;
+        dPhi_dx = (signed_distance(row, col - 1) - signed_distance(row, col + 1)) / 2;
     }
     if (row == 0)
     {
-        dPhi_dy = signed_distance(row, col) - signed_distance(row + 1, col);
+        dPhi_dy = signed_distance(row + 1, col) - signed_distance(row, col);
     }
     else if (row == signed_distance.rows - 1)
     {
-        dPhi_dy = signed_distance(row - 1, col) - signed_distance(row, col);
+        dPhi_dy = signed_distance(row, col) - signed_distance(row - 1, col);
     }
     else
     {
-        dPhi_dy = (signed_distance(row - 1, col) - signed_distance(row + 1, col)) / 2;
+        dPhi_dy = (signed_distance(row + 1, col) - signed_distance(row - 1, col)) / 2;
     }
     return cv::Matx12d(dPhi_dx, dPhi_dy);
 }
@@ -124,7 +124,7 @@ GradientEstimator::getGradient(const glm::mat4 &initial_pose,
 
                 for (int i = 0; i < 6; ++i)
                 {
-                    grad[i] -= non_const_part(0, i) * derivative_const_part(row, col);
+                    grad[i] += non_const_part(0, i) * derivative_const_part(row, col);
                     if (abs(non_const_part(0, i)) > 1e5 || abs(derivative_const_part(row, col)) > 1e5)
                     {
                         int for_debug = 1;
