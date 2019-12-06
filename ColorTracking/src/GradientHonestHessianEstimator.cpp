@@ -187,8 +187,8 @@ void GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
                     non_const_part_on_previous_row[col] = dPhi_on_prev_row[col] * on_border_gradient;
 
                     cv::Mat1d B_partial_derivatives[2];
-                    B_partial_derivatives[0] = non_const_part_on_previous_col - B;
-                    B_partial_derivatives[1] = B - non_const_part_on_previous_row[col];
+                    B_partial_derivatives[0] = B - non_const_part_on_previous_col;
+                    B_partial_derivatives[1] = non_const_part_on_previous_row[col] - B;
                     cv::Mat1d B_gradient = cv::Mat1b::zeros(6, 2);
                     cv::vconcat(B_partial_derivatives, 2, B_gradient);
                     cv::Mat1d B_gradient_transposed = cv::Mat1d::zeros(6, 2);
