@@ -213,7 +213,7 @@ void groundTruthOptimization()
 
 void newtonOptimization()
 {
-    std::string directory_name = "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/foxes";
+    std::string directory_name = "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/Vorona";
     DataIO data = DataIO(directory_name);
     Object3d& object3D = data.object3D;
     cv::VideoCapture& videoCapture = data.videoCapture;
@@ -243,6 +243,9 @@ void newtonOptimization()
         cv::pyrDown(downsampled2, downsampled4);
         cv::pyrDown(downsampled4, downsampled8);
         poseGetter.getPose(downsampled8, 3);
+        if (frame_number == 5) {
+            int for_debug = 1;
+        }
         poseGetter.getPose(downsampled4, 2);
         poseGetter.getPose(downsampled2, 1);
 
@@ -253,7 +256,7 @@ void newtonOptimization()
         {
             GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(gt_path);
             glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
-            //std::cout << "real pose error: " << estimator.estimateEnergy(object3D, frame, real_pose) << std::endl;
+            std::cout << "real pose error: " << estimator.estimateEnergy(object3D, frame, real_pose) << std::endl;
             //plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plot_on_downsampled/" + std::to_string(frame_number));
             //data.writePlots(frame, frame_number, pose);
         }

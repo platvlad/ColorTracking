@@ -18,6 +18,7 @@ glm::mat4 NewtonPoseGetter::getPose(const cv::Mat &frame, int mode)
     int histo_part = 10;
     float best_value = std::numeric_limits<float>::max();
     glm::mat4 best_pose = initial_pose;
+    double least_params = std::numeric_limits<float>::max();
     for (int i = 0; i < iter_number; ++i)
     {
         glm::mat4 transform_matrix = applyResultToPose(initial_pose, params);
@@ -37,12 +38,34 @@ glm::mat4 NewtonPoseGetter::getPose(const cv::Mat &frame, int mode)
         GradientHonestHessianEstimator hessianEstimator;
         double grad[6] = { 0 };
         double step[6] = { 0 };
-        hessianEstimator.getGradient(initial_pose, estimator, grad, step, object3d);
+        bool correct_hessian = hessianEstimator.getGradient(initial_pose, estimator, grad, step, object3d);
         double param_length = sqrt(step[0] * step[0] + step[1] * step[1] + step[2] * step[2] + step[3] * step[3] + step[4] * step[4] + step[5] * step[5]);
-        for (int j = 0; j < 6; ++j)
+        double grad_length = sqrt(grad[0] * grad[0] + grad[1] * grad[1] + grad[2] * grad[2] + grad[3] * grad[3] + grad[4] * grad[4] + grad[5] * grad[5]);
+        if (param_length > 1e-6 && param_length < least_params)
         {
-            params[j] += step[j];
+            least_params = param_length;
         }
+        else if (param_length >= least_params)
+        {
+            i = std::max(i, iter_number - 3);
+        }
+        double quotient[6];
+        if (correct_hessian)
+        {
+            for (int j = 0; j < 6; ++j)
+            {
+                quotient[j] = grad[j] / step[j];
+                params[j] += step[j];
+            }
+        }
+        else
+        {
+            for (int j = 0; j < 6; ++j)
+            {
+                params[j] -= 0.01 * grad[j];
+            }
+        }
+        bool unused = false;
     }
     initial_pose = best_pose;
     return best_pose;

@@ -106,22 +106,30 @@ cv::Matx12d GradientHonestHessianEstimator::getSignedDistanceGradient(const cv::
     {
         dPhi_dx = signed_distance(row, col) - signed_distance(row, col + 1);
     }
-    else
+    else if (col == signed_distance.cols - 1)
     {
         dPhi_dx = signed_distance(row, col - 1) - signed_distance(row, col);
+    }
+    else
+    {
+        dPhi_dx = (signed_distance(row, col - 1) - signed_distance(row, col + 1)) / 2;
     }
     if (row == 0)
     {
         dPhi_dy = signed_distance(row + 1, col) - signed_distance(row, col);
     }
-    else
+    else if (row == signed_distance.rows - 1)
     {
         dPhi_dy = signed_distance(row, col) - signed_distance(row - 1, col);
+    }
+    else
+    {
+        dPhi_dy = (signed_distance(row + 1, col) - signed_distance(row - 1, col)) / 2;
     }
     return cv::Matx12d(dPhi_dx, dPhi_dy);
 }
 
-void GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, histograms::PoseEstimator &estimator,
+bool GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, histograms::PoseEstimator &estimator,
                                                  double *grad, double *step, histograms::Object3d* object_unused)
 {
     for (int i = 0; i < 6; ++i)
@@ -149,6 +157,8 @@ void GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
     int num_strange = 0;
     int num_wrong = 0;
     int num_ok = 0;
+
+    cv::Mat1d signed_distance_second_der = cv::Mat1d::zeros(6, 6);
 
     for (int row = 0; row < num_voters.rows; ++row)
     {
@@ -181,37 +191,28 @@ void GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
                 }
 
                 //compute hessian only if row * col > 0
-                if (row > 0 && col > 0)
+                if (row > 0 && col > 0 && row < num_voters.rows - 1 && col < num_voters.cols - 1)
                 {
+                    double d2Phi_dx2 = 2 * signed_distance(row, col) -
+                                       signed_distance(row, col - 1) -
+                                       signed_distance(row, col + 1);
+                    double d2Phi_dy2 = 2 * signed_distance(row, col) -
+                                       signed_distance(row - 1, col) -
+                                       signed_distance(row + 1, col);
+                    double d2Phi_dxdy = (signed_distance(row - 1, col - 1) +
+                                         signed_distance(row + 1, col + 1) -
+                                         signed_distance(row - 1, col + 1) -
+                                         signed_distance(row + 1, col - 1)) / 4;
+                    cv::Matx22d d2Phi = cv::Matx22d(d2Phi_dx2, d2Phi_dxdy,
+                                                    d2Phi_dxdy, d2Phi_dy2);
                     non_const_part_on_previous_col = dPhi_on_prev_col * on_border_gradient;
-                    non_const_part_on_previous_row[col] = dPhi_on_prev_row[col] * on_border_gradient;
 
-                    cv::Mat1d B_partial_derivatives[2];
-                    B_partial_derivatives[0] = B - non_const_part_on_previous_col;
-                    B_partial_derivatives[1] = non_const_part_on_previous_row[col] - B;
-                    cv::Mat1d B_gradient = cv::Mat1b::zeros(6, 2);
-                    cv::vconcat(B_partial_derivatives, 2, B_gradient);
-                    cv::Mat1d B_gradient_transposed = cv::Mat1d::zeros(6, 2);
-                    cv::transpose(B_gradient, B_gradient_transposed);
-                    bool flag_zero = false;
-                    if ((B_partial_derivatives[1](0, 0) == 0 &&
-                        B_partial_derivatives[1](0, 1) == 0 &&
-                        B_partial_derivatives[1](0, 2) == 0 &&
-                        B_partial_derivatives[1](0, 3) == 0 &&
-                        B_partial_derivatives[1](0, 4) == 0 &&
-                        B_partial_derivatives[1](0, 5) == 0) ||
-                            (B_partial_derivatives[0](0, 0) == 0 &&
-                            B_partial_derivatives[0](0, 1) == 0 &&
-                            B_partial_derivatives[0](0, 2) == 0 &&
-                            B_partial_derivatives[0](0, 3) == 0 &&
-                            B_partial_derivatives[0](0, 4) == 0 &&
-                            B_partial_derivatives[0](0, 5) == 0))
-                    {
-                        flag_zero = true;
-                        ++num_zero;
-                    }
+                    cv::Mat1d B2B3B4_transposed = cv::Mat1d();
+                    cv::transpose(B2B3B4[near_pt_index], B2B3B4_transposed);
 
-                    cv::Mat1d H11 = B_gradient_transposed * B2B3B4[near_pt_index];
+                    cv::Mat1d dB1 = d2Phi * on_border_gradient;
+
+                    cv::Mat1d H11 = B2B3B4_transposed * d2Phi * B2B3B4[near_pt_index];
 
                     cv::Mat1d H12 = cv::Mat1d::zeros(6, 6);
 
@@ -226,6 +227,8 @@ void GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
 
                     cv::Mat1d H1 = A * (H11 + H12);
 
+                    signed_distance_second_der += H11 + H12;
+
                     cv::Mat1d H0 = cv::Mat1d::zeros(6, 6);
                     //H0
                     for (int i = 0; i < 6; ++i)
@@ -234,17 +237,6 @@ void GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
                         {
                             H0(i, j) += H0_scale_part * B(0, i) * B(0, j);
                         }
-                    }
-                    if (abs(H11(0, 1) - H11(1, 0)) > 0.001)
-                    {
-                        ++num_wrong;
-                        if (flag_zero)
-                        {
-                        }
-                    } else
-                    {
-                        ++num_ok;
-
                     }
                     hessian_transposed += H0;
                     hessian_transposed += H1;
@@ -286,6 +278,18 @@ void GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
         hessian_transposed /= hessian_estimators;
         cv::Mat1d hessian_mat = cv::Mat1d::zeros(6, 6);
         cv::transpose(hessian_transposed, hessian_mat);
+        cv::Matx61d eigen_values;
+        cv::eigen(hessian_mat, eigen_values);
+        if (abs(hessian_mat(0, 0)) > 1e10)
+        {
+            return false;
+        }
+        for (int i = 0; i < 6; ++i) {
+            if (eigen_values(i, 0) <= 0.001)
+            {
+                return false;
+            }
+        }
         cv::Mat1d hessian_inv = cv::Mat1d::zeros(6, 6);
         cv::invert(hessian_mat, hessian_inv);
         cv::Mat1d grad_mat = cv::Mat1d::zeros(6, 1);
@@ -298,5 +302,7 @@ void GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
         {
             step[i] = step_mat(i, 0);
         }
+        return true;
     }
+    return false;
 }

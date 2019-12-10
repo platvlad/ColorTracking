@@ -19,11 +19,11 @@ class GradientHonestHessianEstimator
     cv::Matx12d getSignedDistanceGradient(const cv::Mat1f &signed_distance, int row, int col);
 
 public:
-    void getGradient(const glm::mat4 &initial_pose,
-                            histograms::PoseEstimator &estimator,
-                            double* grad,
-                            double* step,
-                            histograms::Object3d* object_unused);
+    bool getGradient(const glm::mat4 &initial_pose,
+                     histograms::PoseEstimator &estimator,
+                     double* grad,
+                     double* step,
+                     histograms::Object3d* object_unused);
 };
 
 
