@@ -287,7 +287,8 @@ bool GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
         for (int i = 0; i < 6; ++i) {
             if (eigen_values(i, 0) <= 0.001)
             {
-                return false;
+                //return false;
+                int for_debug = 1;
             }
         }
         cv::Mat1d hessian_inv = cv::Mat1d::zeros(6, 6);

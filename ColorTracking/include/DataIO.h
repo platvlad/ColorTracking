@@ -28,11 +28,13 @@ public:
 
     void writePlots(const cv::Mat3b &frame, int frame_number, const glm::mat4 &pose);
 
-    static glm::mat4 getPose(const boost::filesystem::path& path, int frame_number=1);
+    glm::mat4 getPose(int frame_number) const;
 
-    static int getNumFrames(const boost::filesystem::path& path);
+    int getNumFrames() const;
 
 private:
+    float mesh_scale_factor;
+
     static histograms::Mesh getMesh(const boost::filesystem::path& path);
 
     static glm::mat4 getCamera(const boost::filesystem::path& path, int height = 512);

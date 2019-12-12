@@ -269,7 +269,7 @@ void Tests::testEvaluateEnergyHouse()
     histograms::Object3d& object3D = data.object3D;
     cv::VideoCapture& videoCapture = data.videoCapture;
     boost::filesystem::path& gt_path = data.ground_truth_path;
-    glm::mat4 pose = DataIO::getPose(gt_path);
+    glm::mat4 pose = data.getPose(1);
     cv::Mat3b first_image;
     videoCapture >> first_image;
 

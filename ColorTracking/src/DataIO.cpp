@@ -15,15 +15,18 @@ glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params);
 DataIO::DataIO(const std::string& directory_name) : directory_name(directory_name)
 {
     boost::filesystem::path mesh_path(directory_name + "/mesh.obj");
-    boost::filesystem::path camera_path(directory_name+ "/camera.yml");
-    ground_truth_path = boost::filesystem::path(directory_name+ "/ground_truth.yml");
+    boost::filesystem::path camera_path(directory_name + "/camera.yml");
+    ground_truth_path = boost::filesystem::path(directory_name + "/ground_truth.yml");
     boost::filesystem::path video_path(directory_name + "/rgb");
     histograms::Mesh mesh = DataIO::getMesh(mesh_path);
+    mesh_scale_factor = mesh.getBBDiameter() / 1;
+    mesh.fitDiameterToOne();
+    //mesh_scale_factor = 1;
     videoCapture = DataIO::getVideo(video_path);
     int height = videoCapture.get(cv::CAP_PROP_FRAME_HEIGHT);
     int width = videoCapture.get(cv::CAP_PROP_FRAME_WIDTH);
     glm::mat4 camera_matrix = DataIO::getCamera(camera_path, height);
-    glm::mat4 pose = DataIO::getPose(ground_truth_path);
+    glm::mat4 pose = DataIO::getPose(1);
     float zNear = DataIO::getZNear(pose);
     Renderer renderer = Renderer(camera_matrix, zNear, zNear * 10000, width, height);
     object3D = histograms::Object3d(mesh, renderer);
@@ -75,15 +78,18 @@ glm::mat4 DataIO::getCamera(const boost::filesystem::path& path, int height)
     return input_camera;
 }
 
-glm::mat4 DataIO::getPose(const boost::filesystem::path &path, int frame_number)
+glm::mat4 DataIO::getPose(int frame_number) const
 {
-    std::map<int, testrunner::Pose> poses = testrunner::readPoses(path);
-    return poses[frame_number].pose;
+    std::map<int, testrunner::Pose> poses = testrunner::readPoses(ground_truth_path);
+    glm::mat4 pose = poses[frame_number].pose;
+    pose[3] /= mesh_scale_factor;
+    pose[3][3] = 1;
+    return pose;
 }
 
-int DataIO::getNumFrames(const boost::filesystem::path& path)
+int DataIO::getNumFrames() const
 {
-    std::map<int, testrunner::Pose> poses = testrunner::readPoses(path);
+    std::map<int, testrunner::Pose> poses = testrunner::readPoses(ground_truth_path);
     return poses.size();
 }
 
@@ -111,6 +117,11 @@ float DataIO::getZNear(const glm::mat4& pose)
 void DataIO::writePositions()
 {
     boost::filesystem::path output_yml_path(directory_name + "/output.yml");
+    for (int i = 1; i <= estimated_poses.size(); ++i)
+    {
+        estimated_poses[i].pose[3] *= mesh_scale_factor;
+        estimated_poses[i].pose[3][3] = 1;
+    }
     testrunner::writePoses(estimated_poses, output_yml_path);
 }
 

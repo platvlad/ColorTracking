@@ -128,12 +128,12 @@ void plotRodriguesDirection(const Object3d &object3d,
 void slsqpOptimization()
 {
     bool plot_energy = true;
-    std::string directory_name = "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/Vorona";
+    std::string directory_name = "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/foxes";
     DataIO data = DataIO(directory_name);
     Object3d& object3D = data.object3D;
     cv::VideoCapture& videoCapture = data.videoCapture;
     boost::filesystem::path& gt_path = data.ground_truth_path;
-    glm::mat4 pose = DataIO::getPose(gt_path);
+    glm::mat4 pose = data.getPose(1);
     int frame_number = 1;
     SLSQPPoseGetter poseGetter = SLSQPPoseGetter(&object3D, pose);
     //GaussNewtonPoseGetter poseGetter = GaussNewtonPoseGetter(&object3D, pose);
@@ -167,7 +167,7 @@ void slsqpOptimization()
         plot_energy = frame_number == 2;
         if (plot_energy)
         {
-            GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(gt_path);
+            GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(data);
             glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
             //std::cout << "real pose error: " << estimator.estimateEnergy(object3D, frame, real_pose) << std::endl;
             //plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plot_on_downsampled/" + std::to_string(frame_number));
@@ -184,9 +184,9 @@ void groundTruthOptimization()
     Object3d& object3D = data.object3D;
     cv::VideoCapture& videoCapture = data.videoCapture;
     boost::filesystem::path& gt_path = data.ground_truth_path;
-    glm::mat4 pose = DataIO::getPose(gt_path);
+    glm::mat4 pose = data.getPose(1);
     int frame_number = 1;
-    GroundTruthPoseGetter poseGetter = GroundTruthPoseGetter(gt_path);
+    GroundTruthPoseGetter poseGetter = GroundTruthPoseGetter(data);
     cv::Mat3b frame;
     videoCapture >> frame;
     while (true)
@@ -213,12 +213,12 @@ void groundTruthOptimization()
 
 void newtonOptimization()
 {
-    std::string directory_name = "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/Vorona";
+    std::string directory_name = "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/foxes";
     DataIO data = DataIO(directory_name);
     Object3d& object3D = data.object3D;
     cv::VideoCapture& videoCapture = data.videoCapture;
     boost::filesystem::path& gt_path = data.ground_truth_path;
-    glm::mat4 pose = DataIO::getPose(gt_path);
+    glm::mat4 pose = data.getPose(1);
     NewtonPoseGetter poseGetter = NewtonPoseGetter(&object3D, pose);
     int frame_number = 1;
     cv::Mat3b frame;
@@ -254,7 +254,7 @@ void newtonOptimization()
         bool plot_energy = frame_number == 2;
         if (plot_energy)
         {
-            GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(gt_path);
+            GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(data);
             glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
             std::cout << "real pose error: " << estimator.estimateEnergy(object3D, frame, real_pose) << std::endl;
             //plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plot_on_downsampled/" + std::to_string(frame_number));

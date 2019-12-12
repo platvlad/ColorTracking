@@ -95,5 +95,19 @@ namespace histograms
         output_file.close();
     }
 
+    void Mesh::fitDiameterToOne()
+    {
+        if (bb_diameter == 0)
+        {
+            return;
+        }
+        float scale_factor = bb_diameter / 1;
+        for (int i = 0; i < vertices.size(); ++i)
+        {
+            vertices[i] /= scale_factor;
+        }
+        bb_diameter = 1;
+    }
+
 
 }
