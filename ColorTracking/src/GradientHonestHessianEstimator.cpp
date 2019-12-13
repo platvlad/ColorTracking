@@ -67,17 +67,17 @@ std::vector<cv::Mat1d> GradientHonestHessianEstimator::getGradientInPoint(const 
                 B3B4.insert(B3B4.begin() + label, dInitF_dX);
                 B2B3B4.insert(B2B3B4.begin() + label, dPi_dInitF_dX);
 
-                double plus_params[6] = { 0 };
-                plus_params[3] = 1;
-                double minus_params[6] = { 0 };
-                minus_params[3] = -1;
-                glm::mat4 plus_transform = applyResultToPose(transform, plus_params);
-                glm::mat4 minus_transform = applyResultToPose(transform, minus_params);
-                glm::vec4 plus_vec_in_3d = plus_transform * vec_on_model;
-                glm::vec4 minus_vec_in_3d = minus_transform * vec_on_model;
-                glm::vec3 plus_pixel = renderer->projectTransformedVertex(plus_vec_in_3d);
-                glm::vec3 pixel = renderer->projectTransformedVertex(vec_in_3d);
-                glm::vec3 minus_pixel = renderer->projectTransformedVertex(minus_vec_in_3d);
+//                double plus_params[6] = { 0 };
+//                plus_params[3] = 1;
+//                double minus_params[6] = { 0 };
+//                minus_params[3] = -1;
+//                glm::mat4 plus_transform = applyResultToPose(transform, plus_params);
+//                glm::mat4 minus_transform = applyResultToPose(transform, minus_params);
+//                glm::vec4 plus_vec_in_3d = plus_transform * vec_on_model;
+//                glm::vec4 minus_vec_in_3d = minus_transform * vec_on_model;
+//                glm::vec3 plus_pixel = renderer->projectTransformedVertex(plus_vec_in_3d);
+//                glm::vec3 pixel = renderer->projectTransformedVertex(vec_in_3d);
+//                glm::vec3 minus_pixel = renderer->projectTransformedVertex(minus_vec_in_3d);
 
                 double z2 = vec_in_3d.z * vec_in_3d.z;
                 double fx_over_z2 = focal.x / z2;
@@ -287,8 +287,7 @@ bool GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
         for (int i = 0; i < 6; ++i) {
             if (eigen_values(i, 0) <= 0.001)
             {
-                //return false;
-                int for_debug = 1;
+                return false;
             }
         }
         cv::Mat1d hessian_inv = cv::Mat1d::zeros(6, 6);

@@ -27,7 +27,7 @@ namespace histograms
 
         float getBBDiameter() const;
 
-        void fitDiameterToOne();
+        void fitDiameterToFive();
 
         void exportWithPose(const std::string &file_name, const glm::mat4 &pose) const;
 

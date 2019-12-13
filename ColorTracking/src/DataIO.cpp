@@ -19,8 +19,8 @@ DataIO::DataIO(const std::string& directory_name) : directory_name(directory_nam
     ground_truth_path = boost::filesystem::path(directory_name + "/ground_truth.yml");
     boost::filesystem::path video_path(directory_name + "/rgb");
     histograms::Mesh mesh = DataIO::getMesh(mesh_path);
-    mesh_scale_factor = mesh.getBBDiameter() / 1;
-    mesh.fitDiameterToOne();
+    mesh_scale_factor = mesh.getBBDiameter() / 5;
+    mesh.fitDiameterToFive();
     //mesh_scale_factor = 1;
     videoCapture = DataIO::getVideo(video_path);
     int height = videoCapture.get(cv::CAP_PROP_FRAME_HEIGHT);

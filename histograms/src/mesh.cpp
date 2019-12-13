@@ -95,18 +95,18 @@ namespace histograms
         output_file.close();
     }
 
-    void Mesh::fitDiameterToOne()
+    void Mesh::fitDiameterToFive()
     {
         if (bb_diameter == 0)
         {
             return;
         }
-        float scale_factor = bb_diameter / 1;
+        float scale_factor = bb_diameter / 5;
         for (int i = 0; i < vertices.size(); ++i)
         {
             vertices[i] /= scale_factor;
         }
-        bb_diameter = 1;
+        bb_diameter = 5;
     }
 
 

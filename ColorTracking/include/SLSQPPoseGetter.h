@@ -36,6 +36,7 @@ public:
     SLSQPPoseGetter(histograms::Object3d* object3d, const glm::mat4& initial_pose);
     glm::mat4 getPose(const cv::Mat& frame, int mode);
     glm::mat4 getPose(const cv::Mat& frame);
+    ~SLSQPPoseGetter() {}
 };
 
 #endif //COLORTRACKING_SLSQPPOSEGETTER_H

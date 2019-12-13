@@ -9,6 +9,8 @@ class PoseGetter
 public:
     PoseGetter() {};
     virtual glm::mat4 getPose(const cv::Mat& frame) = 0;
+    virtual glm::mat4 getPose(const cv::Mat& frame, int mode) = 0;
+    virtual ~PoseGetter() {}
 };
 
 #endif //COLORTRACKING_POSEGETTER_H

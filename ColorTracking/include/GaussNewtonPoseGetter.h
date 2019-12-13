@@ -15,6 +15,8 @@ public:
     glm::mat4 getPose(const cv::Mat& frame, int mode);
 
     glm::mat4 getPose(const cv::Mat& frame);
+
+    ~GaussNewtonPoseGetter() {}
 };
 
 

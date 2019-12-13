@@ -15,6 +15,10 @@ public:
 
     glm::mat4 getPose(const cv::Mat& frame);
 
+    glm::mat4 getPose(const cv::Mat& frame, int mode);
+
     glm::mat4 getPose(int frame_index);
+
+    ~GroundTruthPoseGetter() {}
 };
 #endif //COLORTRACKING_GROUNDTRUTHPOSEGETTER_H

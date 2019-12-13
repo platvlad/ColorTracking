@@ -5,6 +5,8 @@
 
 glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params);
 
+void plotEnergy(const histograms::Object3d& object3d, const cv::Mat3b& frame, const glm::mat4& pose, int frame_number);
+
 NewtonPoseGetter::NewtonPoseGetter(histograms::Object3d *object3d, const glm::mat4 &initial_pose):
                                     object3d(object3d),
                                     initial_pose(initial_pose)
@@ -60,9 +62,13 @@ glm::mat4 NewtonPoseGetter::getPose(const cv::Mat &frame, int mode)
         }
         else
         {
-            for (int j = 0; j < 6; ++j)
+            for (int j = 0; j < 3; ++j)
             {
-                params[j] -= 0.01 * grad[j];
+                params[j] -= 0.005 * grad[j];
+            }
+            for (int j = 3; j < 6; ++j)
+            {
+                params[j] -= 0.005 * grad[j];
             }
         }
         bool unused = false;

@@ -20,12 +20,12 @@ glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params);
 void plotEnergy(const Object3d& object3d, const cv::Mat3b& frame, const glm::mat4& pose, int frame_number)
 {
     int num_points = 100;
-    float max_rotation = 1;
-    float max_translation = 0.2f * object3d.getMesh().getBBDiameter();
+    float max_rotation = 0.1;
+    float max_translation = 0.1f * object3d.getMesh().getBBDiameter();
     float rotation_step = max_rotation / static_cast<float>(num_points);
     float translation_step = max_translation / static_cast<float>(num_points);
     std::string base_file_name =
-            "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/ho_fm_f/plots copy/" + std::to_string(frame_number);
+            "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/Vorona/plots/" + std::to_string(frame_number);
     std::ofstream fout_rot_x( base_file_name + "rot_x.yml");
     std::ofstream fout_rot_y(base_file_name + "rot_y.yml");
     std::ofstream fout_rot_z(base_file_name + "rot_z.yml");
@@ -70,8 +70,6 @@ void plotEnergy(const Object3d& object3d, const cv::Mat3b& frame, const glm::mat
     fout_tr_y.close();
     fout_tr_z.close();
 }
-
-
 
 void plotRodriguesDirection(const Object3d &object3d,
                             const cv::Mat &frame,
@@ -125,101 +123,25 @@ void plotRodriguesDirection(const Object3d &object3d,
     fout.close();
 }
 
-void slsqpOptimization()
-{
-    bool plot_energy = true;
-    std::string directory_name = "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/foxes";
+void runOptimization(const std::string &directory_name, const std::string &method) {
     DataIO data = DataIO(directory_name);
     Object3d& object3D = data.object3D;
     cv::VideoCapture& videoCapture = data.videoCapture;
     boost::filesystem::path& gt_path = data.ground_truth_path;
     glm::mat4 pose = data.getPose(1);
-    int frame_number = 1;
-    SLSQPPoseGetter poseGetter = SLSQPPoseGetter(&object3D, pose);
-    //GaussNewtonPoseGetter poseGetter = GaussNewtonPoseGetter(&object3D, pose);
-    cv::Mat3b frame;
-    videoCapture >> frame;
-    PoseEstimator estimator;
-    while (true)
+    PoseGetter* poseGetter = nullptr;
+    if (method == "newton")
     {
-        object3D.updateHistograms(frame, pose);
-        data.estimated_poses[frame_number] = pose;
-        data.writePng(frame, frame_number);
-
-        videoCapture >> frame;
-        ++frame_number;
-        if (frame.empty())
-        {
-            break;
-        }
-        cv::Mat downsampled2;
-        cv::Mat downsampled4;
-        cv::Mat downsampled8;
-        cv::pyrDown(frame, downsampled2);
-        cv::pyrDown(downsampled2, downsampled4);
-        cv::pyrDown(downsampled4, downsampled8);
-        poseGetter.getPose(downsampled8, 3);
-        poseGetter.getPose(downsampled4, 2);
-        poseGetter.getPose(downsampled2, 1);
-
-        pose = poseGetter.getPose(frame, 0);
-        std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, frame, pose, true) << std::endl;
-        plot_energy = frame_number == 2;
-        if (plot_energy)
-        {
-            GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(data);
-            glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
-            //std::cout << "real pose error: " << estimator.estimateEnergy(object3D, frame, real_pose) << std::endl;
-            //plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plot_on_downsampled/" + std::to_string(frame_number));
-            //data.writePlots(frame, frame_number, pose);
-        }
+        poseGetter = new NewtonPoseGetter(&object3D, pose);
     }
-    data.writePositions();
-}
-
-void groundTruthOptimization()
-{
-    std::string directory_name = "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/ho_fm_f";
-    DataIO data = DataIO(directory_name);
-    Object3d& object3D = data.object3D;
-    cv::VideoCapture& videoCapture = data.videoCapture;
-    boost::filesystem::path& gt_path = data.ground_truth_path;
-    glm::mat4 pose = data.getPose(1);
-    int frame_number = 1;
-    GroundTruthPoseGetter poseGetter = GroundTruthPoseGetter(data);
-    cv::Mat3b frame;
-    videoCapture >> frame;
-    while (true)
+    else if (method == "slsqp")
     {
-        data.estimated_poses[frame_number] = pose;
-        data.writePng(frame, frame_number);
-
-        if (frame_number == 1)
-        {
-            pose = poseGetter.getPose(frame);
-        }
-
-        videoCapture >> frame;
-
-        ++frame_number;
-        if (frame.empty())
-        {
-            break;
-        }
-
-        pose = poseGetter.getPose(frame);
+        poseGetter = new SLSQPPoseGetter(&object3D, pose);
     }
-}
-
-void newtonOptimization()
-{
-    std::string directory_name = "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/foxes";
-    DataIO data = DataIO(directory_name);
-    Object3d& object3D = data.object3D;
-    cv::VideoCapture& videoCapture = data.videoCapture;
-    boost::filesystem::path& gt_path = data.ground_truth_path;
-    glm::mat4 pose = data.getPose(1);
-    NewtonPoseGetter poseGetter = NewtonPoseGetter(&object3D, pose);
+    else if (method == "ground_truth")
+    {
+        poseGetter = new GroundTruthPoseGetter(data);
+    }
     int frame_number = 1;
     cv::Mat3b frame;
     videoCapture >> frame;
@@ -236,20 +158,27 @@ void newtonOptimization()
         {
             break;
         }
-        cv::Mat downsampled2;
-        cv::Mat downsampled4;
-        cv::Mat downsampled8;
-        cv::pyrDown(frame, downsampled2);
-        cv::pyrDown(downsampled2, downsampled4);
-        cv::pyrDown(downsampled4, downsampled8);
-        poseGetter.getPose(downsampled8, 3);
-        if (frame_number == 5) {
-            int for_debug = 1;
+        if (method == "ground_truth")
+        {
+            if (frame_number == 2)
+            {
+                poseGetter->getPose(frame, 0);
+            }
         }
-        poseGetter.getPose(downsampled4, 2);
-        poseGetter.getPose(downsampled2, 1);
+        else
+        {
+            cv::Mat downsampled2;
+            cv::Mat downsampled4;
+            cv::Mat downsampled8;
+            cv::pyrDown(frame, downsampled2);
+            cv::pyrDown(downsampled2, downsampled4);
+            cv::pyrDown(downsampled4, downsampled8);
+            poseGetter->getPose(downsampled8, 3);
+            poseGetter->getPose(downsampled4, 2);
+            poseGetter->getPose(downsampled2, 1);
+        }
 
-        pose = poseGetter.getPose(frame, 0);
+        pose = poseGetter->getPose(frame, 0);
         std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, frame, pose, true) << std::endl;
         bool plot_energy = frame_number == 2;
         if (plot_energy)
@@ -257,18 +186,21 @@ void newtonOptimization()
             GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(data);
             glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
             std::cout << "real pose error: " << estimator.estimateEnergy(object3D, frame, real_pose) << std::endl;
-            //plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plot_on_downsampled/" + std::to_string(frame_number));
+            //plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plot/" + std::to_string(frame_number));
             //data.writePlots(frame, frame_number, pose);
         }
     }
     data.writePositions();
+
+    if (poseGetter != nullptr)
+    {
+        delete poseGetter;
+    }
 }
 
 int main()
 {
 //    Tests::runTests();
-//    slsqpOptimization();
-//    groundTruthOptimization();
-    newtonOptimization();
+    runOptimization("/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/Vorona", "slsqp");
     return 0;
 }

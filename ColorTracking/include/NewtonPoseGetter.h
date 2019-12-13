@@ -18,6 +18,8 @@ public:
     glm::mat4 getPose(const cv::Mat& frame);
 
     void getGradientHessian(const histograms::PoseEstimator& estimator);
+
+    ~NewtonPoseGetter() {}
 };
 
 
