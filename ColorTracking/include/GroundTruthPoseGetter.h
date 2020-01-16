@@ -19,6 +19,8 @@ public:
 
     glm::mat4 getPose(int frame_index);
 
+    virtual void setInitialPose(const glm::mat4 &pose) {}
+
     ~GroundTruthPoseGetter() {}
 };
 #endif //COLORTRACKING_GROUNDTRUTHPOSEGETTER_H

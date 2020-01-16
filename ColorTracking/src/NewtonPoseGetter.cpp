@@ -51,6 +51,10 @@ glm::mat4 NewtonPoseGetter::getPose(const cv::Mat &frame, int mode)
         {
             i = std::max(i, iter_number - 3);
         }
+        if (param_length > 100)
+        {
+            continue;
+        }
         double quotient[6];
         if (correct_hessian)
         {
@@ -82,7 +86,8 @@ glm::mat4 NewtonPoseGetter::getPose(const cv::Mat &frame)
     return getPose(frame, 0);
 }
 
-void NewtonPoseGetter::getGradientHessian(const histograms::PoseEstimator &estimator)
+void NewtonPoseGetter::setInitialPose(const glm::mat4 &pose)
 {
-
+    initial_pose = pose;
 }
+

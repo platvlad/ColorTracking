@@ -17,6 +17,35 @@ using namespace histograms;
 
 glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params);
 
+std::vector<double> params_from_diff(const glm::mat4& prev, const glm::mat4& curr)
+{
+    glm::mat4 prev_inv = glm::inverse(prev);
+    glm::mat4 diff = curr * prev_inv;
+    cv::Matx33d rot_diff = cv::Matx33d(diff[0][0], diff[1][0], diff[2][0],
+                                       diff[0][1], diff[1][1], diff[2][1],
+                                       diff[0][2], diff[1][2], diff[2][2]);
+    cv::Vec3d rot_params = cv::Vec3d();
+    cv::Rodrigues(rot_diff, rot_params);
+    std::vector<double> result;
+    result.reserve(6);
+    for (int i = 0; i < 3; ++i)
+    {
+        result.push_back(rot_params(i));
+    }
+    for (int i = 0; i < 3; ++i)
+    {
+        result.push_back(diff[3][i]);
+    }
+    return result;
+
+}
+
+glm::mat4 get_diff_matr(const glm::mat4& prev, const glm::mat4& curr)
+{
+    glm::mat4 prev_inv = glm::inverse(prev);
+    return curr * prev_inv;
+}
+
 void plotEnergy(const Object3d& object3d, const cv::Mat3b& frame, const glm::mat4& pose, int frame_number)
 {
     int num_points = 100;
@@ -26,18 +55,18 @@ void plotEnergy(const Object3d& object3d, const cv::Mat3b& frame, const glm::mat
     float translation_step = max_translation / static_cast<float>(num_points);
     std::string base_file_name =
             "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/Vorona/plots/" + std::to_string(frame_number);
-    std::ofstream fout_rot_x( base_file_name + "rot_x.yml");
-    std::ofstream fout_rot_y(base_file_name + "rot_y.yml");
-    std::ofstream fout_rot_z(base_file_name + "rot_z.yml");
-    std::ofstream fout_tr_x(base_file_name + "tr_x.yml");
-    std::ofstream fout_tr_y(base_file_name + "tr_y.yml");
-    std::ofstream fout_tr_z(base_file_name + "tr_z.yml");
-    fout_rot_x << "frames:" << std::endl;
-    fout_rot_y << "frames:" << std::endl;
-    fout_rot_z << "frames:" << std::endl;
-    fout_tr_x << "frames:" << std::endl;
-    fout_tr_y << "frames:" << std::endl;
-    fout_tr_z << "frames:   " << std::endl;
+//    std::ofstream fout_rot_x( base_file_name + "rot_x.yml");
+//    std::ofstream fout_rot_y(base_file_name + "rot_y.yml");
+//    std::ofstream fout_rot_z(base_file_name + "rot_z.yml");
+//    std::ofstream fout_tr_x(base_file_name + "tr_x.yml");
+//    std::ofstream fout_tr_y(base_file_name + "tr_y.yml");
+//    std::ofstream fout_tr_z(base_file_name + "tr_z.yml");
+//    fout_rot_x << "frames:" << std::endl;
+//    fout_rot_y << "frames:" << std::endl;
+//    fout_rot_z << "frames:" << std::endl;
+//    fout_tr_x << "frames:" << std::endl;
+//    fout_tr_y << "frames:" << std::endl;
+//    fout_tr_z << "frames:   " << std::endl;
     for (int pt = -num_points; pt <= num_points; ++pt)
     {
         int pose_number = pt + num_points + 1;
@@ -50,25 +79,33 @@ void plotEnergy(const Object3d& object3d, const cv::Mat3b& frame, const glm::mat
         glm::mat4 tr_y = glm::translate(pose, glm::vec3(0, offset, 0.0f));
         glm::mat4 tr_z = glm::translate(pose, glm::vec3(0, 0, offset));
         PoseEstimator estimator;
-        fout_rot_x << "  - frame: " << pose_number << std::endl;
-        fout_rot_x << "    error: " << estimator.estimateEnergy(object3d, frame, rot_x) << std::endl;
-        fout_rot_y << "  - frame: " << pose_number << std::endl;
-        fout_rot_y << "    error: " << estimator.estimateEnergy(object3d, frame, rot_y) << std::endl;
-        fout_rot_z << "  - frame: " << pose_number << std::endl;
-        fout_rot_z << "    error: " << estimator.estimateEnergy(object3d, frame, rot_z) << std::endl;
-        fout_tr_x << "  - frame: " << pose_number << std::endl;
-        fout_tr_x << "    error: " << estimator.estimateEnergy(object3d, frame, tr_x) << std::endl;
-        fout_tr_y << "  - frame: " << pose_number << std::endl;
-        fout_tr_y << "    error: " << estimator.estimateEnergy(object3d, frame, tr_y) << std::endl;
-        fout_tr_z << "  - frame: " << pose_number << std::endl;
-        fout_tr_z << "    error: " << estimator.estimateEnergy(object3d, frame, tr_z) << std::endl;
+        if (frame_number == 82 && pose_number == 33)
+        {
+            estimator.estimateEnergy(object3d, frame, rot_x, 1, true);
+        }
+        if (frame_number == 82 && pose_number == 34)
+        {
+            estimator.estimateEnergy(object3d, frame, rot_x, 1, true);
+        }
+//        fout_rot_x << "  - frame: " << pose_number << std::endl;
+//        fout_rot_x << "    error: " << estimator.estimateEnergy(object3d, frame, rot_x) << std::endl;
+//        fout_rot_y << "  - frame: " << pose_number << std::endl;
+//        fout_rot_y << "    error: " << estimator.estimateEnergy(object3d, frame, rot_y) << std::endl;
+//        fout_rot_z << "  - frame: " << pose_number << std::endl;
+//        fout_rot_z << "    error: " << estimator.estimateEnergy(object3d, frame, rot_z) << std::endl;
+//        fout_tr_x << "  - frame: " << pose_number << std::endl;
+//        fout_tr_x << "    error: " << estimator.estimateEnergy(object3d, frame, tr_x) << std::endl;
+//        fout_tr_y << "  - frame: " << pose_number << std::endl;
+//        fout_tr_y << "    error: " << estimator.estimateEnergy(object3d, frame, tr_y) << std::endl;
+//        fout_tr_z << "  - frame: " << pose_number << std::endl;
+//        fout_tr_z << "    error: " << estimator.estimateEnergy(object3d, frame, tr_z) << std::endl;
     }
-    fout_rot_x.close();
-    fout_rot_y.close();
-    fout_rot_z.close();
-    fout_tr_x.close();
-    fout_tr_y.close();
-    fout_tr_z.close();
+//    fout_rot_x.close();
+//    fout_rot_y.close();
+//    fout_rot_z.close();
+//    fout_tr_x.close();
+//    fout_tr_y.close();
+//    fout_tr_z.close();
 }
 
 void plotRodriguesDirection(const Object3d &object3d,
@@ -142,6 +179,7 @@ void runOptimization(const std::string &directory_name, const std::string &metho
     {
         poseGetter = new GroundTruthPoseGetter(data);
     }
+    glm::mat4 prev_pose = pose;
     int frame_number = 1;
     cv::Mat3b frame;
     videoCapture >> frame;
@@ -151,6 +189,14 @@ void runOptimization(const std::string &directory_name, const std::string &metho
         object3D.updateHistograms(frame, pose);
         data.estimated_poses[frame_number] = pose;
         data.writePng(frame, frame_number);
+
+        if (frame_number > 1)
+        {
+            glm::mat4 diff = get_diff_matr(prev_pose, pose);
+            prev_pose = pose;
+            pose = diff * pose;
+            poseGetter->setInitialPose(pose);
+        }
 
         videoCapture >> frame;
         ++frame_number;
@@ -180,13 +226,14 @@ void runOptimization(const std::string &directory_name, const std::string &metho
 
         pose = poseGetter->getPose(frame, 0);
         std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, frame, pose, true) << std::endl;
-        bool plot_energy = frame_number == 2;
+        bool plot_energy = false;
         if (plot_energy)
         {
             GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(data);
             glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
-            std::cout << "real pose error: " << estimator.estimateEnergy(object3D, frame, real_pose) << std::endl;
+            std::cout << "real pose error: " << estimator.estimateEnergy(object3D, frame, /*real_pose*/pose, 10, true) << std::endl;
             //plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plot/" + std::to_string(frame_number));
+            plotEnergy(object3D, frame, pose, frame_number);
             //data.writePlots(frame, frame_number, pose);
         }
     }
@@ -201,6 +248,6 @@ void runOptimization(const std::string &directory_name, const std::string &metho
 int main()
 {
 //    Tests::runTests();
-    runOptimization("/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/Vorona", "slsqp");
+    runOptimization("/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/ho_fm_f", "slsqp");
     return 0;
 }

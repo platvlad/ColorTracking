@@ -10,6 +10,7 @@ public:
     PoseGetter() {};
     virtual glm::mat4 getPose(const cv::Mat& frame) = 0;
     virtual glm::mat4 getPose(const cv::Mat& frame, int mode) = 0;
+    virtual void setInitialPose(const glm::mat4 &pose) = 0;
     virtual ~PoseGetter() {}
 };
 

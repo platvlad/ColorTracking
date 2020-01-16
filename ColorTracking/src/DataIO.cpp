@@ -70,7 +70,7 @@ histograms::Mesh DataIO::getMesh(const boost::filesystem::path& path)
 glm::mat4 DataIO::getCamera(const boost::filesystem::path& path, int height)
 {
     glm::mat4 input_camera = testrunner::readCamera(path);
-    bool kinect_matrix = false;
+    bool kinect_matrix = true;
     if (kinect_matrix)
     {
         input_camera[2][1] = -height - input_camera[2][1];

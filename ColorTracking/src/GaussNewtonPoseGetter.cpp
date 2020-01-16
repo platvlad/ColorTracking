@@ -40,3 +40,8 @@ glm::mat4 GaussNewtonPoseGetter::getPose(const cv::Mat &frame)
 {
     return getPose(frame, 0);
 }
+
+void GaussNewtonPoseGetter::setInitialPose(const glm::mat4 &pose)
+{
+    initial_pose = pose;
+}

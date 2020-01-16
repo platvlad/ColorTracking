@@ -284,12 +284,12 @@ bool GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
         {
             return false;
         }
-        for (int i = 0; i < 6; ++i) {
-            if (eigen_values(i, 0) <= 0.001)
-            {
-                return false;
-            }
-        }
+//        for (int i = 0; i < 6; ++i) {
+//            if (eigen_values(i, 0) <= 0.001)
+//            {
+//                return false;
+//            }
+//        }
         cv::Mat1d hessian_inv = cv::Mat1d::zeros(6, 6);
         cv::invert(hessian_mat, hessian_inv);
         cv::Mat1d grad_mat = cv::Mat1d::zeros(6, 1);

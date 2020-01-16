@@ -76,6 +76,8 @@ glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params)
     return matr * difference;
 }
 
+
+
     void plotRodriguesDirection(const histograms::Object3d &object3d,
                             const cv::Mat &frame,
                             const glm::mat4 &estimated_pose,
@@ -169,4 +171,9 @@ glm::mat4 SLSQPPoseGetter::getPose(const cv::Mat& frame, int mode)
 glm::mat4 SLSQPPoseGetter::getPose(const cv::Mat &frame)
 {
     return getPose(frame, 0);
+}
+
+void SLSQPPoseGetter::setInitialPose(const glm::mat4 &pose)
+{
+    pass_to_optimization.initial_pose = pose;
 }
