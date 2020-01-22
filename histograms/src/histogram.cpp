@@ -170,7 +170,11 @@ namespace histograms
         float for_back = eta_b * prob_bg[blue][green][red];
         if (for_fore > 0 || for_back > 0)
         {
-            return for_fore / (for_fore + for_back);
+            if (for_fore * 5 > for_back && for_back * 5 > for_fore)
+            {
+                return for_fore / (for_fore + for_back);
+            }
+            return prob_fg[blue][green][red] / (prob_fg[blue][green][red] + prob_bg[blue][green][red]);
         }
         return 0.5f;
         //return -1;
