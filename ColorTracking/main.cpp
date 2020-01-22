@@ -9,7 +9,7 @@
 #include <opencv/cv.hpp>
 #include <GaussNewtonPoseGetter.h>
 #include <NewtonPoseGetter.h>
-
+//
 #include "DataIO.h"
 #include "tests.h"
 
@@ -54,19 +54,19 @@ void plotEnergy(const Object3d& object3d, const cv::Mat3b& frame, const glm::mat
     float rotation_step = max_rotation / static_cast<float>(num_points);
     float translation_step = max_translation / static_cast<float>(num_points);
     std::string base_file_name =
-            "/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/Vorona/plots/" + std::to_string(frame_number);
-//    std::ofstream fout_rot_x( base_file_name + "rot_x.yml");
-//    std::ofstream fout_rot_y(base_file_name + "rot_y.yml");
-//    std::ofstream fout_rot_z(base_file_name + "rot_z.yml");
-//    std::ofstream fout_tr_x(base_file_name + "tr_x.yml");
-//    std::ofstream fout_tr_y(base_file_name + "tr_y.yml");
-//    std::ofstream fout_tr_z(base_file_name + "tr_z.yml");
-//    fout_rot_x << "frames:" << std::endl;
-//    fout_rot_y << "frames:" << std::endl;
-//    fout_rot_z << "frames:" << std::endl;
-//    fout_tr_x << "frames:" << std::endl;
-//    fout_tr_y << "frames:" << std::endl;
-//    fout_tr_z << "frames:   " << std::endl;
+            "data/Vorona/plots/" + std::to_string(frame_number);
+    std::ofstream fout_rot_x( base_file_name + "rot_x.yml");
+    std::ofstream fout_rot_y(base_file_name + "rot_y.yml");
+    std::ofstream fout_rot_z(base_file_name + "rot_z.yml");
+    std::ofstream fout_tr_x(base_file_name + "tr_x.yml");
+    std::ofstream fout_tr_y(base_file_name + "tr_y.yml");
+    std::ofstream fout_tr_z(base_file_name + "tr_z.yml");
+    fout_rot_x << "frames:" << std::endl;
+    fout_rot_y << "frames:" << std::endl;
+    fout_rot_z << "frames:" << std::endl;
+    fout_tr_x << "frames:" << std::endl;
+    fout_tr_y << "frames:" << std::endl;
+    fout_tr_z << "frames:   " << std::endl;
     for (int pt = -num_points; pt <= num_points; ++pt)
     {
         int pose_number = pt + num_points + 1;
@@ -79,33 +79,25 @@ void plotEnergy(const Object3d& object3d, const cv::Mat3b& frame, const glm::mat
         glm::mat4 tr_y = glm::translate(pose, glm::vec3(0, offset, 0.0f));
         glm::mat4 tr_z = glm::translate(pose, glm::vec3(0, 0, offset));
         PoseEstimator estimator;
-        if (frame_number == 82 && pose_number == 33)
-        {
-            estimator.estimateEnergy(object3d, frame, rot_x, 1, true);
-        }
-        if (frame_number == 82 && pose_number == 34)
-        {
-            estimator.estimateEnergy(object3d, frame, rot_x, 1, true);
-        }
-//        fout_rot_x << "  - frame: " << pose_number << std::endl;
-//        fout_rot_x << "    error: " << estimator.estimateEnergy(object3d, frame, rot_x) << std::endl;
-//        fout_rot_y << "  - frame: " << pose_number << std::endl;
-//        fout_rot_y << "    error: " << estimator.estimateEnergy(object3d, frame, rot_y) << std::endl;
-//        fout_rot_z << "  - frame: " << pose_number << std::endl;
-//        fout_rot_z << "    error: " << estimator.estimateEnergy(object3d, frame, rot_z) << std::endl;
-//        fout_tr_x << "  - frame: " << pose_number << std::endl;
-//        fout_tr_x << "    error: " << estimator.estimateEnergy(object3d, frame, tr_x) << std::endl;
-//        fout_tr_y << "  - frame: " << pose_number << std::endl;
-//        fout_tr_y << "    error: " << estimator.estimateEnergy(object3d, frame, tr_y) << std::endl;
-//        fout_tr_z << "  - frame: " << pose_number << std::endl;
-//        fout_tr_z << "    error: " << estimator.estimateEnergy(object3d, frame, tr_z) << std::endl;
+        fout_rot_x << "  - frame: " << pose_number << std::endl;
+        fout_rot_x << "    error: " << estimator.estimateEnergy(object3d, frame, rot_x) << std::endl;
+        fout_rot_y << "  - frame: " << pose_number << std::endl;
+        fout_rot_y << "    error: " << estimator.estimateEnergy(object3d, frame, rot_y) << std::endl;
+        fout_rot_z << "  - frame: " << pose_number << std::endl;
+        fout_rot_z << "    error: " << estimator.estimateEnergy(object3d, frame, rot_z) << std::endl;
+        fout_tr_x << "  - frame: " << pose_number << std::endl;
+        fout_tr_x << "    error: " << estimator.estimateEnergy(object3d, frame, tr_x) << std::endl;
+        fout_tr_y << "  - frame: " << pose_number << std::endl;
+        fout_tr_y << "    error: " << estimator.estimateEnergy(object3d, frame, tr_y) << std::endl;
+        fout_tr_z << "  - frame: " << pose_number << std::endl;
+        fout_tr_z << "    error: " << estimator.estimateEnergy(object3d, frame, tr_z) << std::endl;
     }
-//    fout_rot_x.close();
-//    fout_rot_y.close();
-//    fout_rot_z.close();
-//    fout_tr_x.close();
-//    fout_tr_y.close();
-//    fout_tr_z.close();
+    fout_rot_x.close();
+    fout_rot_y.close();
+    fout_rot_z.close();
+    fout_tr_x.close();
+    fout_tr_y.close();
+    fout_tr_z.close();
 }
 
 void plotRodriguesDirection(const Object3d &object3d,
@@ -248,6 +240,7 @@ void runOptimization(const std::string &directory_name, const std::string &metho
 int main()
 {
 //    Tests::runTests();
-    runOptimization("/Users/vladislav.platonov/repo/ColorTracking/ColorTracking/data/ho_fm_f", "slsqp");
+    runOptimization("data/foxes", "slsqp");
+    std::cout << 239 << std::endl;
     return 0;
 }

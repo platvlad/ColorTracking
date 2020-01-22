@@ -1,23 +1,28 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.12)
 project(histograms)
 
 set(CMAKE_CXX_STANDARD 98)
 
+FIND_PACKAGE(glm REQUIRED)
+
 FIND_PACKAGE(OpenCV 3 REQUIRED)
 
+
 set(DEBUG_LIBRARIES
+        ${GLM_LIBS}
         ${OpenCV_LIBS}
 #        ${PROJECT_SOURCE_DIR}/../Renderer/cmake-build-debug/libRenderer.a
 )
 
 set(OPTIMIZED_LIBRARIES
+        ${GLM_LIBS}
         ${OpenCV_LIBS}
 #        ${PROJECT_SOURCE_DIR}/../Renderer/cmake-build-release/libRenderer.a
         )
 
 INCLUDE_DIRECTORIES(
+        ${GLM_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
-        ../deps/include
 #        ../Renderer/include
         include
 )

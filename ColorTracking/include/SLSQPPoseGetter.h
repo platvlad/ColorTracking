@@ -2,8 +2,8 @@
 #define COLORTRACKING_SLSQPPOSEGETTER_H
 
 #include <opencv2/core/mat.hpp>
-#include "nlopt/nlopt.h"
-#include "nlopt/nlopt.hpp"
+#include "nlopt.h"
+#include "nlopt.hpp"
 
 #include <PoseEstimator.h>
 #include "PoseGetter.h"

@@ -78,7 +78,7 @@ glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params)
 
 
 
-    void plotRodriguesDirection(const histograms::Object3d &object3d,
+void plotRodriguesDirection(const histograms::Object3d &object3d,
                             const cv::Mat &frame,
                             const glm::mat4 &estimated_pose,
                             const glm::mat4 &real_pose,

@@ -3,6 +3,11 @@
 #include <opencv2/imgcodecs.hpp>
 #include <PoseEstimator.h>
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+
+#include <cmath>
+
 
 namespace histograms
 {

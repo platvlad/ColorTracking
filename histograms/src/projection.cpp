@@ -1,6 +1,9 @@
 #include <opencv2/imgproc.hpp>
 #include "projection.h"
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 const float Projection::s_heaviside = 1.2f;
 
 Projection::Projection() : width(0), height(0), frame_offset(0), color_map(cv::Mat3b(0, 0))

@@ -1,7 +1,7 @@
 #ifndef RENDERER_RENDERER_H
 #define RENDERER_RENDERER_H
 
-#include <OpenGL/gl.h>
+//#include <OpenGL/gl.h>
 
 #include <glm/mat4x4.hpp>
 #include <opencv2/core/mat.hpp>
