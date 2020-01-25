@@ -60,9 +60,9 @@ std::vector<cv::Mat1d> GradientHonestHessianEstimator::getGradientInPoint(const 
                 dX(2, 1) = -vec_on_model[0];
                 dX(2, 5) = 1;
 
-                cv::Mat1d dInitF_dX = dInitF * dX;
+                cv::Mat1d dInitF_dX = cv::Mat1d(dInitF) * dX;
 
-                cv::Mat1d dPi_dInitF_dX = dPi * dInitF_dX;
+                cv::Mat1d dPi_dInitF_dX = cv::Mat1d(dPi) * dInitF_dX;
 
                 B3B4.insert(B3B4.begin() + label, dInitF_dX);
                 B2B3B4.insert(B2B3B4.begin() + label, dPi_dInitF_dX);
@@ -171,7 +171,7 @@ bool GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
 
             cv::Mat1d on_border_gradient = on_border_gradients[nearest_labels.at<int>(row, col)];
 
-            cv::Mat1d B = dPhi * on_border_gradient;   // = B
+            cv::Mat1d B = cv::Mat1d(dPhi) * on_border_gradient;   // = B
 
 
             int near_pt_index = nearest_labels.at<int>(row, col);
@@ -205,20 +205,20 @@ bool GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
                                          signed_distance(row + 1, col - 1)) / 4;
                     cv::Matx22d d2Phi = cv::Matx22d(d2Phi_dx2, d2Phi_dxdy,
                                                     d2Phi_dxdy, d2Phi_dy2);
-                    non_const_part_on_previous_col = dPhi_on_prev_col * on_border_gradient;
+                    non_const_part_on_previous_col = cv::Mat1d(dPhi_on_prev_col) * on_border_gradient;
 
                     cv::Mat1d B2B3B4_transposed = cv::Mat1d();
                     cv::transpose(B2B3B4[near_pt_index], B2B3B4_transposed);
 
-                    cv::Mat1d dB1 = d2Phi * on_border_gradient;
+                    cv::Mat1d dB1 = cv::Mat1d(d2Phi) * on_border_gradient;
 
-                    cv::Mat1d H11 = B2B3B4_transposed * d2Phi * B2B3B4[near_pt_index];
+                    cv::Mat1d H11 = B2B3B4_transposed * cv::Mat1d(d2Phi) * B2B3B4[near_pt_index];
 
                     cv::Mat1d H12 = cv::Mat1d::zeros(6, 6);
 
                     for (int i = 0; i < 6; ++i)
                     {
-                        cv::Mat1d magic_term =  dPhi * Magic[i][near_pt_index] * B3B4[near_pt_index];
+                        cv::Mat1d magic_term = cv::Mat1d(dPhi * Magic[i][near_pt_index]) * B3B4[near_pt_index];
                         for (int j = 0; j < 6; ++j)
                         {
                             H12(i, j) += magic_term(j);

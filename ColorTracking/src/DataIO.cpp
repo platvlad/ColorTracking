@@ -1,5 +1,5 @@
 #include <boost/filesystem/operations.hpp>
-#include <opencv2/imgcodecs.hpp>
+#include <opencv2/highgui.hpp>
 #include <PoseEstimator.h>
 
 
@@ -23,8 +23,8 @@ DataIO::DataIO(const std::string& directory_name) : directory_name(directory_nam
     mesh.fitDiameterToFive();
     //mesh_scale_factor = 1;
     videoCapture = DataIO::getVideo(video_path);
-    int height = videoCapture.get(cv::CAP_PROP_FRAME_HEIGHT);
-    int width = videoCapture.get(cv::CAP_PROP_FRAME_WIDTH);
+    int height = videoCapture.get(CV_CAP_PROP_FRAME_HEIGHT);
+    int width = videoCapture.get(CV_CAP_PROP_FRAME_WIDTH);
     glm::mat4 camera_matrix = DataIO::getCamera(camera_path, height);
     glm::mat4 pose = DataIO::getPose(1);
     float zNear = DataIO::getZNear(pose);

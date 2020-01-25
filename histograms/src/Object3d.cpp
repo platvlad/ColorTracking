@@ -1,6 +1,9 @@
 #include <set>
-#include <opencv2/imgcodecs.hpp>
+//#include <opencv2/imgcodecs.hpp>
+//#include <opencv2/opencv.hpp>
+#include <opencv2/core/core.hpp>
 
+#include "mesh.h"
 #include "Object3d.h"
 
 namespace histograms

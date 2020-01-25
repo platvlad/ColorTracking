@@ -32,7 +32,7 @@ GradientHessianEstimator::getGradient(const glm::mat4 &initial_pose, histograms:
 
                 cv::Mat1d on_border_gradient = on_border_gradients[nearest_labels.at<int>(row, col)];
 
-                cv::Mat1d non_const_part = dPhi * on_border_gradient;
+                cv::Mat1d non_const_part = cv::Mat1d(dPhi) * on_border_gradient;
 
                 cv::Mat1d jacobian_in_pixel = -derivative_const_part(row, col) * non_const_part;
 

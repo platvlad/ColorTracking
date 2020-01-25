@@ -1,7 +1,7 @@
 #ifndef COLORTRACKING_SLSQPPOSEGETTER_H
 #define COLORTRACKING_SLSQPPOSEGETTER_H
 
-#include <opencv2/core/mat.hpp>
+#include <opencv2/core.hpp>
 #include "nlopt.h"
 #include "nlopt.hpp"
 

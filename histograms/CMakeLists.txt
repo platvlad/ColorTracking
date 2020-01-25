@@ -5,25 +5,25 @@ set(CMAKE_CXX_STANDARD 98)
 
 FIND_PACKAGE(glm REQUIRED)
 
-FIND_PACKAGE(OpenCV 3 REQUIRED)
+FIND_PACKAGE(OpenCV REQUIRED)
 
 
 set(DEBUG_LIBRARIES
         ${GLM_LIBS}
         ${OpenCV_LIBS}
-#        ${PROJECT_SOURCE_DIR}/../Renderer/cmake-build-debug/libRenderer.a
+#        ${PROJECT_SOURCE_DIR}\\..\\deps\\opencv2\\OPENCV_STATICLIB_WIN_VS2015\\*.lib
 )
 
 set(OPTIMIZED_LIBRARIES
         ${GLM_LIBS}
         ${OpenCV_LIBS}
-#        ${PROJECT_SOURCE_DIR}/../Renderer/cmake-build-release/libRenderer.a
+#        ${PROJECT_SOURCE_DIR}\\..\\deps\\opencv2\\OPENCV_STATICLIB_WIN_VS2015\\*.lib
         )
 
 INCLUDE_DIRECTORIES(
         ${GLM_INCLUDE_DIRS}
+#        ${PROJECT_SOURCE_DIR}\\..\\deps\\opencv2\\OPENCV_INCLUDE
         ${OpenCV_INCLUDE_DIRS}
-#        ../Renderer/include
         include
 )
 

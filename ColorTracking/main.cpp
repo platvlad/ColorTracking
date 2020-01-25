@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <opencv2/imgcodecs.hpp>
+#include <opencv2/highgui.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <PoseEstimator.h>
@@ -9,9 +9,11 @@
 #include <opencv/cv.hpp>
 #include <GaussNewtonPoseGetter.h>
 #include <NewtonPoseGetter.h>
-//
+
 #include "DataIO.h"
 #include "tests.h"
+
+#include "lkt/Features.hpp"
 
 using namespace histograms;
 
@@ -176,8 +178,12 @@ void runOptimization(const std::string &directory_name, const std::string &metho
     cv::Mat3b frame;
     videoCapture >> frame;
     PoseEstimator estimator;
+    //lkt::FeatureInfoList prevFeatureList;
+    //size_t total_pixel_size = frame.rows * frame.cols;
+    //lkt::Features frame_features = lkt::Features(total_pixel_size);
     while (true)
     {
+        
         object3D.updateHistograms(frame, pose);
         data.estimated_poses[frame_number] = pose;
         data.writePng(frame, frame_number);

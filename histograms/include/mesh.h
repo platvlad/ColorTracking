@@ -2,7 +2,6 @@
 #define HISTOGRAMS_MESH_H
 
 #include <vector>
-#include <opencv2/core/mat.hpp>
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
 

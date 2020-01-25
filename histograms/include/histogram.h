@@ -1,7 +1,7 @@
 #ifndef HISTOGRAMS_HISTOGRAM_H
 #define HISTOGRAMS_HISTOGRAM_H
 
-#include <opencv2/core/hal/interface.h>
+//#include <opencv2/core/hal/interface.h>
 #include <opencv2/imgproc.hpp>
 #include <map>
 #include "CircleWindow.h"

@@ -2,7 +2,7 @@
 #define COLORTRACKING_POSEGETTER_H
 
 #include <glm/mat4x4.hpp>
-#include <opencv2/core/mat.hpp>
+#include <opencv2/core.hpp>
 
 class PoseGetter
 {

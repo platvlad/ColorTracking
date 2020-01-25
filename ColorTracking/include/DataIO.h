@@ -6,7 +6,7 @@
 #include <glm/mat4x4.hpp>
 #include <boost/filesystem/path.hpp>
 #include "mesh.h"
-#include <opencv2/videoio.hpp>
+#include <opencv2/highgui.hpp>
 #include <Object3d.h>
 
 #include "test_runner/io.hpp"

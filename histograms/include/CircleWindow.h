@@ -2,7 +2,7 @@
 #define HISTOGRAMS_CIRCLEWINDOW_H
 
 #include <vector>
-#include <opencv2/core/mat.hpp>
+//#include <opencv2/core/mat.hpp>
 
 typedef std::pair<std::vector<int>, std::vector<int> > Mask;
 

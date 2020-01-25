@@ -4,7 +4,7 @@
 //#include <OpenGL/gl.h>
 
 #include <glm/mat4x4.hpp>
-#include <opencv2/core/mat.hpp>
+#include <opencv2/core.hpp>
 
 #include "mesh.h"
 #include "projection.h"

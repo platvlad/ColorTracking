@@ -1,5 +1,6 @@
 #include<opencv2/imgproc.hpp>
-#include <opencv2/imgcodecs.hpp>
+//#include <opencv2/imgcodecs.hpp>
+#include <opencv2/highgui.hpp>
 #include <algorithm>
 
 #include "renderer.h"
@@ -264,7 +265,7 @@ void Renderer::renderTriangleWireframe(cv::Mat3b& color_map, glm::vec3 &p0, glm:
 
 void Renderer::updateROI(cv::Rect& roi, int x, int y)
 {
-    if (roi.empty())
+    if (roi.width == 0 && roi.height == 0)
     {
         roi.x = x;
         roi.y = y;

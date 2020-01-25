@@ -14,8 +14,7 @@ namespace histograms
     {
         if (Histogram::window_masks.find(radius) == Histogram::window_masks.end())
         {
-            std::pair<std::map<int, const Mask>::iterator, bool> insertion_result =
-                    Histogram::window_masks.insert(std::make_pair(radius, CircleWindow(radius).getMask()));
+            Histogram::window_masks.insert(std::make_pair(radius, CircleWindow(radius).getMask()));
         }
     }
 

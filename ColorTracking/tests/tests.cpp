@@ -4,7 +4,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <renderer.h>
-#include <opencv2/imgcodecs.hpp>
+#include <opencv2/highgui.hpp>
 #include <PoseEstimator.h>
 #include <DataIO.h>
 #include "tests.h"

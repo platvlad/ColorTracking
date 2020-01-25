@@ -2,7 +2,7 @@
 #define RENDERER_MAPS_H
 
 
-#include <opencv2/core/mat.hpp>
+#include <opencv2/core.hpp>
 #include <glm/vec3.hpp>
 
 class Projection

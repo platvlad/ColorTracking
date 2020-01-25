@@ -1,7 +1,10 @@
 #include <set>
 #include <fstream>
-#include <opencv2/imgcodecs.hpp>
+//#include <opencv2/imgcodecs.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui.hpp>
 #include <PoseEstimator.h>
+#include <mesh.h>
 
 #define _USE_MATH_DEFINES
 #include <math.h>

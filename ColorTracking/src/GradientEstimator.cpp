@@ -52,8 +52,8 @@ std::vector<cv::Mat1d> GradientEstimator::getGradientInPoint(const glm::mat4 &in
                 dX(2, 0) = vec_on_model[1];
                 dX(2, 1) = -vec_on_model[0];
                 dX(2, 5) = 1;
-
-                gradients.insert(gradients.begin() + label, dPi * dInitF * dX);
+                // data is copied??
+                gradients.insert(gradients.begin() + label, cv::Mat1d(dPi * dInitF) * dX);
             }
         }
     }
@@ -120,7 +120,7 @@ GradientEstimator::getGradient(const glm::mat4 &initial_pose,
 
                 cv::Mat1d on_border_gradient = on_border_gradients[nearest_labels.at<int>(row, col)];
 
-                cv::Mat1d non_const_part = dPhi * on_border_gradient;
+                cv::Mat1d non_const_part = cv::Mat1d(dPhi) * on_border_gradient;
 
                 for (int i = 0; i < 6; ++i)
                 {

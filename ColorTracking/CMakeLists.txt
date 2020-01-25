@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 98)
 set(Boost_USE_STATIC_LIBS ON)
 set(BOOST_ROOT ${PROJECT_SOURCE_DIR}/../deps/boost_1_72_0)
 
-FIND_PACKAGE(OpenCV 3 REQUIRED)
+FIND_PACKAGE(OpenCV REQUIRED)
 FIND_PACKAGE(glm REQUIRED)
 FIND_PACKAGE( Boost 1.72 COMPONENTS filesystem program_options system REQUIRED )
 FIND_PACKAGE(NLopt REQUIRED)
@@ -17,8 +17,9 @@ set(DEBUG_LIBRARIES
         ${GLM_LIBS}
         ${Boost_LIBRARIES}
         ${NLOPT_LIBRARIES}
-        ${PROJECT_SOURCE_DIR}/deps/yaml-cpp-release-0.3.0/build/Debug/libyaml-cppmdd.lib
-        ${PROJECT_SOURCE_DIR}/../histograms/build/Debug/histograms.lib
+        debug ${PROJECT_SOURCE_DIR}/deps/yaml-cpp-release-0.3.0/build/Debug/libyaml-cppmdd.lib
+        debug ${PROJECT_SOURCE_DIR}/../histograms/build/Debug/histograms.lib
+        debug ${PROJECT_SOURCE_DIR}/../lkt-tracker-library/build/Debug/lkttracker.lib
         )
 
 set(OPTIMIZED_LIBRARIES
@@ -26,8 +27,9 @@ set(OPTIMIZED_LIBRARIES
         ${GLM_LIBS}
         ${Boost_LIBRARIES}
         ${NLOPT_LIBRARIES}
-        ${PROJECT_SOURCE_DIR}/deps/yaml-cpp-release-0.3.0/build/Release/libyaml-cppmd.lib
-        ${PROJECT_SOURCE_DIR}/../histograms/build/Release/histograms.lib
+        optimized ${PROJECT_SOURCE_DIR}/deps/yaml-cpp-release-0.3.0/build/Release/libyaml-cppmd.lib
+        optimized ${PROJECT_SOURCE_DIR}/../histograms/build/Release/histograms.lib
+        optimized ${PROJECT_SOURCE_DIR}/../lkt-tracker-library/build/Release/lkttracker.lib
         )
 
 INCLUDE_DIRECTORIES(
@@ -38,6 +40,7 @@ INCLUDE_DIRECTORIES(
         ${PROJECT_SOURCE_DIR}/deps/yaml-cpp-release-0.3.0/include
         ../deps/include
         ${PROJECT_SOURCE_DIR}/../histograms/include
+        ${PROJECT_SOURCE_DIR}/../lkt-tracker-library/include
         include
         tests
 )
