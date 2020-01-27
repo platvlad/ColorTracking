@@ -62,6 +62,7 @@ add_executable(ColorTracking
                src/NewtonPoseGetter.cpp include/NewtonPoseGetter.h 
                src/GradientHonestHessianEstimator.cpp include/GradientHonestHessianEstimator.h 
                src/LevenbergPoseGetter.cpp include/LevenbergPoseGetter.h 
+               src/FeatureTracker.cpp include/FeatureTracker.h 
                include/GeomUtils.h src/GeomUtils.cpp
               )
               

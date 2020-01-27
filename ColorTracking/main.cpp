@@ -14,6 +14,7 @@
 #include "tests.h"
 
 #include "lkt/Features.hpp"
+#include "FeatureTracker.h"
 
 using namespace histograms;
 
@@ -178,12 +179,10 @@ void runOptimization(const std::string &directory_name, const std::string &metho
     cv::Mat3b frame;
     videoCapture >> frame;
     PoseEstimator estimator;
-    //lkt::FeatureInfoList prevFeatureList;
-    //size_t total_pixel_size = frame.rows * frame.cols;
-    //lkt::Features frame_features = lkt::Features(total_pixel_size);
+    FeatureTracker f_tracker(frame.size());
     while (true)
     {
-        
+        f_tracker.handleFrame(frame);
         object3D.updateHistograms(frame, pose);
         data.estimated_poses[frame_number] = pose;
         data.writePng(frame, frame_number);
