@@ -15,8 +15,13 @@ class FeatureTracker
     lkt::Mesh mesh;
     glm::mat4 init_model;
     glm::mat4 projection;
-    std::map<size_t, glm::vec3> feat_positions;
+    std::vector<glm::vec3> object_points;
     glm::mat4 prev_model;
+    cv::Size frame_size;
+
+    void filterObjectPoints(const std::vector<size_t> &indices, const std::vector<size_t> &valid_points);
+    void getValidImagePoints(std::vector<glm::vec2> &pts_2d);
+    void unprojectFeatures();
 
 public:
     FeatureTracker(const histograms::Mesh &mesh,

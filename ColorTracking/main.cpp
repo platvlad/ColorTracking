@@ -185,6 +185,7 @@ void runOptimization(const std::string &directory_name, const std::string &metho
     while (true)
     {
         pose = f_tracker.handleFrame(frame);
+        std::cout << "Frame " << frame_number << std::endl;
         
         //object3D.updateHistograms(frame, pose);
         data.estimated_poses[frame_number] = pose;
