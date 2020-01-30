@@ -56,6 +56,8 @@ public:
 
     glm::vec2 getFocal() const;
 
+    const glm::mat4& getCameraMatrix() const;
+
 };
 
 #endif //RENDERER_RENDERER_H

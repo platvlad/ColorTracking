@@ -314,3 +314,7 @@ glm::vec2 Renderer::getFocal() const
     return glm::vec2(camera_matrix[0][0], camera_matrix[1][1]);
 }
 
+const glm::mat4& Renderer::getCameraMatrix() const 
+{
+    return camera_matrix;
+}

@@ -7,8 +7,8 @@
 
 #include <glm/mat3x3.hpp>
 
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
 #include <yaml-cpp/yaml.h>
 

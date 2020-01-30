@@ -1,6 +1,6 @@
 #include "SLSQPPoseGetter.h"
 #include <glm/gtc/matrix_transform.hpp>
-#include <opencv/cv.hpp>
+#include <opencv2/calib3d.hpp>
 #include <iostream>
 #include <GradientEstimator.h>
 #include "GradientHessianEstimator.h"

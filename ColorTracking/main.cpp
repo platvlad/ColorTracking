@@ -6,7 +6,7 @@
 #include <PoseEstimator.h>
 #include <GroundTruthPoseGetter.h>
 #include <SLSQPPoseGetter.h>
-#include <opencv/cv.hpp>
+#include <opencv2/calib3d.hpp>
 #include <GaussNewtonPoseGetter.h>
 #include <NewtonPoseGetter.h>
 
@@ -52,7 +52,7 @@ glm::mat4 get_diff_matr(const glm::mat4& prev, const glm::mat4& curr)
 void plotEnergy(const Object3d& object3d, const cv::Mat3b& frame, const glm::mat4& pose, int frame_number)
 {
     int num_points = 100;
-    float max_rotation = 0.1;
+    float max_rotation = 0.1f;
     float max_translation = 0.1f * object3d.getMesh().getBBDiameter();
     float rotation_step = max_rotation / static_cast<float>(num_points);
     float translation_step = max_translation / static_cast<float>(num_points);
@@ -179,21 +179,24 @@ void runOptimization(const std::string &directory_name, const std::string &metho
     cv::Mat3b frame;
     videoCapture >> frame;
     PoseEstimator estimator;
-    FeatureTracker f_tracker(frame.size());
+    const Renderer& renderer = object3D.getRenderer();
+    const glm::mat4& camera_matrix = renderer.getCameraMatrix();
+    FeatureTracker f_tracker(object3D.getMesh(), pose, camera_matrix,  frame.size());
     while (true)
     {
-        f_tracker.handleFrame(frame);
-        object3D.updateHistograms(frame, pose);
+        pose = f_tracker.handleFrame(frame);
+        
+        //object3D.updateHistograms(frame, pose);
         data.estimated_poses[frame_number] = pose;
         data.writePng(frame, frame_number);
-
-        if (frame_number > 1)
+        
+        /*if (frame_number > 1)
         {
             glm::mat4 diff = get_diff_matr(prev_pose, pose);
             prev_pose = pose;
             pose = diff * pose;
             poseGetter->setInitialPose(pose);
-        }
+        }*/
 
         videoCapture >> frame;
         ++frame_number;
@@ -201,38 +204,38 @@ void runOptimization(const std::string &directory_name, const std::string &metho
         {
             break;
         }
-        if (method == "ground_truth")
-        {
-            if (frame_number == 2)
-            {
-                poseGetter->getPose(frame, 0);
-            }
-        }
-        else
-        {
-            cv::Mat downsampled2;
-            cv::Mat downsampled4;
-            cv::Mat downsampled8;
-            cv::pyrDown(frame, downsampled2);
-            cv::pyrDown(downsampled2, downsampled4);
-            cv::pyrDown(downsampled4, downsampled8);
-            poseGetter->getPose(downsampled8, 3);
-            poseGetter->getPose(downsampled4, 2);
-            poseGetter->getPose(downsampled2, 1);
-        }
+        //if (method == "ground_truth")
+        //{
+        //    if (frame_number == 2)
+        //    {
+        //        poseGetter->getPose(frame, 0);
+        //    }
+        //}
+        //else
+        //{
+        //    cv::Mat downsampled2;
+        //    cv::Mat downsampled4;
+        //    cv::Mat downsampled8;
+        //    cv::pyrDown(frame, downsampled2);
+        //    cv::pyrDown(downsampled2, downsampled4);
+        //    cv::pyrDown(downsampled4, downsampled8);
+        //    poseGetter->getPose(downsampled8, 3);
+        //    poseGetter->getPose(downsampled4, 2);
+        //    poseGetter->getPose(downsampled2, 1);
+        //}
 
-        pose = poseGetter->getPose(frame, 0);
-        std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, frame, pose, true) << std::endl;
-        bool plot_energy = false;
-        if (plot_energy)
-        {
-            GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(data);
-            glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
-            std::cout << "real pose error: " << estimator.estimateEnergy(object3D, frame, /*real_pose*/pose, 10, true) << std::endl;
-            //plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plot/" + std::to_string(frame_number));
-            plotEnergy(object3D, frame, pose, frame_number);
-            //data.writePlots(frame, frame_number, pose);
-        }
+        //pose = poseGetter->getPose(frame, 0);
+        //std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, frame, pose, true) << std::endl;
+        //bool plot_energy = false;
+        //if (plot_energy)
+        //{
+        //    GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(data);
+        //    glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
+        //    std::cout << "real pose error: " << estimator.estimateEnergy(object3D, frame, /*real_pose*/pose, 10, true) << std::endl;
+        //    //plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plot/" + std::to_string(frame_number));
+        //    plotEnergy(object3D, frame, pose, frame_number);
+        //    //data.writePlots(frame, frame_number, pose);
+        //}
     }
     data.writePositions();
 
@@ -246,6 +249,5 @@ int main()
 {
 //    Tests::runTests();
     runOptimization("data/foxes", "slsqp");
-    std::cout << 239 << std::endl;
     return 0;
 }
