@@ -43,6 +43,7 @@ void FeatureTracker::filterObjectPoints(std::vector<glm::vec3> &pts_3d, std::vec
         for (int j = first_point_index_to_delete; j < point_index; ++j)
         {
             object_points.erase(feature_list[j].id);
+            feature_faces.erase(feature_list[j].id);
         }
         first_point_index_to_delete = point_index + 1;
     }
@@ -68,9 +69,26 @@ void FeatureTracker::getValidObjectImagePoints(std::vector<glm::vec3> &pts_3d, s
         }
         else {
             object_points.erase(feature_list[i].id);
+            feature_faces.erase(feature_list[i].id);
         }
     }
     feature_list.resize(pts_2d.size());
+}
+
+std::set<int> FeatureTracker::getFaceSet(cv::Mat1i &faceIds)
+{
+    std::set<int> result;
+    for (int row = 0; row < faceIds.rows; ++row)
+    {
+        for (int col = 0; col < faceIds.cols; ++col)
+        {
+            int face_id = faceIds(row, col);
+            if (face_id >= 0) {
+                result.insert(face_id);
+            }
+        }
+    }
+    return result;
 }
 
 void FeatureTracker::unprojectFeatures()
@@ -84,26 +102,36 @@ void FeatureTracker::unprojectFeatures()
     std::vector< boost::optional<std::pair<glm::vec3, size_t> > > unprojected = 
         lkt::unproject(mesh, prev_model, projection, faceIds, imagePoints);
     int feature_list_index = 0;
+
+    std::set<int> face_set = getFaceSet(faceIds);
     for (int i = 0; i < unprojected.size(); ++i)
     {
+        size_t feat_id = feature_list[i].id;
         boost::optional<std::pair<glm::vec3, size_t> >& feat_3d = unprojected[i];
 
-        if (feat_3d){
+        std::map<size_t, size_t>::iterator feat_face_iter = feature_faces.find(feat_id);
+        bool feat_is_new = feat_face_iter == feature_faces.end();
+        bool is_visible = feat_is_new;
+        if (!feat_is_new)
+        {
+            if (face_set.count(feat_face_iter->second)) { 
+                is_visible = true; }
+        }
+
+        if (feat_3d && is_visible){
             std::pair<glm::vec3, size_t> feat_3d_data = feat_3d.get();
             glm::vec3 &feat_3d_pos = feat_3d_data.first;
-            size_t feat_id = feature_list[i].id;
 
-            std::map<size_t, glm::vec3>::iterator obj_pt_iter = object_points.find(feat_id);
-
-            if (obj_pt_iter == object_points.end()) {
+            if (feat_is_new) {
                 object_points[feat_id] = feat_3d_pos;
+                feature_faces[feat_id] = feat_3d_data.second;
             }
-            size_t object_points_size = object_points.size();
             feature_list[feature_list_index] = feature_list[i];
             ++feature_list_index;
         }
         else {
-            object_points.erase(feature_list[i].id);
+            object_points.erase(feat_id);
+            feature_faces.erase(feat_id);
         }
     }
     feature_list.resize(feature_list_index);
