@@ -184,8 +184,8 @@ void runOptimization(const std::string &directory_name, const std::string &metho
     FeatureTracker f_tracker(object3D.getMesh(), pose, camera_matrix,  frame.size());
     while (true)
     {
-        pose = f_tracker.handleFrame(frame);
         std::cout << "Frame " << frame_number << std::endl;
+        pose = f_tracker.handleFrame(frame);
         
         //object3D.updateHistograms(frame, pose);
         data.estimated_poses[frame_number] = pose;

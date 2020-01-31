@@ -19,7 +19,7 @@ class FeatureTracker
     glm::mat4 prev_model;
     cv::Size frame_size;
 
-    void filterObjectPoints(const std::vector<size_t> &indices, const std::vector<size_t> &valid_points);
+    void filterObjectPoints(std::vector<glm::vec2> &pts_2d, const std::vector<size_t> &valid_points);
     void getValidImagePoints(std::vector<glm::vec2> &pts_2d);
     void unprojectFeatures();
 
