@@ -137,6 +137,21 @@ void FeatureTracker::unprojectFeatures()
     feature_list.resize(feature_list_index);
 }
 
+void drawLine(cv::Mat3b& frame, cv::Point red_cross, cv::Point blue_point) 
+{
+    cv::Scalar color = cv::Vec3b(0, 255, 0);
+    cv::line(frame, red_cross, blue_point, color, 1, CV_AA);
+    cv::Vec3b red = cv::Vec3b(0, 0, 255);
+    int cross_row = red_cross.y;
+    int cross_col = red_cross.x;
+    frame(cross_row, cross_col) = red;
+    frame(cross_row - 1, cross_col - 1) = red;
+    frame(cross_row - 1, cross_col + 1) = red;
+    frame(cross_row + 1, cross_col - 1) = red;
+    frame(cross_row + 1, cross_col + 1) = red;
+    frame(blue_point.y, blue_point.x) = cv::Vec3b(255, 0, 0);
+}
+
 glm::mat4 FeatureTracker::handleFrame(cv::Mat3b &frame)
 {
     cv::Mat1b gray_frame;
@@ -189,7 +204,21 @@ glm::mat4 FeatureTracker::handleFrame(cv::Mat3b &frame)
 
     feature_list = frame_features.mergeFeatureLists(feature_list, new_features.first, frame_size);
     unprojectFeatures();
-
+    for (int i = 0; i < feature_list.size(); ++i) {
+        lkt::FeatureInfo &feat_info = feature_list[i];
+        int row = frame_size.height - floor(feat_info.y);
+        int col = floor(feat_info.x);
+        mvp = projection * prev_model;
+        glm::vec4 proj_pt = mvp * glm::vec4(object_points[feat_info.id], 1.0);
+        int proj_row = frame_size.height - floor(proj_pt.y / proj_pt.w);
+        int proj_col = floor(proj_pt.x / proj_pt.w);
+        drawLine(frame, cv::Point(col, row), cv::Point(proj_col, proj_row));
+        if (i == 0)
+        {
+            std::cout << "(row, col) = (" << row << ", " << col << ")" << std::endl;
+            std::cout << "(proj_row, proj_col) = (" << proj_row << ", " << proj_col << ")" << std::endl;
+        }
+    }
     prev_frame = flipped_frame;
     return prev_model;
 }

@@ -1,7 +1,12 @@
+#pragma comment(lib, "glew32d.lib")
+
 #include <iostream>
 #include <fstream>
 #include <opencv2/highgui.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
+//#define GLEW_STATIC
+#include <GL/glew.h>
 
 #include <PoseEstimator.h>
 #include <GroundTruthPoseGetter.h>
@@ -249,6 +254,9 @@ void runOptimization(const std::string &directory_name, const std::string &metho
 int main()
 {
 //    Tests::runTests();
-    runOptimization("data/foxes", "slsqp");
+    //GLuint VAO;
+    //glGenVertexArrays(1, &VAO);
+   // std::cout << glGetString(GL_VERSION) << std::endl;
+    runOptimization("data/ho_fm_f", "slsqp");
     return 0;
 }

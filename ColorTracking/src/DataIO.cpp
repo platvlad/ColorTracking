@@ -1,6 +1,7 @@
 #include <boost/filesystem/operations.hpp>
 #include <opencv2/highgui.hpp>
 #include <PoseEstimator.h>
+#include <iostream>
 
 
 #define TINYOBJLOADER_IMPLEMENTATION
@@ -141,10 +142,10 @@ void DataIO::writePng(cv::Mat3b frame, int frame_number)
         {
             if (mask(row, column))
             {
-                float blue = frame(row, column)[0] / 2;
-                float green = frame(row, column)[1] / 2;
-                float red = frame(row, column)[2] / 2;
-                output(row, column) = cv::Vec3b(blue, green + 128, red);
+                //float blue = frame(row, column)[0] / 2;
+                //float green = frame(row, column)[1] / 2;
+                //float red = frame(row, column)[2] / 2;
+                //output(row, column) = cv::Vec3b(blue, green + 128, red);
                 cv::Vec3b abracadabra = frame(row, column);
             }
         }
@@ -152,7 +153,7 @@ void DataIO::writePng(cv::Mat3b frame, int frame_number)
     std::string frame_name = std::to_string(frame_number);
     frame_name = std::string(4 - frame_name.length(), '0') + frame_name;
 
-    cv::imwrite(directory_name + "/output_frames/" + frame_name + ".png", output);
+    cv::imwrite(directory_name + "/output_frames/" + frame_name + ".png", output(maps.getExtendedROI(20)));
 }
 
 void DataIO::writePlots(const cv::Mat3b &frame, int frame_number, const glm::mat4 &pose)

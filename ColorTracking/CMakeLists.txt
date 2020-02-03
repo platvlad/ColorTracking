@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 98)
 set(Boost_USE_STATIC_LIBS ON)
 set(BOOST_ROOT ${PROJECT_SOURCE_DIR}/../deps/boost_1_72_0)
 
+FIND_PACKAGE(OpenGL REQUIRED)
 FIND_PACKAGE(OpenCV REQUIRED)
 FIND_PACKAGE(glm REQUIRED)
 FIND_PACKAGE( Boost 1.72 COMPONENTS filesystem program_options system REQUIRED )
@@ -14,25 +15,33 @@ FIND_PACKAGE(NLopt REQUIRED)
 
 set(DEBUG_LIBRARIES
         ${OpenCV_LIBS}
+        ${OPENGL_LIBRARIES}
+        ${glew_LIBRARIES}
         ${GLM_LIBS}
         ${Boost_LIBRARIES}
         ${NLOPT_LIBRARIES}
         debug ${PROJECT_SOURCE_DIR}/deps/yaml-cpp-release-0.3.0/build/Debug/libyaml-cppmdd.lib
         debug ${PROJECT_SOURCE_DIR}/../histograms/build/Debug/histograms.lib
         debug ${PROJECT_SOURCE_DIR}/../lkt-tracker-library/build/Debug/lkttracker.lib
+        debug ${PROJECT_SOURCE_DIR}/../deps/glew-2.1.0/build/vc15/lib/Debug/glew32d.lib
         )
 
 set(OPTIMIZED_LIBRARIES
         ${OpenCV_LIBS}
+        ${OPENGL_LIBRARIES}
+        ${glew_LIBRARIES}
         ${GLM_LIBS}
         ${Boost_LIBRARIES}
         ${NLOPT_LIBRARIES}
         optimized ${PROJECT_SOURCE_DIR}/deps/yaml-cpp-release-0.3.0/build/Release/libyaml-cppmd.lib
         optimized ${PROJECT_SOURCE_DIR}/../histograms/build/Release/histograms.lib
         optimized ${PROJECT_SOURCE_DIR}/../lkt-tracker-library/build/Release/lkttracker.lib
+        optimized ${PROJECT_SOURCE_DIR}/../deps/glew-2.1.0/build/vc15/lib/Release/glew32.lib
         )
 
 INCLUDE_DIRECTORIES(
+        ${OPENGL_INCLUDE_DIR}
+        ${glew_INCLUDE_DIR}
         ${Boost_INCLUDE_DIR}
         ${GLM_INCLUDE_DIRS}
         ${PROJECT_SOURCE_DIR}/deps/include
@@ -62,7 +71,8 @@ add_executable(ColorTracking
                src/NewtonPoseGetter.cpp include/NewtonPoseGetter.h 
                src/GradientHonestHessianEstimator.cpp include/GradientHonestHessianEstimator.h 
                src/LevenbergPoseGetter.cpp include/LevenbergPoseGetter.h 
-               src/FeatureTracker.cpp include/FeatureTracker.h 
+               src/FeatureTracker.cpp include/FeatureTracker.h
+               src/Feature3DInfoList.cpp include/Feature3DInfoList.h 
                include/GeomUtils.h src/GeomUtils.cpp
               )
               
