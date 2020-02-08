@@ -44,11 +44,21 @@ public:
                      int frame_offset,
                      bool compute_signed_distance = true) const;
 
+    //version for flipped frames
+    Projection projectMesh2(const histograms::Mesh& mesh,
+        const glm::mat4& pose,
+        const cv::Mat3b &frame,
+        int frame_offset,
+        bool compute_signed_distance = true) const;
+
     void renderMesh(const histograms::Mesh& mesh, cv::Mat3b& frame, const glm::mat4& pose) const;
 
     glm::vec4 transformVertex(const glm::vec3& vertex, const glm::mat4& pose) const;
 
     glm::vec3 projectTransformedVertex(const glm::vec4& vertex) const;
+
+    //version for flipped frames
+    glm::vec3 projectTransformedVertex2(const glm::vec4& vertex) const;
 
     size_t getWidth() const;
 

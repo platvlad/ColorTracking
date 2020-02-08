@@ -13,19 +13,20 @@ class FeatureTracker
 {
     lkt::Features frame_features;
     lkt::FeatureInfoList feature_list;
+    std::map<size_t, size_t> feature_ages;
     cv::Mat1b prev_frame;
     lkt::Mesh mesh;
     glm::mat4 init_model;
     glm::mat4 projection;
     std::map<size_t, glm::vec3> object_points;
-    std::map<size_t, size_t>feature_faces;
+    std::map<size_t, size_t> feature_faces;
     glm::mat4 prev_model;
     cv::Size frame_size;
 
     void filterObjectPoints(std::vector<glm::vec3> &pts_3d, std::vector<glm::vec2> &pts_2d, const std::vector<size_t> &valid_points);
-    void getValidObjectImagePoints(std::vector<glm::vec3> &pts_3d, std::vector<glm::vec2> &pts_2d);
+    void getValidObjectImagePoints(std::vector<glm::vec3> &pts_3d, std::vector<glm::vec2> &pts_2d, bool use_ages);
     std::set<int> getFaceSet(cv::Mat1i &faceIds);
-    void unprojectFeatures();
+    void unprojectFeatures(cv::Mat3b& flipped_frame);
 
 public:
     FeatureTracker(const histograms::Mesh &mesh,

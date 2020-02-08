@@ -75,6 +75,43 @@ Projection Renderer::projectMesh(const histograms::Mesh& mesh,
     return maps;
 }
 
+// version for flipped frames
+Projection Renderer::projectMesh2(const histograms::Mesh& mesh,
+    const glm::mat4& pose,
+    const cv::Mat3b &frame,
+    int frame_offset,
+    bool compute_signed_distance) const
+{
+    Projection maps(frame, frame_offset);
+    const std::vector<glm::uvec3>& faces = mesh.getFaces();
+    const std::vector<glm::vec3>& vertices = mesh.getVertices();
+    maps.vertex_projections = std::vector<glm::vec3>(vertices.size());
+    std::vector<glm::vec4> vertex_transforms = std::vector<glm::vec4>(vertices.size());
+    for (size_t i = 0; i < vertices.size(); ++i)
+    {
+        vertex_transforms[i] = transformVertex(vertices[i], pose);
+        maps.vertex_projections[i] = projectTransformedVertex2(vertex_transforms[i]);
+        roundXY(maps.vertex_projections[i]);  // inplace
+    }
+
+    for (size_t i = 0; i < faces.size(); ++i)
+    {
+        glm::uvec3 face = faces[i];
+        renderTriangle(maps, vertex_transforms, face);
+    }
+    if (frame_offset >= 0)
+    {
+        maps.trimToExtendedROI();
+    }
+    if (compute_signed_distance)
+    {
+        maps.computeSignedDistance();
+        maps.computeHeaviside();
+    }
+    return maps;
+}
+
+
 glm::vec4 Renderer::transformVertex(const glm::vec3 &vertex, const glm::mat4 &pose) const
 {
     glm::vec4 v_hom = glm::vec4(vertex, 1);
@@ -87,6 +124,16 @@ glm::vec3 Renderer::projectTransformedVertex(const glm::vec4& vertex) const
     if (p_hom[3] != 0.0f)
     {
         return glm::vec3(p_hom[0] / p_hom[3], -2 * camera_matrix[2][1] - (p_hom[1] / p_hom[3]), p_hom[3]);
+    }
+    return glm::vec3();
+}
+
+glm::vec3 Renderer::projectTransformedVertex2(const glm::vec4& vertex) const
+{
+    glm::vec4 p_hom = camera_matrix * vertex;
+    if (p_hom[3] != 0.0f)
+    {
+        return glm::vec3(p_hom[0] / p_hom[3], (p_hom[1] / p_hom[3]), p_hom[3]);
     }
     return glm::vec3();
 }

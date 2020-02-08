@@ -1,4 +1,4 @@
-#pragma comment(lib, "glew32d.lib")
+#pragma comment(lib, "glew32.lib")
 
 #include <iostream>
 #include <fstream>
@@ -257,6 +257,6 @@ int main()
     //GLuint VAO;
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
-    runOptimization("data/ho_fm_f", "slsqp");
+    runOptimization("data/ir_ir_5_r", "slsqp");
     return 0;
 }
