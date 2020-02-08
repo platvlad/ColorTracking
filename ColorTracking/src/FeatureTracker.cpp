@@ -27,7 +27,8 @@ FeatureTracker::FeatureTracker(const histograms::Mesh &mesh,
 {
 }
 
-void FeatureTracker::filterObjectPoints(std::vector<glm::vec3> &pts_3d, std::vector<glm::vec2> &pts_2d, const std::vector<size_t> &valid_points)
+void FeatureTracker::filterObjectPoints(std::vector<glm::vec3> &pts_3d, 
+    std::vector<glm::vec2> &pts_2d, const std::vector<size_t> &valid_points)
 {
     size_t valid_points_size = valid_points.size();
     size_t first_point_index_to_delete = 0;
@@ -37,7 +38,6 @@ void FeatureTracker::filterObjectPoints(std::vector<glm::vec3> &pts_3d, std::vec
         if (point_index > i)
         {
             feature_list[i] = feature_list[point_index];
-
             pts_3d[i] = pts_3d[point_index];
             pts_2d[i] = pts_2d[point_index];
         }
@@ -55,8 +55,9 @@ void FeatureTracker::filterObjectPoints(std::vector<glm::vec3> &pts_3d, std::vec
     
 }
 
-void FeatureTracker::getValidObjectImagePoints(std::vector<glm::vec3> &pts_3d, std::vector<glm::vec2> &pts_2d, bool use_ages)
+std::vector<size_t> FeatureTracker::getValidObjectImagePoints(std::vector<glm::vec3> &pts_3d, std::vector<glm::vec2> &pts_2d, int min_age)
 {
+    std::vector<size_t> result;
     int valid_points_count = 0;
     for (int i = 0; i < feature_list.size(); ++i)
     {
@@ -68,10 +69,11 @@ void FeatureTracker::getValidObjectImagePoints(std::vector<glm::vec3> &pts_3d, s
                 feature_list[valid_points_count] = feature_list[i];
             }
             ++valid_points_count;
-            if (feature_ages[feat.id] > 2 || !use_ages) 
+            if (feature_ages[feat.id] >= min_age) 
             {
                 pts_2d.push_back(glm::vec2(feat.x, feat.y));
                 pts_3d.push_back(object_points[feat.id]);
+                result.push_back(i);
             }
         }
         else {
@@ -81,6 +83,7 @@ void FeatureTracker::getValidObjectImagePoints(std::vector<glm::vec3> &pts_3d, s
         }
     }
     feature_list.resize(valid_points_count);
+    return result;
 }
 
 std::set<int> FeatureTracker::getFaceSet(cv::Mat1i &faceIds)
@@ -97,6 +100,28 @@ std::set<int> FeatureTracker::getFaceSet(cv::Mat1i &faceIds)
         }
     }
     return result;
+}
+
+void FeatureTracker::filterFeatureListIndices(const std::vector<size_t> &valid_indices)
+{
+    int first_to_delete = 0;
+    for (int i = 0; i < valid_indices.size(); ++i)
+    {
+        size_t pt_index = valid_indices[i];
+        if (pt_index > i)
+        {
+            feature_list[i] = feature_list[pt_index];
+        }
+        for (int j = first_to_delete; j < pt_index; ++j)
+        {
+            object_points.erase(feature_list[j].id);
+            feature_faces.erase(feature_list[j].id);
+            feature_ages.erase(feature_list[j].id);
+        }
+        first_to_delete = pt_index + 1;
+    }
+    feature_list.resize(valid_indices.size());
+
 }
 
 void FeatureTracker::unprojectFeatures(cv::Mat3b& flipped_frame)
@@ -201,22 +226,34 @@ glm::mat4 FeatureTracker::handleFrame(cv::Mat3b &frame)
         cv::imwrite("data\\ir_ir_5_r\\flipped.png", flipped_frame);
         return init_model;
     }
-    
+    std::cout << "feature list size before moving " << feature_list.size() << std::endl;
     feature_list = lkt::moveFeaturesBySparseFlow(prev_frame, gray_frame, feature_list);
     std::vector<glm::vec2> pts_2d;
     std::vector<glm::vec3> pts_3d;
-    getValidObjectImagePoints(pts_3d, pts_2d, true);
-    if (pts_3d.size() < 6) {
-        pts_2d = std::vector<glm::vec2>();
-        pts_3d = std::vector<glm::vec3>();
-        getValidObjectImagePoints(pts_3d, pts_2d, false);
+    std::vector<size_t> feature_list_indices;
+    for (int age = 1; age >= 0; --age)
+    {
+        feature_list_indices = getValidObjectImagePoints(pts_3d, pts_2d, age);
+        if (pts_3d.size() >= 40 || age == 0) {
+            filterFeatureListIndices(feature_list_indices);
+            break;
+        } 
+        else {
+            pts_2d.clear();
+            pts_3d.clear();
+            feature_list_indices.clear();
+        }
     }
+    
+    std::cout << "feature list size = " << feature_list.size() << std::endl;
+    std::cout << "pts_3d size = " << pts_3d.size() << std::endl;
     float maxInlierError = lkt::computeMaxPnPErr(frame.cols, frame.rows);
     prev_model = lkt::solveEPnPRansac(pts_3d, pts_2d, prev_model, glm::mat4(1.0), projection, 1000, maxInlierError).get_value_or(prev_model);
     glm::mat4 mvp = projection * prev_model;
     std::vector<size_t> inliers = lkt::findInliers(mvp, maxInlierError, pts_3d, pts_2d);
+    std::cout << "feature list size before first filtering " << feature_list.size() << std::endl;
     filterObjectPoints(pts_3d, pts_2d, inliers);
-
+    std::cout << "feature list size after first filtering " << feature_list.size() << std::endl;
     if (pts_3d.size() > 0)
     {
         prev_model = lkt::solvePnP(pts_3d, pts_2d, prev_model, glm::mat4(1.0), projection, lkt::lm::buildHuberAndTukeyBundle());
@@ -225,10 +262,12 @@ glm::mat4 FeatureTracker::handleFrame(cv::Mat3b &frame)
     mvp = projection * prev_model;
     
     inliers = lkt::findInliers(mvp, maxInlierError, pts_3d, pts_2d);
+    std::cout << "num of inliers" << inliers.size() << std::endl;
+
     filterObjectPoints(pts_3d, pts_2d, inliers);
 
     lkt::Features::FeaturesAndCorners new_features = frame_features.detectFeaturesAndCorners(gray_frame);
-
+    std::cout << "feature list size before merging new features " << feature_list.size() << std::endl;
     feature_list = frame_features.mergeFeatureLists(feature_list, new_features.first, frame_size);
     unprojectFeatures(flipped_frame);
     for (int i = 0; i < feature_list.size(); ++i) {

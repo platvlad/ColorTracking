@@ -23,10 +23,15 @@ class FeatureTracker
     glm::mat4 prev_model;
     cv::Size frame_size;
 
-    void filterObjectPoints(std::vector<glm::vec3> &pts_3d, std::vector<glm::vec2> &pts_2d, const std::vector<size_t> &valid_points);
-    void getValidObjectImagePoints(std::vector<glm::vec3> &pts_3d, std::vector<glm::vec2> &pts_2d, bool use_ages);
+    void filterObjectPoints(std::vector<glm::vec3> &pts_3d, 
+        std::vector<glm::vec2> &pts_2d, 
+        const std::vector<size_t> &valid_points);
+
+    //return feature list indices of points
+    std::vector<size_t> getValidObjectImagePoints(std::vector<glm::vec3> &pts_3d, std::vector<glm::vec2> &pts_2d, int min_age);
     std::set<int> getFaceSet(cv::Mat1i &faceIds);
     void unprojectFeatures(cv::Mat3b& flipped_frame);
+    void filterFeatureListIndices(const std::vector<size_t> &valid_indices);
 
 public:
     FeatureTracker(const histograms::Mesh &mesh,
