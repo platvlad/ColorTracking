@@ -257,6 +257,6 @@ int main()
     //GLuint VAO;
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
-    runOptimization("data/ir_ir_5_r", "slsqp");
+    runOptimization("data/ho_fm_f", "slsqp");
     return 0;
 }

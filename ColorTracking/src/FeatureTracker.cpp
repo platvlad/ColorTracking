@@ -45,7 +45,6 @@ void FeatureTracker::filterObjectPoints(std::vector<glm::vec3> &pts_3d, std::vec
         {
             object_points.erase(feature_list[j].id);
             feature_faces.erase(feature_list[j].id);
-            feature_ages.erase(feature_list[j].id);
         }
         first_point_index_to_delete = point_index + 1;
     }
@@ -55,7 +54,7 @@ void FeatureTracker::filterObjectPoints(std::vector<glm::vec3> &pts_3d, std::vec
     
 }
 
-void FeatureTracker::getValidObjectImagePoints(std::vector<glm::vec3> &pts_3d, std::vector<glm::vec2> &pts_2d, bool use_ages)
+void FeatureTracker::getValidObjectImagePoints(std::vector<glm::vec3> &pts_3d, std::vector<glm::vec2> &pts_2d)
 {
     int valid_points_count = 0;
     for (int i = 0; i < feature_list.size(); ++i)
@@ -68,16 +67,12 @@ void FeatureTracker::getValidObjectImagePoints(std::vector<glm::vec3> &pts_3d, s
                 feature_list[valid_points_count] = feature_list[i];
             }
             ++valid_points_count;
-            if (feature_ages[feat.id] > 2 || !use_ages) 
-            {
-                pts_2d.push_back(glm::vec2(feat.x, feat.y));
-                pts_3d.push_back(object_points[feat.id]);
-            }
+            pts_2d.push_back(glm::vec2(feat.x, feat.y));
+            pts_3d.push_back(object_points[feat.id]);
         }
         else {
             object_points.erase(feat.id);
             feature_faces.erase(feat.id);
-            feature_ages.erase(feat.id);
         }
     }
     feature_list.resize(valid_points_count);
@@ -150,10 +145,6 @@ void FeatureTracker::unprojectFeatures(cv::Mat3b& flipped_frame)
             if (feat_is_new) {
                 object_points[feat_id] = feat_3d_pos;
                 feature_faces[feat_id] = feat_3d_data.second;
-                feature_ages[feat_id] = 0;
-            }
-            else {
-                feature_ages[feat_id] += 1;
             }
             feature_list[feature_list_index] = feature_list[i];
             ++feature_list_index;
@@ -161,7 +152,6 @@ void FeatureTracker::unprojectFeatures(cv::Mat3b& flipped_frame)
         else {
             object_points.erase(feat_id);
             feature_faces.erase(feat_id);
-            feature_ages.erase(feat_id);
         }
     }
     feature_list.resize(feature_list_index);
@@ -205,12 +195,7 @@ glm::mat4 FeatureTracker::handleFrame(cv::Mat3b &frame)
     feature_list = lkt::moveFeaturesBySparseFlow(prev_frame, gray_frame, feature_list);
     std::vector<glm::vec2> pts_2d;
     std::vector<glm::vec3> pts_3d;
-    getValidObjectImagePoints(pts_3d, pts_2d, true);
-    if (pts_3d.size() < 6) {
-        pts_2d = std::vector<glm::vec2>();
-        pts_3d = std::vector<glm::vec3>();
-        getValidObjectImagePoints(pts_3d, pts_2d, false);
-    }
+    getValidObjectImagePoints(pts_3d, pts_2d);
     float maxInlierError = lkt::computeMaxPnPErr(frame.cols, frame.rows);
     prev_model = lkt::solveEPnPRansac(pts_3d, pts_2d, prev_model, glm::mat4(1.0), projection, 1000, maxInlierError).get_value_or(prev_model);
     glm::mat4 mvp = projection * prev_model;
