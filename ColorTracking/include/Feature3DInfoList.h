@@ -37,11 +37,13 @@ class Feature3DInfoList
     static lkt::FeatureInfoList getFeatureInfoList(const std::vector<Feature3DInfo> &feature_3d_info_list);
 
     static std::vector< boost::optional<std::pair<glm::vec3, size_t> > > unprojectFeatures(
-        const lkt::FeatureInfoList &feature_info_list, 
-        const lkt::Mesh &mesh, 
-        const glm::mat4 &model, 
-        const glm::mat4 &projection, 
-        cv::Size &frame_size);
+        const lkt::FeatureInfoList &feature_info_list,
+ 
+        const lkt::Mesh &mesh,
+ 
+        const glm::mat4 &model,
+ 
+        const glm::mat4 &projection, cv::Mat1i & face_ids);
 
 
 public:

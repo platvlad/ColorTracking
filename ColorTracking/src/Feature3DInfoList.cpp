@@ -101,42 +101,19 @@ glm::mat4 Feature3DInfoList::solvePnP(
 {
     std::vector<glm::vec3> pts_3d = getObjectPosVector();
     std::vector<glm::vec2> pts_2d = getImagePtsVector();
-    std::cout << "pts_3d size = " << pts_3d.size() << std::endl;
-    std::cout << "pts_2d size = " << pts_2d.size() << std::endl;
-    std::cout << "Solving PnP on mvp = ";
     glm::mat4 mvp = projection * view * model;
-    for (int i = 0; i < 4; ++i)
-    {
-        std::cout << "[";
-        for (int j = 0; j < 4; ++j)
-        {
-            std::cout << mvp[j][i] << ' ';
-        }
-        std::cout << "]" << std::endl;
-    }
+
     glm::mat4 result = lkt::solvePnP(pts_3d, pts_2d, model, view, projection, lossFunctions);
-    std::cout << "Got ";
-    for (int i = 0; i < 4; ++i)
-    {
-        std::cout << "[";
-        for (int j = 0; j < 4; ++j)
-        {
-            std::cout << result[j][i] << ' ';
-        }
-        std::cout << "]" << std::endl;
-    }
+
     return result;
 }
 
 void Feature3DInfoList::filterOutliers(const glm::mat4 &mvp, float maxInlierError)
 {
-    std::cout << "Before outliers filtering: " << featInfos.size() << std::endl;
     std::vector<glm::vec3> pts_3d = getObjectPosVector();
     std::vector<glm::vec2> pts_2d = getImagePtsVector();    
     std::vector<size_t> inliers = lkt::findInliers(mvp, maxInlierError, pts_3d, pts_2d);
-    std::cout << "inliers size = " << inliers.size() << std::endl;
     filterByIndices(inliers);
-    std::cout << "After outliers filtering " << featInfos.size() << std::endl;
 }
 
 void Feature3DInfoList::filterInvisible(const lkt::Mesh &mesh, const glm::mat4 &model, const glm::mat4 &projection, const cv::Size &frame_size)
@@ -184,14 +161,14 @@ std::set<int> Feature3DInfoList::getFaceSet(cv::Mat1i &faceIds)
 }
 
 std::vector< boost::optional<std::pair<glm::vec3, size_t> > > Feature3DInfoList::unprojectFeatures(
-    const lkt::FeatureInfoList &feature_info_list, 
-    const lkt::Mesh &mesh, 
-    const glm::mat4 &model, 
-    const glm::mat4 &projection, 
-    cv::Size &frame_size)
+    const lkt::FeatureInfoList &feature_info_list,
+ 
+    const lkt::Mesh &mesh,
+ 
+    const glm::mat4 &model,
+ 
+    const glm::mat4 &projection, cv::Mat1i & face_ids)
 {
-    cv::Mat1i faceIds = lkt::getFaceIds(mesh, model, projection, frame_size);
-
     size_t num_features = feature_info_list.size();
     std::vector<glm::vec2> imagePoints(num_features);
     for (int i = 0; i < num_features; ++i)
@@ -200,7 +177,7 @@ std::vector< boost::optional<std::pair<glm::vec3, size_t> > > Feature3DInfoList:
         imagePoints[i] = glm::vec2(feature.x, feature.y);
     }
 
-    return lkt::unproject(mesh, model, projection, faceIds, imagePoints);
+    return lkt::unproject(mesh, model, projection, face_ids, imagePoints);
 }
 
 std::map<size_t, size_t> Feature3DInfoList::getIdPositions(const std::vector<Feature3DInfo> &feat_infos)
@@ -226,15 +203,17 @@ lkt::FeatureInfoList Feature3DInfoList::getFeatureInfoList(const std::vector<Fea
 void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &mesh, const glm::mat4 &model, const glm::mat4 &projection)
 {
     lkt::Features::FeaturesAndCorners new_features = featureDetector.detectFeaturesAndCorners(frame);
-    std::vector< boost::optional<std::pair<glm::vec3, size_t> > > unprojected = 
-        unprojectFeatures(new_features.first, mesh, model, projection, frame.size());
     if (!featInfos.empty())
     {
         lkt::FeatureInfoList old_feature_list = getFeatureInfoList();
-        std::cout << "old features size " << old_feature_list.size() << std::endl;
-        std::cout << "new features size " << new_features.first.size() << std::endl;
+
+        cv::Mat1i faceIds = lkt::getFaceIds(mesh, model, projection, frame.size());
+        std::set<int> face_set = getFaceSet(faceIds);
         lkt::FeatureInfoList merged_feature_info_list = featureDetector.mergeFeatureLists(old_feature_list, new_features.first, frame.size());
-        std::cout << "merged list size = " << merged_feature_info_list.size() << std::endl;
+
+        std::vector< boost::optional<std::pair<glm::vec3, size_t> > > unprojected =
+            unprojectFeatures(merged_feature_info_list, mesh, model, projection, faceIds);
+
         std::map<size_t, size_t> old_feat_positions = getIdPositions(featInfos);
         std::vector<Feature3DInfo> new_vector(merged_feature_info_list.size());
         size_t new_vector_counter = 0;
@@ -242,14 +221,19 @@ void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &
         {
             lkt::FeatureInfo& feat = merged_feature_info_list[i];
             std::map<size_t, size_t>::iterator old_pos_iter = old_feat_positions.find(feat.id);
-            if (old_pos_iter != old_feat_positions.end())
+            if (unprojected[i])
             {
-                new_vector[new_vector_counter] = featInfos[old_pos_iter->second];
-                ++new_vector_counter;
-            }
-            else {
-                if (unprojected[i])
+                if (old_pos_iter != old_feat_positions.end())
                 {
+                    size_t old_pos = old_pos_iter->second;
+                    Feature3DInfo& feat_3d_info = featInfos[old_pos];
+                    if (face_set.count(feat_3d_info.face_id))
+                    {
+                        new_vector[new_vector_counter] = featInfos[old_pos];
+                        ++new_vector_counter;
+                    }
+                }
+                else {
                     std::pair<glm::vec3, size_t> unprojected_data = unprojected[i].get();
                     Feature3DInfo feat_3d_info;
                     feat_3d_info.feature_info = merged_feature_info_list[i];
@@ -257,37 +241,18 @@ void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &
                     feat_3d_info.face_id = unprojected_data.second;
                     new_vector[new_vector_counter] = feat_3d_info;
                     ++new_vector_counter;
+                    
                 }
             }
         }
         new_vector.resize(new_vector_counter);
         featInfos = new_vector;
-        /*filterInvisible(mesh, model, projection, frame.size());
-        std::cout << "old counter = " << featInfos.size() << std::endl;
-        std::vector<Feature3DInfo> new_features_3d_infos = get3DInfo(new_features.first, mesh, model, projection, frame.size());
-        std::cout << "new counter = " << new_features_3d_infos.size() << std::endl;
-        std::vector<Feature3DInfo> old_features_3d_infos = featInfos;
-        std::map<size_t, size_t> idsToOldVectorPos = getIdPositions(old_features_3d_infos);
-        std::map<size_t, size_t> idsToNewVectorPos = getIdPositions(new_features_3d_infos);
-        lkt::FeatureInfoList old_feature_list = getFeatureInfoList();
-        lkt::FeatureInfoList new_feature_list = getFeatureInfoList(new_features_3d_infos);
-        lkt::FeatureInfoList merged_feature_list = featureDetector.mergeFeatureLists(old_feature_list, new_feature_list, frame.size());
-        size_t merged_feature_list_size = merged_feature_list.size();
-        featInfos = std::vector<Feature3DInfo>(merged_feature_list_size);*/
-        //for (int i = 0; i < merged_feature_list_size; ++i)
-        //{
-        //    lkt::FeatureInfo& feat_info = merged_feature_list[i];
-        //    std::map<size_t, size_t>::iterator old_vector_pos_iter = idsToOldVectorPos.find(feat_info.id);
-        //    if (old_vector_pos_iter != idsToOldVectorPos.end()) {
-        //        featInfos[i] = old_features_3d_infos[old_vector_pos_iter->second];
-        //    }
-        //    else {
-        //        std::map<size_t, size_t>::iterator new_vector_pos_iter = idsToNewVectorPos.find(feat_info.id);
-        //        featInfos[i] = new_features_3d_infos[new_vector_pos_iter->second];
-        //    }
-        //}
+
     }
     else {
+        cv::Mat1i faceIds = lkt::getFaceIds(mesh, model, projection, frame.size());
+        std::vector< boost::optional<std::pair<glm::vec3, size_t> > > unprojected =
+            unprojectFeatures(new_features.first, mesh, model, projection, faceIds);
         for (int i = 0; i < unprojected.size(); ++i)
         {
             if (unprojected[i])
