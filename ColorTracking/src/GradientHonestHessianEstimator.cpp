@@ -116,15 +116,15 @@ cv::Matx12d GradientHonestHessianEstimator::getSignedDistanceGradient(const cv::
     }
     if (row == 0)
     {
-        dPhi_dy = signed_distance(row + 1, col) - signed_distance(row, col);
+        dPhi_dy = signed_distance(row, col) - signed_distance(row + 1, col);
     }
     else if (row == signed_distance.rows - 1)
     {
-        dPhi_dy = signed_distance(row, col) - signed_distance(row - 1, col);
+        dPhi_dy = signed_distance(row - 1, col) - signed_distance(row, col);
     }
     else
     {
-        dPhi_dy = (signed_distance(row + 1, col) - signed_distance(row - 1, col)) / 2;
+        dPhi_dy = (signed_distance(row - 1, col) - signed_distance(row + 1, col)) / 2;
     }
     return cv::Matx12d(dPhi_dx, dPhi_dy);
 }
@@ -199,10 +199,10 @@ bool GradientHonestHessianEstimator::getGradient(const glm::mat4 &initial_pose, 
                     double d2Phi_dy2 = 2 * signed_distance(row, col) -
                                        signed_distance(row - 1, col) -
                                        signed_distance(row + 1, col);
-                    double d2Phi_dxdy = (signed_distance(row - 1, col - 1) +
-                                         signed_distance(row + 1, col + 1) -
+                    double d2Phi_dxdy = (signed_distance(row + 1, col - 1) +
                                          signed_distance(row - 1, col + 1) -
-                                         signed_distance(row + 1, col - 1)) / 4;
+                                         signed_distance(row + 1, col + 1) -
+                                         signed_distance(row - 1, col - 1)) / 4;
                     cv::Matx22d d2Phi = cv::Matx22d(d2Phi_dx2, d2Phi_dxdy,
                                                     d2Phi_dxdy, d2Phi_dy2);
                     non_const_part_on_previous_col = cv::Mat1d(dPhi_on_prev_col) * on_border_gradient;

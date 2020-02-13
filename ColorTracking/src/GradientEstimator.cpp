@@ -78,15 +78,15 @@ cv::Matx12d GradientEstimator::getSignedDistanceGradient(const cv::Mat1f &signed
     }
     if (row == 0)
     {
-        dPhi_dy = signed_distance(row + 1, col) - signed_distance(row, col);
+        dPhi_dy = signed_distance(row, col) - signed_distance(row + 1, col);
     }
     else if (row == signed_distance.rows - 1)
     {
-        dPhi_dy = signed_distance(row, col) - signed_distance(row - 1, col);
+        dPhi_dy = signed_distance(row - 1, col) - signed_distance(row, col);
     }
     else
     {
-        dPhi_dy = (signed_distance(row + 1, col) - signed_distance(row - 1, col)) / 2;
+        dPhi_dy = (signed_distance(row - 1, col) - signed_distance(row + 1, col)) / 2;
     }
     return cv::Matx12d(dPhi_dx, dPhi_dy);
 }

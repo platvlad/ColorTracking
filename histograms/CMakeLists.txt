@@ -27,7 +27,15 @@ INCLUDE_DIRECTORIES(
         include
 )
 
-add_library(histograms src/Object3d.cpp src/PoseEstimator.cpp include/CircleWindow.h include/histogram.h include/projection.h include/mesh.h include/renderer.h src/CircleWindow.cpp src/histogram.cpp src/projection.cpp src/mesh.cpp src/renderer.cpp include/MeshRenderer.h src/MeshRenderer.cpp include/PoseEstimator.h)
+add_library(histograms 
+            include/Object3d.h src/Object3d.cpp 
+            include/PoseEstimator.h src/PoseEstimator.cpp 
+            include/CircleWindow.h src/CircleWindow.cpp 
+            include/histogram.h src/histogram.cpp 
+            include/projection.h src/projection.cpp 
+            include/mesh.h src/mesh.cpp 
+            include/renderer.h src/renderer.cpp 
+            include/MeshRenderer.h src/MeshRenderer.cpp)
 
 TARGET_LINK_LIBRARIES(histograms debug ${DEBUG_LIBRARIES})
 TARGET_LINK_LIBRARIES(histograms optimized ${OPTIMIZED_LIBRARIES})

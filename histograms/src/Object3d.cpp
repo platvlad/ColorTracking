@@ -32,7 +32,7 @@ namespace histograms
 
     void Object3d::updateHistograms(const cv::Mat3b& frame, const glm::mat4& pose)
     {
-        Projection projection = renderer.projectMesh(mesh, pose, frame, histogram_radius);
+        Projection projection = renderer.projectMesh2(mesh, pose, frame, histogram_radius);
 
         const std::vector<glm::vec3>& vertices = mesh.getVertices();
 

@@ -71,11 +71,6 @@ histograms::Mesh DataIO::getMesh(const boost::filesystem::path& path)
 glm::mat4 DataIO::getCamera(const boost::filesystem::path& path, int height)
 {
     glm::mat4 input_camera = testrunner::readCamera(path);
-    /*bool kinect_matrix = true;
-    if (kinect_matrix)
-    {
-        input_camera[2][1] = -height - input_camera[2][1];
-    }*/
     return input_camera;
 }
 
@@ -132,10 +127,10 @@ void DataIO::writePng(cv::Mat3b frame, int frame_number)
     const Renderer& renderer = object3D.getRenderer();
     const histograms::Mesh& mesh = object3D.getMesh();
     glm::mat4 pose = estimated_poses[frame_number].pose;
-//    renderer.renderMesh(mesh, output, pose);
+    //renderer.renderMesh(mesh, output, pose);
     Projection maps = renderer.projectMesh2(mesh, pose, output, -1, false);
     cv::Mat1b& mask = maps.mask;
-    cv::Rect roi =  maps.roi;
+//    cv::Rect roi =  maps.roi;
     for (int row = 0; row < output.rows; ++row)
     {
         for (int column = 0; column < output.cols; ++column)
@@ -145,15 +140,16 @@ void DataIO::writePng(cv::Mat3b frame, int frame_number)
                 float blue = frame(row, column)[0] / 2;
                 float green = frame(row, column)[1] / 2;
                 float red = frame(row, column)[2] / 2;
-                //output(row, column) = cv::Vec3b(blue, green + 128, red);
+                output(row, column) = cv::Vec3b(blue, green + 128, red);
                 cv::Vec3b abracadabra = frame(row, column);
             }
         }
     }
     std::string frame_name = std::to_string(frame_number);
     frame_name = std::string(4 - frame_name.length(), '0') + frame_name;
-
-    cv::imwrite(directory_name + "/output_frames/" + frame_name + ".png", output);
+    cv::Mat3b flipped_output;
+    cv::flip(output, flipped_output, 0);
+    cv::imwrite(directory_name + "/output_frames/" + frame_name + ".png", flipped_output);
 }
 
 void DataIO::writePlots(const cv::Mat3b &frame, int frame_number, const glm::mat4 &pose)

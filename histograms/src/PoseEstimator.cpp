@@ -28,7 +28,7 @@ namespace histograms
                                  static_cast<float>(object_renderer.getWidth());
 
         int histogram_radius = std::ceil(static_cast<float>(object.getHistogramRadius()) * frame_size_scale);
-        projection = renderer->projectMesh(mesh, pose, frame, histogram_radius);
+        projection = renderer->projectMesh2(mesh, pose, frame, histogram_radius);
 
         cv::Mat1f& signed_distance = projection.signed_distance;
         cv::Size projection_size = projection.getSize();
