@@ -21,8 +21,6 @@ class Feature3DInfoList
     lkt::Features featureDetector;
 
     lkt::FeatureInfoList getFeatureInfoList();
-    std::vector<glm::vec3> getObjectPosVector();
-    std::vector<glm::vec2> getImagePtsVector();
 
     static bool lkFailed(Feature3DInfo& feat_3d_info);
 
@@ -54,6 +52,9 @@ public:
 
     void filterLKSuccess();
 
+    std::vector<glm::vec3> getObjectPosVector();
+    std::vector<glm::vec2> getImagePtsVector();
+
     glm::mat4 solveEPnPRansac(
         const glm::mat4 &prev_model, 
         const glm::mat4 &view, 
@@ -70,6 +71,8 @@ public:
     void filterOutliers(const glm::mat4 &mvp, float maxInlierError);
 
     void addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &mesh, const glm::mat4 &model, const glm::mat4 &projection);
+
+    int getFeatureCount() const;
 
     void drawFeatures(cv::Mat3b &frame, const glm::mat4 &mvp);
 

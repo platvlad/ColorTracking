@@ -11,6 +11,7 @@
 #include <PoseEstimator.h>
 #include <GroundTruthPoseGetter.h>
 #include <SLSQPPoseGetter.h>
+#include <SlsqpLktPoseGetter.h>
 #include <opencv2/calib3d.hpp>
 #include <GaussNewtonPoseGetter.h>
 #include <NewtonPoseGetter.h>
@@ -166,6 +167,12 @@ void runOptimization(const std::string &directory_name, const std::string &metho
     cv::VideoCapture& videoCapture = data.videoCapture;
     boost::filesystem::path& gt_path = data.ground_truth_path;
     glm::mat4 pose = data.getPose(1);
+    glm::mat4 prev_pose = pose;
+    int frame_number = 1;
+    cv::Mat3b frame;
+    videoCapture >> frame;
+    cv::Mat3b flipped_frame;
+    cv::flip(frame, flipped_frame, 0);
     PoseGetter* poseGetter = nullptr;
     if (method == "newton")
     {
@@ -179,19 +186,18 @@ void runOptimization(const std::string &directory_name, const std::string &metho
     {
         poseGetter = new GroundTruthPoseGetter(data);
     }
-    glm::mat4 prev_pose = pose;
-    int frame_number = 1;
-    cv::Mat3b frame;
-    videoCapture >> frame;
-    cv::Mat3b flipped_frame;
-    cv::flip(frame, flipped_frame, 0);
+    else if (method == "slsqp_lkt")
+    {
+        poseGetter = new SlsqpLktPoseGetter(&object3D, pose, flipped_frame);
+    }
+    
     PoseEstimator estimator;
     const Renderer& renderer = object3D.getRenderer();
     const glm::mat4& camera_matrix = renderer.getCameraMatrix();
     FeatureTracker f_tracker(object3D.getMesh(), pose, camera_matrix,  frame.size());
     while (true)
     {
-        //std::cout << "Frame " << frame_number << std::endl;
+        std::cout << "Frame " << frame_number << std::endl;
         //pose = f_tracker.handleFrame(frame);
         
         object3D.updateHistograms(flipped_frame, pose);
@@ -220,7 +226,7 @@ void runOptimization(const std::string &directory_name, const std::string &metho
                 poseGetter->getPose(flipped_frame, 0);
             }
         }
-        else
+        else if (method != "slsqp_lkt")
         {
             cv::Mat downsampled2;
             cv::Mat downsampled4;
@@ -260,6 +266,6 @@ int main()
     //GLuint VAO;
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
-    runOptimization("data/ho_fm_f", "slsqp");
+    runOptimization("data/ir_ir_5_r", "slsqp_lkt");
     return 0;
 }

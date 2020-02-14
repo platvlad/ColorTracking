@@ -283,6 +283,11 @@ void drawLine(cv::Mat3b& frame, cv::Point red_cross, cv::Point blue_point)
     frame(blue_point.y, blue_point.x) = cv::Vec3b(255, 0, 0);
 }
 
+int Feature3DInfoList::getFeatureCount() const
+{
+    return featInfos.size();
+}
+
 
 //filpped frame
 void Feature3DInfoList::drawFeatures(cv::Mat3b &frame, const glm::mat4 &mvp)

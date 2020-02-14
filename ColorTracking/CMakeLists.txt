@@ -64,6 +64,7 @@ add_executable(ColorTracking
                include/test_runner/io.hpp src/test_runner/io.cpp
                include/utils/OptProcessor.hpp src/utils/OptProcessor.cpp 
                include/SLSQPPoseGetter.h src/SLSQPPoseGetter.cpp 
+               include/SlsqpLktPoseGetter.h src/SlsqpLktPoseGetter.cpp 
                include/PoseGetter.h 
                src/GradientEstimator.cpp include/GradientEstimator.h 
                src/GaussNewtonPoseGetter.cpp include/GaussNewtonPoseGetter.h 
