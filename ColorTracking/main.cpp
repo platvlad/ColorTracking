@@ -55,7 +55,49 @@ glm::mat4 get_diff_matr(const glm::mat4& prev, const glm::mat4& curr)
     return curr * prev_inv;
 }
 
-void plotEnergy(const Object3d& object3d, const cv::Mat3b& frame, const glm::mat4& pose, int frame_number)
+void plotColorRotation(
+    const Object3d &object3d, 
+    const cv::Mat3b &frame,
+    const glm::mat4& pose, 
+    const std::vector<float> &angles, 
+    const glm::vec3& axis, 
+    std::string file_name)
+{
+    std::ofstream fout_rot(file_name);
+    fout_rot << "frames:" << std::endl;
+
+    for (int i = 0; i < angles.size(); ++i)
+    {
+        glm::mat4 transform = glm::rotate(pose, angles[i], axis);
+        PoseEstimator estimator;
+        fout_rot << "  - frame: " << i + 1 << std::endl;
+        fout_rot << "    error: " << estimator.estimateEnergy(object3d, frame, transform) << std::endl;
+    }
+    fout_rot.close();
+}
+
+void plotColorTranslation(
+    const Object3d &object3d,
+    const cv::Mat3b &frame,
+    const glm::mat4& pose,
+    const std::vector<float> &offsets,
+    const glm::vec3& axis,
+    std::string file_name)
+{
+    std::ofstream fout_tr(file_name);
+    fout_tr << "frames:" << std::endl;
+    for (int i = 0; i < offsets.size(); ++i)
+    {
+        glm::vec3 offset_vector(axis.x * offsets[i], axis.y * offsets[i], axis.z * offsets[i]);
+        glm::mat4 transform = glm::translate(pose, offset_vector);
+        PoseEstimator estimator;
+        fout_tr << "  - frame: " << i + 1 << std::endl;
+        fout_tr << "    error: " << estimator.estimateEnergy(object3d, frame, transform) << std::endl;
+    }
+    fout_tr.close();
+}
+
+void plotEnergy(const Object3d& object3d, const cv::Mat3b& frame, const glm::mat4& pose, int frame_number, std::string directory_name)
 {
     int num_points = 100;
     float max_rotation = 0.1f;
@@ -63,50 +105,28 @@ void plotEnergy(const Object3d& object3d, const cv::Mat3b& frame, const glm::mat
     float rotation_step = max_rotation / static_cast<float>(num_points);
     float translation_step = max_translation / static_cast<float>(num_points);
     std::string base_file_name =
-            "data/Vorona/plots/" + std::to_string(frame_number);
-    std::ofstream fout_rot_x( base_file_name + "rot_x.yml");
-    std::ofstream fout_rot_y(base_file_name + "rot_y.yml");
-    std::ofstream fout_rot_z(base_file_name + "rot_z.yml");
-    std::ofstream fout_tr_x(base_file_name + "tr_x.yml");
-    std::ofstream fout_tr_y(base_file_name + "tr_y.yml");
-    std::ofstream fout_tr_z(base_file_name + "tr_z.yml");
-    fout_rot_x << "frames:" << std::endl;
-    fout_rot_y << "frames:" << std::endl;
-    fout_rot_z << "frames:" << std::endl;
-    fout_tr_x << "frames:" << std::endl;
-    fout_tr_y << "frames:" << std::endl;
-    fout_tr_z << "frames:   " << std::endl;
+            directory_name + "/plots/" + std::to_string(frame_number);
+    std::string rot_x_file = base_file_name + "rot_x.yml";
+    std::string rot_y_file = base_file_name + "rot_y.yml";
+    std::string rot_z_file = base_file_name + "rot_z.yml";
+    std::string tr_x_file = base_file_name + "tr_x.yml";
+    std::string tr_y_file = base_file_name + "tr_y.yml";
+    std::string tr_z_file = base_file_name + "tr_z.yml";
+    std::vector<float> angles(2 * num_points + 1);
+    std::vector<float> offsets(2 * num_points + 1);
     for (int pt = -num_points; pt <= num_points; ++pt)
     {
-        int pose_number = pt + num_points + 1;
-        float angle = rotation_step * pt;
-        float offset = translation_step * pt;
-        glm::mat4 rot_x = glm::rotate(pose, angle, glm::vec3(1, 0, 0));
-        glm::mat4 rot_y = glm::rotate(pose, angle, glm::vec3(0, 1, 0));
-        glm::mat4 rot_z = glm::rotate(pose, angle, glm::vec3(0, 0, 1));
-        glm::mat4 tr_x = glm::translate(pose, glm::vec3(offset, 0, 0.0f));
-        glm::mat4 tr_y = glm::translate(pose, glm::vec3(0, offset, 0.0f));
-        glm::mat4 tr_z = glm::translate(pose, glm::vec3(0, 0, offset));
-        PoseEstimator estimator;
-        fout_rot_x << "  - frame: " << pose_number << std::endl;
-        fout_rot_x << "    error: " << estimator.estimateEnergy(object3d, frame, rot_x) << std::endl;
-        fout_rot_y << "  - frame: " << pose_number << std::endl;
-        fout_rot_y << "    error: " << estimator.estimateEnergy(object3d, frame, rot_y) << std::endl;
-        fout_rot_z << "  - frame: " << pose_number << std::endl;
-        fout_rot_z << "    error: " << estimator.estimateEnergy(object3d, frame, rot_z) << std::endl;
-        fout_tr_x << "  - frame: " << pose_number << std::endl;
-        fout_tr_x << "    error: " << estimator.estimateEnergy(object3d, frame, tr_x) << std::endl;
-        fout_tr_y << "  - frame: " << pose_number << std::endl;
-        fout_tr_y << "    error: " << estimator.estimateEnergy(object3d, frame, tr_y) << std::endl;
-        fout_tr_z << "  - frame: " << pose_number << std::endl;
-        fout_tr_z << "    error: " << estimator.estimateEnergy(object3d, frame, tr_z) << std::endl;
+        int pose_number = pt + num_points;
+        angles[pose_number] = rotation_step * pt;
+        offsets[pose_number] = translation_step * pt;
     }
-    fout_rot_x.close();
-    fout_rot_y.close();
-    fout_rot_z.close();
-    fout_tr_x.close();
-    fout_tr_y.close();
-    fout_tr_z.close();
+    plotColorRotation(object3d, frame, pose, angles, glm::vec3(1.0, 0.0, 0.0), rot_x_file);
+    plotColorRotation(object3d, frame, pose, angles, glm::vec3(0.0, 1.0, 0.0), rot_y_file);
+    plotColorRotation(object3d, frame, pose, angles, glm::vec3(0.0, 0.0, 1.0), rot_z_file);
+    plotColorTranslation(object3d, frame, pose, offsets, glm::vec3(1.0, 0.0, 0.0), tr_x_file);
+    plotColorTranslation(object3d, frame, pose, offsets, glm::vec3(1.0, 0.0, 0.0), tr_x_file);
+    plotColorTranslation(object3d, frame, pose, offsets, glm::vec3(1.0, 0.0, 0.0), tr_x_file);
+    
 }
 
 void plotRodriguesDirection(const Object3d &object3d,
@@ -226,7 +246,7 @@ void runOptimization(const std::string &directory_name, const std::string &metho
                 poseGetter->getPose(flipped_frame, 0);
             }
         }
-        else if (method != "slsqp_lkt")
+        else if (method != "slsqp_lkt" && method != "slsqp")
         {
             cv::Mat downsampled2;
             cv::Mat downsampled4;
@@ -239,17 +259,25 @@ void runOptimization(const std::string &directory_name, const std::string &metho
             poseGetter->getPose(downsampled2, 1);
         }
 
-        pose = poseGetter->getPose(flipped_frame, 0);
+        bool plot_energy = frame_number == 2;
+        if (plot_energy && method == "slsqp_lkt")
+        {
+            SlsqpLktPoseGetter* slsqp_lkt_pose_getter = reinterpret_cast<SlsqpLktPoseGetter*>(poseGetter);
+            pose = slsqp_lkt_pose_getter->getPose(flipped_frame, 0, directory_name, frame_number);
+        }
+        else
+        {
+            pose = poseGetter->getPose(flipped_frame, 0);
+        }
         std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, flipped_frame, pose, true) << std::endl;
-        bool plot_energy = false;
         if (plot_energy)
         {
-            GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(data);
-            glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
-            std::cout << "real pose error: " << estimator.estimateEnergy(object3D, flipped_frame, /*real_pose*/pose, 10, true) << std::endl;
-            //plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plot/" + std::to_string(frame_number));
-            plotEnergy(object3D, flipped_frame, pose, frame_number);
-            //data.writePlots(frame, frame_number, pose);
+            //GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(data);
+            //glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
+            //std::cout << "real pose error: " << estimator.estimateEnergy(object3D, flipped_frame, /*real_pose*/pose, 10, true) << std::endl;
+            ////plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plot/" + std::to_string(frame_number));
+            //plotEnergy(object3D, flipped_frame, pose, frame_number, directory_name);
+            ////data.writePlots(frame, frame_number, pose);
         }
     }
     data.writePositions();

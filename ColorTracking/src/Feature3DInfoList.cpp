@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include <opencv2/highgui.hpp>
+
 #include "lkt/optflow.hpp"
 #include "lkt/ransac.hpp"
 #include "lkt/inliers.hpp"
