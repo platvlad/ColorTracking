@@ -25,6 +25,11 @@ class SlsqpLktPoseGetter : public PoseGetter
     cv::Mat3b frame;
     lkt::Mesh mesh;
     glm::mat4 projection_matrix;
+    size_t initial_feat_number;
+    float pixels_per_feat;
+    double color_feat_err_koeff;
+    double color_error;
+    double feat_error;
 
     static double energy_function(unsigned n, const double *x, double *grad, void *my_func_data);
 

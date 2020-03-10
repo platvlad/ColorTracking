@@ -43,6 +43,11 @@ std::vector<glm::vec2> Feature3DInfoList::getImagePtsVector()
     return result;
 }
 
+size_t Feature3DInfoList::size() const
+{
+    return featInfos.size();
+}
+
 // get vector of valid indices and keep in featInfos only elements on these indices
 void Feature3DInfoList::filterByIndices(const std::vector<size_t> & indices)
 {
@@ -120,7 +125,10 @@ void Feature3DInfoList::filterOutliers(const glm::mat4 &mvp, float maxInlierErro
 
 void Feature3DInfoList::filterInvisible(const lkt::Mesh &mesh, const glm::mat4 &model, const glm::mat4 &projection, const cv::Size &frame_size)
 {
-    cv::Mat1i faceIds = lkt::getFaceIds(mesh, model, projection, frame_size);
+    int resize_koeff = 4;
+    cv::Size increased_frame_size = frame_size * resize_koeff;
+    glm::mat4 increased_proj = static_cast<float>(resize_koeff) * projection;
+    cv::Mat1i faceIds = lkt::getFaceIds(mesh, model, increased_proj, increased_frame_size);
     size_t num_features = featInfos.size();
     std::vector<glm::vec2> imagePoints(num_features);
     for (int i = 0; i < num_features; ++i)
@@ -129,8 +137,9 @@ void Feature3DInfoList::filterInvisible(const lkt::Mesh &mesh, const glm::mat4 &
         imagePoints[i] = glm::vec2(feature.x, feature.y);
     }
     std::vector< boost::optional<std::pair<glm::vec3, size_t> > > unprojected =
-        lkt::unproject(mesh, model, projection, faceIds, imagePoints);
+        lkt::unproject(mesh, model, increased_proj, faceIds, imagePoints);
     std::set<int> face_set = getFaceSet(faceIds);
+    std::cout << "face set size = " << face_set.size() << std::endl;
     int filtered_feat_counter = 0;
     for (int i = 0; i < num_features; ++i)
     {
@@ -211,7 +220,9 @@ void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &
 
         cv::Mat1i faceIds = lkt::getFaceIds(mesh, model, projection, frame.size());
         std::set<int> face_set = getFaceSet(faceIds);
-        lkt::FeatureInfoList merged_feature_info_list = featureDetector.mergeFeatureLists(old_feature_list, new_features.first, frame.size());
+        std::cout << "face set size = " << face_set.size() << std::endl;
+        lkt::FeatureInfoList merged_feature_info_list = 
+            featureDetector.mergeFeatureLists(old_feature_list, new_features.first, frame.size());
 
         std::vector< boost::optional<std::pair<glm::vec3, size_t> > > unprojected =
             unprojectFeatures(merged_feature_info_list, mesh, model, projection, faceIds);
@@ -249,7 +260,7 @@ void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &
         }
         new_vector.resize(new_vector_counter);
         featInfos = new_vector;
-
+        //filterInvisible(mesh, model, projection, frame.size());
     }
     else {
         cv::Mat1i faceIds = lkt::getFaceIds(mesh, model, projection, frame.size());

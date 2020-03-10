@@ -55,6 +55,8 @@ public:
     std::vector<glm::vec3> getObjectPosVector();
     std::vector<glm::vec2> getImagePtsVector();
 
+    size_t size() const;
+
     glm::mat4 solveEPnPRansac(
         const glm::mat4 &prev_model, 
         const glm::mat4 &view, 

@@ -107,7 +107,7 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
 
     glm::mat4 transform_matrix = applyResultToPose(initial_pose, x);
     histograms::PoseEstimator estimator;
-    float current_value = estimator.estimateEnergy(*object, frame, transform_matrix, histo_part, false);
+    float current_value = estimator.estimateEnergy(*object, frame, transform_matrix, histo_part, false).first;
 
     if (grad)
     {

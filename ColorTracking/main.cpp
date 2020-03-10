@@ -71,7 +71,7 @@ void plotColorRotation(
         glm::mat4 transform = glm::rotate(pose, angles[i], axis);
         PoseEstimator estimator;
         fout_rot << "  - frame: " << i + 1 << std::endl;
-        fout_rot << "    error: " << estimator.estimateEnergy(object3d, frame, transform) << std::endl;
+        fout_rot << "    error: " << estimator.estimateEnergy(object3d, frame, transform).first << std::endl;
     }
     fout_rot.close();
 }
@@ -92,7 +92,7 @@ void plotColorTranslation(
         glm::mat4 transform = glm::translate(pose, offset_vector);
         PoseEstimator estimator;
         fout_tr << "  - frame: " << i + 1 << std::endl;
-        fout_tr << "    error: " << estimator.estimateEnergy(object3d, frame, transform) << std::endl;
+        fout_tr << "    error: " << estimator.estimateEnergy(object3d, frame, transform).first << std::endl;
     }
     fout_tr.close();
 }
@@ -176,7 +176,7 @@ void plotRodriguesDirection(const Object3d &object3d,
         double params[6] = { steps[0] * pt, steps[1] * pt, steps[2] * pt, steps[3] * pt, steps[4] * pt, steps[5] * pt };
         glm::mat4 transform = applyResultToPose(estimated_pose, params);
         fout << "  - frame: " << pose_number << std::endl;
-        fout << "    error: " << estimator.estimateEnergy(object3d, frame, transform) << std::endl;
+        fout << "    error: " << estimator.estimateEnergy(object3d, frame, transform).first << std::endl;
     }
     fout.close();
 }
@@ -259,7 +259,7 @@ void runOptimization(const std::string &directory_name, const std::string &metho
             poseGetter->getPose(downsampled2, 1);
         }
 
-        bool plot_energy = frame_number == 2;
+        bool plot_energy = false;
         if (plot_energy && method == "slsqp_lkt")
         {
             SlsqpLktPoseGetter* slsqp_lkt_pose_getter = reinterpret_cast<SlsqpLktPoseGetter*>(poseGetter);
@@ -269,7 +269,7 @@ void runOptimization(const std::string &directory_name, const std::string &metho
         {
             pose = poseGetter->getPose(flipped_frame, 0);
         }
-        std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, flipped_frame, pose, true) << std::endl;
+        std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, flipped_frame, pose, true).first << std::endl;
         if (plot_energy)
         {
             //GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(data);

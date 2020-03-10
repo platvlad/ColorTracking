@@ -25,7 +25,7 @@ glm::mat4 GaussNewtonPoseGetter::getPose(const cv::Mat &frame, int mode)
         glm::mat4 transform_matrix;
         transform_matrix = applyResultToPose(initial_pose, x);
         int histo_part = 10;
-        float current_value = estimator.estimateEnergy(*object3d, frame, transform_matrix, histo_part, false);
+        float current_value = estimator.estimateEnergy(*object3d, frame, transform_matrix, histo_part, false).first;
         GradientHessianEstimator::getGradient(initial_pose, estimator, grad);
         for (int j = 0; j < 6; ++j)
         {

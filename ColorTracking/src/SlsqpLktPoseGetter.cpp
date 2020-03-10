@@ -37,7 +37,8 @@ SlsqpLktPoseGetter::SlsqpLktPoseGetter(histograms::Object3d* object3d, const glm
     num_iterations(12),
     object(object3d),
     feature_info_list(init_frame.size().area()),
-    frame(init_frame)
+    frame(init_frame),
+    color_feat_err_koeff(1)
 {
     
     cv::cvtColor(init_frame, prev_frame, cv::COLOR_BGR2GRAY);
@@ -45,6 +46,9 @@ SlsqpLktPoseGetter::SlsqpLktPoseGetter(histograms::Object3d* object3d, const glm
     mesh = lkt::Mesh(histo_mesh.getVertices(), histo_mesh.getFaces());
     projection_matrix = object3d->getRenderer().getCameraMatrix();
     feature_info_list.addNewFeatures(prev_frame, mesh, initial_pose, projection_matrix);
+
+    initial_feat_number = feature_info_list.size();
+    pixels_per_feat = 0;
 
     std::vector<double> params = std::vector<double>(6, 0);
     lkt::lm::ParametersFixer fixer(params, std::vector<bool>(params.size(), false));
@@ -93,7 +97,14 @@ double SlsqpLktPoseGetter::energy_function(unsigned n, const double *x, double *
     lkt::lm::VectorViewD err(feat_errors);
     lkt::lm::DenseMatrix jacobian(num_measurements, 6, 0);
     histograms::PoseEstimator estimator;
-    float color_err = estimator.estimateEnergy(*object, frame, transform_matrix, histo_part, false);
+    std::pair<float, size_t> color_error_estimators = estimator.estimateEnergy(*object, frame, transform_matrix, histo_part, false);
+    size_t num_color_estimators = color_error_estimators.second;
+    passed_data->color_error = color_error_estimators.first * num_color_estimators;
+    if (passed_data->pixels_per_feat == 0)
+    {
+        passed_data->pixels_per_feat = static_cast<float>(num_color_estimators) / static_cast<float>(passed_data->initial_feat_number);
+    }
+
     passed_data->pnp_obj->computeView(rodrigue_params, err, jacobian, true);
     
     cv::Mat1d err_vector(num_measurements, 1);
@@ -104,18 +115,38 @@ double SlsqpLktPoseGetter::energy_function(unsigned n, const double *x, double *
     cv::Mat1d err_transposed;
     cv::transpose(err_vector, err_transposed);
     cv::Mat1d err_matr = err_transposed * err_vector;
-    double lk_error = err_matr(0, 0) * 4e-5;
-    double err_value = lk_error + color_err;
-    std::cout << "feat error = " << lk_error << "; color error = " << color_err << std::endl;
+    double koeff = 2e-6 * passed_data->color_feat_err_koeff;
+    std::cout << "koeff = " << koeff << std::endl;
+    passed_data->feat_error = err_matr(0, 0) * passed_data->pixels_per_feat / 2;
+    double lk_error = koeff * passed_data->feat_error;
+    double weighted_num_voters = num_color_estimators + koeff * passed_data->initial_feat_number * num_measurements / 2;
+    double err_value = (lk_error + passed_data->color_error) / weighted_num_voters;
+    //double err_value = lk_error;
     if (grad)
     {
         GradientEstimator::getGradient(initial_pose, estimator, grad);
-        //GradientEstimator::getGradient(glm::mat4(1.0), estimator, grad);
-        lkt::lm::VectorD grad_vec(6);
-        lkt::lm::DenseMatrixTraits::transposeAndMulByVec(jacobian, feat_errors, grad_vec);
+        double color_grad_norm2 = 0;
         for (int i = 0; i < 6; ++i)
         {
-            grad[i] += grad_vec[i] * 5e-7;
+            grad[i] *= num_color_estimators;
+            color_grad_norm2 += grad[i] * grad[i];
+        }
+
+        lkt::lm::VectorD grad_vec(6);
+        lkt::lm::DenseMatrixTraits::transposeAndMulByVec(jacobian, feat_errors, grad_vec);
+        double lkt_grad_norm2 = 0;
+        for (int i = 0; i < 6; ++i)
+        {
+            //grad[i] = grad_vec[i];
+            grad[i] += koeff * grad_vec[i] * passed_data->pixels_per_feat / 2;
+            grad[i] /= weighted_num_voters;
+            lkt_grad_norm2 += (grad_vec[i] * passed_data->pixels_per_feat / 2) * (grad_vec[i] * passed_data->pixels_per_feat / 2);
+        }
+        if (color_grad_norm2 > 0)
+        {
+            std::cout << "feat error = " << passed_data->feat_error << "; color error = " << passed_data->color_error << std::endl;
+            std::cout << "err value = " << err_value << std::endl;
+            std::cout << "grad norm ratio = " << sqrt(lkt_grad_norm2 / color_grad_norm2) << std::endl;
         }
     }
     return err_value;
@@ -134,11 +165,11 @@ double SlsqpLktPoseGetter::energy_function_for_plot(const double *x, std::string
     int num_features = feature_info_list.getFeatureCount();
     int num_measurements = 2 * num_features;
 
-    std::vector<double> feat_errors(num_measurements);
+    /*std::vector<double> feat_errors(num_measurements);
     lkt::lm::VectorViewD err(feat_errors);
     lkt::lm::DenseMatrix jacobian(num_measurements, 6, 0);
     histograms::PoseEstimator estimator;
-    float color_err = estimator.estimateEnergy(*object, frame, transform_matrix, histo_part, false);
+    float color_err = estimator.estimateEnergy(*object, frame, transform_matrix, histo_part, false).first;
     pnp_obj->computeView(rodrigue_params, err, jacobian, true);
 
     cv::Mat1d err_vector(num_measurements, 1);
@@ -150,7 +181,30 @@ double SlsqpLktPoseGetter::energy_function_for_plot(const double *x, std::string
     cv::transpose(err_vector, err_transposed);
     cv::Mat1d err_matr = err_transposed * err_vector;
     double lk_error = err_matr(0, 0) * 4e-5;
-    double err_value = lk_error + color_err;
+    double err_value = lk_error + color_err;*/
+    std::vector<double> feat_errors(num_measurements);
+    lkt::lm::VectorViewD err(feat_errors);
+    lkt::lm::DenseMatrix jacobian(num_measurements, 6, 0);
+    histograms::PoseEstimator estimator;
+    std::pair<float, size_t> color_error_estimators = estimator.estimateEnergy(*object, frame, transform_matrix, histo_part, false);
+    size_t num_color_estimators = color_error_estimators.second;
+    double color_err = color_error_estimators.first * num_color_estimators;
+
+    pnp_obj->computeView(rodrigue_params, err, jacobian, true);
+
+    cv::Mat1d err_vector(num_measurements, 1);
+    for (int i = 0; i < num_measurements; ++i)
+    {
+        err_vector(i, 0) = err[i];
+    }
+    cv::Mat1d err_transposed;
+    cv::transpose(err_vector, err_transposed);
+    cv::Mat1d err_matr = err_transposed * err_vector;
+    double koeff = 4e-6;
+    double lk_error = err_matr(0, 0) * pixels_per_feat / 2;
+    double lk_error_koeff = koeff * lk_error;
+    double weighted_num_voters = num_color_estimators + koeff * initial_feat_number * num_measurements / 2;
+    double err_value = (lk_error_koeff + color_err) / weighted_num_voters;
     if (plot_type == "mixed")
     {
         return err_value;
@@ -226,6 +280,7 @@ glm::mat4 SlsqpLktPoseGetter::getPose(const cv::Mat& new_frame, int mode, std::s
         feature_info_list.filterOutliers(mvp, maxInlierError);
 
         feature_info_list.addNewFeatures(gray_frame, mesh, initial_pose, projection_matrix);
+        color_feat_err_koeff = color_error / feat_error;
         return initial_pose;
     }
     return glm::mat4();

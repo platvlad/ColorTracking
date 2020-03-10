@@ -208,7 +208,7 @@ void DataIO::writePlots(const cv::Mat3b &frame, int frame_number, const glm::mat
         for (int i = 0; i < 6; ++i)
         {
             *output_files[i] << "  - frame: " << pose_number << std::endl;
-            *output_files[i] << "    error: " << estimator.estimateEnergy(object3D, frame, transforms[i]) << std::endl;
+            *output_files[i] << "    error: " << estimator.estimateEnergy(object3D, frame, transforms[i]).first << std::endl;
         }
 
     }

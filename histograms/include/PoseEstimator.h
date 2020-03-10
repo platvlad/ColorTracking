@@ -23,7 +23,7 @@ namespace histograms
 
         PoseEstimator();
 
-        float estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, int histo_part = 1, bool debug_info = false);
+        std::pair<float, size_t> estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, int histo_part = 1, bool debug_info = false);
 
         const cv::Mat1f& getDerivativeConstPart();
 

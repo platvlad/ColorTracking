@@ -14,7 +14,7 @@
 
 namespace histograms
 {
-    float PoseEstimator::estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, int histo_part, bool debug_info)
+    std::pair<float, size_t> PoseEstimator::estimateEnergy(const Object3d &object, const cv::Mat3b &frame, const glm::mat4 &pose, int histo_part, bool debug_info)
     {
         object_pose = pose;
         const Mesh& mesh = object.getMesh();
@@ -128,9 +128,9 @@ namespace histograms
 
         if (num_error_estimators)
         {
-            return error_sum / static_cast<float>(num_error_estimators);
+            return std::pair<float, size_t>(error_sum / static_cast<float>(num_error_estimators), num_error_estimators);
         }
-        return std::numeric_limits<float>::max();
+        return std::pair<float, size_t>(std::numeric_limits<float>::max(), 0);
     }
 
     double PoseEstimator::getDirac(int row, int col) const

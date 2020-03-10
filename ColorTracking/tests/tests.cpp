@@ -233,13 +233,13 @@ void Tests::testEvaluateEnergy()
     cv::Mat blue_image = cv::imread("/Users/vladislav.platonov/repo/RBOT2/RBOT/data/primitive/rgb/0002.png");
     histograms::PoseEstimator estimator;
     object3D.updateHistograms(blue_image, pose);
-    float err = estimator.estimateEnergy(object3D, blue_image, pose);
+    float err = estimator.estimateEnergy(object3D, blue_image, pose).first;
     std::cout << err << std::endl;
     glm::mat4 translated = glm::translate(pose, glm::vec3(0, 0, 1));
     glm::mat4 rotated = glm::rotate(pose, 0.5f, glm::vec3(0, 1, 0));
-    float err2 = estimator.estimateEnergy(object3D, blue_image, translated);
+    float err2 = estimator.estimateEnergy(object3D, blue_image, translated).first;
     std::cout << err2 << std::endl;
-    float err3 = estimator.estimateEnergy(object3D, blue_image, rotated);
+    float err3 = estimator.estimateEnergy(object3D, blue_image, rotated).first;
     std::cout << err3 << std::endl;
     if (err < 0.05 && err < err2 && err < err3)
     {
@@ -275,12 +275,12 @@ void Tests::testEvaluateEnergyHouse()
 
     histograms::PoseEstimator estimator;
     object3D.updateHistograms(first_image, pose);
-    float energy = estimator.estimateEnergy(object3D, first_image, pose);
+    float energy = estimator.estimateEnergy(object3D, first_image, pose).first;
     std::cout << "energy = " << energy << std::endl;
     glm::mat4 translated = glm::translate(pose, glm::vec3(0, 0, 0.1));
-    float energy_translated = estimator.estimateEnergy(object3D, first_image, translated);
+    float energy_translated = estimator.estimateEnergy(object3D, first_image, translated).first;
     std::cout << "energy translated = " << energy_translated << std::endl;
     glm::mat4 rotated = glm::rotate(pose, 1.0f, glm::vec3(0, 1, 0));
-    float energy_rotated = estimator.estimateEnergy(object3D, first_image, rotated);
+    float energy_rotated = estimator.estimateEnergy(object3D, first_image, rotated).first;
     std::cout << "energy rotated = " << energy_rotated << std::endl;
 }

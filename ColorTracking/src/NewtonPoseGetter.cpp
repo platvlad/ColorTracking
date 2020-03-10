@@ -30,7 +30,7 @@ glm::mat4 NewtonPoseGetter::getPose(const cv::Mat &frame, int mode)
             params[j] = 0;
         }
         histograms::PoseEstimator estimator;
-        float current_value = estimator.estimateEnergy(*object3d, frame, transform_matrix, histo_part, false);
+        float current_value = estimator.estimateEnergy(*object3d, frame, transform_matrix, histo_part, false).first;
         if (current_value < best_value)
         {
             best_value = current_value;
