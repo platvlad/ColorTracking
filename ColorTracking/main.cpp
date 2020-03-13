@@ -181,6 +181,20 @@ void plotRodriguesDirection(const Object3d &object3d,
     fout.close();
 }
 
+void process_frame(const cv::Mat3b &input, cv::Mat3b &output)
+{
+    if (!input.empty())
+    {
+        cv::Mat3b flipped_frame;
+        cv::flip(input, flipped_frame, 0);
+        cv::cvtColor(flipped_frame, output, CV_BGR2HSV);
+        std::vector<cv::Mat1b> hsv_channels;
+        cv::split(output, hsv_channels);
+        cv::equalizeHist(hsv_channels[2], hsv_channels[2]);
+        cv::merge(hsv_channels, output);
+    }
+}
+
 void runOptimization(const std::string &directory_name, const std::string &method) {
     DataIO data = DataIO(directory_name);
     Object3d& object3D = data.object3D;
@@ -191,8 +205,8 @@ void runOptimization(const std::string &directory_name, const std::string &metho
     int frame_number = 1;
     cv::Mat3b frame;
     videoCapture >> frame;
-    cv::Mat3b flipped_frame;
-    cv::flip(frame, flipped_frame, 0);
+    cv::Mat3b processed_frame;
+    process_frame(frame, processed_frame);
     PoseGetter* poseGetter = nullptr;
     if (method == "newton")
     {
@@ -208,7 +222,7 @@ void runOptimization(const std::string &directory_name, const std::string &metho
     }
     else if (method == "slsqp_lkt")
     {
-        poseGetter = new SlsqpLktPoseGetter(&object3D, pose, flipped_frame);
+        poseGetter = new SlsqpLktPoseGetter(&object3D, pose, processed_frame);
     }
     
     PoseEstimator estimator;
@@ -220,9 +234,11 @@ void runOptimization(const std::string &directory_name, const std::string &metho
         std::cout << "Frame " << frame_number << std::endl;
         //pose = f_tracker.handleFrame(frame);
         
-        object3D.updateHistograms(flipped_frame, pose);
+        object3D.updateHistograms(processed_frame, pose);
         data.estimated_poses[frame_number] = pose;
-        data.writePng(flipped_frame, frame_number);
+        cv::Mat3b equalized_bgr;
+        cv::cvtColor(processed_frame, equalized_bgr, CV_HSV2BGR);
+        data.writePng(equalized_bgr, frame_number);
         
         if (frame_number > 1)
         {
@@ -233,9 +249,9 @@ void runOptimization(const std::string &directory_name, const std::string &metho
         }
 
         videoCapture >> frame;
-        cv::flip(frame, flipped_frame, 0);
+        process_frame(frame, processed_frame);
         ++frame_number;
-        if (flipped_frame.empty())
+        if (frame.empty())
         {
             break;
         }
@@ -243,7 +259,7 @@ void runOptimization(const std::string &directory_name, const std::string &metho
         {
             if (frame_number == 2)
             {
-                poseGetter->getPose(flipped_frame, 0);
+                poseGetter->getPose(processed_frame, 0);
             }
         }
         else if (method != "slsqp_lkt" && method != "slsqp")
@@ -251,7 +267,7 @@ void runOptimization(const std::string &directory_name, const std::string &metho
             cv::Mat downsampled2;
             cv::Mat downsampled4;
             cv::Mat downsampled8;
-            cv::pyrDown(flipped_frame, downsampled2);
+            cv::pyrDown(processed_frame, downsampled2);
             cv::pyrDown(downsampled2, downsampled4);
             cv::pyrDown(downsampled4, downsampled8);
             poseGetter->getPose(downsampled8, 3);
@@ -263,20 +279,21 @@ void runOptimization(const std::string &directory_name, const std::string &metho
         if (plot_energy && method == "slsqp_lkt")
         {
             SlsqpLktPoseGetter* slsqp_lkt_pose_getter = reinterpret_cast<SlsqpLktPoseGetter*>(poseGetter);
-            pose = slsqp_lkt_pose_getter->getPose(flipped_frame, 0, directory_name, frame_number);
+            pose = slsqp_lkt_pose_getter->getPose(processed_frame, 0, directory_name, frame_number);
         }
         else
         {
-            pose = poseGetter->getPose(flipped_frame, 0);
+            pose = poseGetter->getPose(processed_frame, 0);
         }
-        std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, flipped_frame, pose, true).first << std::endl;
+        std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, processed_frame, pose, true).first << std::endl;
         if (plot_energy)
         {
-            //GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(data);
-            //glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
-            //std::cout << "real pose error: " << estimator.estimateEnergy(object3D, flipped_frame, /*real_pose*/pose, 10, true) << std::endl;
+            GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(data);
+            glm::mat4 real_pose = ground_truth_pose_getter.getPose(frame_number);
+            std::cout << "real pose error: " << estimator.estimateEnergy(object3D, processed_frame, real_pose/*pose*/, 10, true).first
+                << std::endl;
             ////plotRodriguesDirection(object3D, frame, pose, real_pose, directory_name + "/plot/" + std::to_string(frame_number));
-            //plotEnergy(object3D, flipped_frame, pose, frame_number, directory_name);
+            plotEnergy(object3D, processed_frame, pose, frame_number, directory_name);
             ////data.writePlots(frame, frame_number, pose);
         }
     }
@@ -294,6 +311,6 @@ int main()
     //GLuint VAO;
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
-    runOptimization("data/ir_ir_5_r", "slsqp_lkt");
+    runOptimization("data/ir_ir_5_r", "slsqp");
     return 0;
 }
