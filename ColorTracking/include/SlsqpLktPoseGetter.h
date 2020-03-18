@@ -31,6 +31,10 @@ class SlsqpLktPoseGetter : public PoseGetter
     double color_error;
     double feat_error;
 
+    static std::pair<float, size_t> colorEnergy(const glm::mat4 &transform_matrix, double *grad, SlsqpLktPoseGetter *passed_data);
+
+    static std::pair<float, size_t> featEnergy(const glm::mat4 &transform_matrix, double *grad, SlsqpLktPoseGetter *passed_data);
+
     static double energy_function(unsigned n, const double *x, double *grad, void *my_func_data);
 
     double energy_function_for_plot(const double *x, std::string plot_type = "mixed");

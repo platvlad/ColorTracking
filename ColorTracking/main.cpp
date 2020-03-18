@@ -186,12 +186,12 @@ void process_frame(const cv::Mat3b &input, cv::Mat3b &output)
     if (!input.empty())
     {
         cv::Mat3b flipped_frame;
-        cv::flip(input, flipped_frame, 0);
-        cv::cvtColor(flipped_frame, output, CV_BGR2HSV);
-        std::vector<cv::Mat1b> hsv_channels;
-        cv::split(output, hsv_channels);
-        cv::equalizeHist(hsv_channels[2], hsv_channels[2]);
-        cv::merge(hsv_channels, output);
+        cv::flip(input, output, 0);
+        //cv::cvtColor(flipped_frame, output, CV_BGR2HSV);
+        //std::vector<cv::Mat1b> hsv_channels;
+        //cv::split(output, hsv_channels);
+        //cv::equalizeHist(hsv_channels[2], hsv_channels[2]);
+        //cv::merge(hsv_channels, output);
     }
 }
 
@@ -236,9 +236,9 @@ void runOptimization(const std::string &directory_name, const std::string &metho
         
         object3D.updateHistograms(processed_frame, pose);
         data.estimated_poses[frame_number] = pose;
-        cv::Mat3b equalized_bgr;
-        cv::cvtColor(processed_frame, equalized_bgr, CV_HSV2BGR);
-        data.writePng(equalized_bgr, frame_number);
+        cv::Mat3b flipped_frame;
+        cv::flip(frame, flipped_frame, 0);
+        data.writePng(flipped_frame, frame_number);
         
         if (frame_number > 1)
         {
@@ -311,6 +311,6 @@ int main()
     //GLuint VAO;
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
-    runOptimization("data/ir_ir_5_r", "slsqp");
+    runOptimization("data/ir_ir_5_r", "slsqp_lkt");
     return 0;
 }

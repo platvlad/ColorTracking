@@ -73,40 +73,36 @@ SlsqpLktPoseGetter::SlsqpLktPoseGetter(histograms::Object3d* object3d, const glm
     nlopt_set_maxeval(opt, num_iterations);
 }
 
-double SlsqpLktPoseGetter::energy_function(unsigned n, const double *x, double *grad, void *my_func_data)
+std::pair<float, size_t> SlsqpLktPoseGetter::colorEnergy(const glm::mat4 &transform_matrix, 
+    double *grad, 
+    SlsqpLktPoseGetter *passed_data)
 {
-
-    SlsqpLktPoseGetter* passed_data = reinterpret_cast<SlsqpLktPoseGetter*>(my_func_data);
     histograms::Object3d* object = passed_data->object;
     cv::Mat& frame = passed_data->frame;
-
     int histo_part = 10;
-
+    histograms::PoseEstimator estimator;
+    std::pair<float, size_t> color_error_estimators = estimator.estimateEnergy(*object, frame, transform_matrix, histo_part, false);
     glm::mat4& initial_pose = passed_data->initial_pose;
+    if (grad)
+    {
+        GradientEstimator::getGradient(initial_pose, estimator, grad);
+    }
+    return color_error_estimators;
+}
 
-    //glm::mat4 transform_matrix = applyResultToPose(glm::mat4(1.0), x);
 
-    glm::mat4 transform_matrix = applyResultToPose(initial_pose, x);
-
+//one feature assumed to be one voter
+std::pair<float, size_t> SlsqpLktPoseGetter::featEnergy(const glm::mat4 &transform_matrix, double *grad, SlsqpLktPoseGetter *passed_data)
+{
     std::vector<double> rodrigue_params = rodriguesFromTransform(transform_matrix);
-    
     int num_features = passed_data->feature_info_list.getFeatureCount();
     int num_measurements = 2 * num_features;
-
     std::vector<double> feat_errors(num_measurements);
     lkt::lm::VectorViewD err(feat_errors);
     lkt::lm::DenseMatrix jacobian(num_measurements, 6, 0);
-    histograms::PoseEstimator estimator;
-    std::pair<float, size_t> color_error_estimators = estimator.estimateEnergy(*object, frame, transform_matrix, histo_part, false);
-    size_t num_color_estimators = color_error_estimators.second;
-    passed_data->color_error = color_error_estimators.first * num_color_estimators;
-    if (passed_data->pixels_per_feat == 0)
-    {
-        passed_data->pixels_per_feat = static_cast<float>(num_color_estimators) / static_cast<float>(passed_data->initial_feat_number);
-    }
 
     passed_data->pnp_obj->computeView(rodrigue_params, err, jacobian, true);
-    
+
     cv::Mat1d err_vector(num_measurements, 1);
     for (int i = 0; i < num_measurements; ++i)
     {
@@ -115,40 +111,76 @@ double SlsqpLktPoseGetter::energy_function(unsigned n, const double *x, double *
     cv::Mat1d err_transposed;
     cv::transpose(err_vector, err_transposed);
     cv::Mat1d err_matr = err_transposed * err_vector;
+    float error = err_matr(0, 0) / num_features;
+    if (grad)
+    {
+        lkt::lm::VectorD grad_vec(6);
+        lkt::lm::DenseMatrixTraits::transposeAndMulByVec(jacobian, feat_errors, grad_vec);
+        for (int i = 0; i < 6; ++i)
+        {
+            grad[i] = grad_vec[i] / num_features;
+        }
+    }
+    return std::pair<float, size_t>(error, num_features);
+}
+
+double SlsqpLktPoseGetter::energy_function(unsigned n, const double *x, double *grad, void *my_func_data)
+{
+
+    SlsqpLktPoseGetter* passed_data = reinterpret_cast<SlsqpLktPoseGetter*>(my_func_data);
+    glm::mat4& initial_pose = passed_data->initial_pose;
+    glm::mat4 transform_matrix = applyResultToPose(initial_pose, x);
+
+    std::pair<float, size_t> color_error_num;
+    std::pair<float, size_t> feat_error_num;
+    double color_grad[6] = { 0 };
+    double feat_grad[6] = { 0 };
+    if (grad)
+    {
+        color_error_num = colorEnergy(transform_matrix, color_grad, passed_data);
+        feat_error_num = featEnergy(transform_matrix, feat_grad, passed_data);
+    }
+    else
+    {
+        color_error_num = colorEnergy(transform_matrix, NULL, passed_data);
+        feat_error_num = featEnergy(transform_matrix, NULL, passed_data);
+    }
+    size_t num_color_estimators = color_error_num.second;
+    if (passed_data->pixels_per_feat == 0)
+    {
+        passed_data->pixels_per_feat = static_cast<float>(num_color_estimators) / static_cast<float>(passed_data->initial_feat_number);
+    }
+    
+    float color_error = color_error_num.first;
+    float feat_error = feat_error_num.first;
+    size_t num_feat_estimators = feat_error_num.second;
     double koeff = 2e-6 * passed_data->color_feat_err_koeff;
     std::cout << "koeff = " << koeff << std::endl;
-    passed_data->feat_error = err_matr(0, 0) * passed_data->pixels_per_feat / 2;
+
+    // full errors with virtual voters
+    passed_data->feat_error = feat_error * num_feat_estimators * passed_data->pixels_per_feat / 2;
+    passed_data->color_error = color_error * num_color_estimators;
+
+    // for summing
     double lk_error = koeff * passed_data->feat_error;
-    double weighted_num_voters = num_color_estimators + koeff * passed_data->initial_feat_number * num_measurements / 2;
+    //double lk_error = passed_data->lkt_koeff * passed_data->feat_error;
+
+    double weighted_num_voters = num_color_estimators + koeff * passed_data->initial_feat_number * num_feat_estimators;
     double err_value = (lk_error + passed_data->color_error) / weighted_num_voters;
+    //double err_value = (lk_error + passed_data->color_error) / 2;
     //double err_value = lk_error;
     if (grad)
     {
-        GradientEstimator::getGradient(initial_pose, estimator, grad);
-        double color_grad_norm2 = 0;
         for (int i = 0; i < 6; ++i)
         {
-            grad[i] *= num_color_estimators;
-            color_grad_norm2 += grad[i] * grad[i];
+            grad[i] = color_grad[i] * num_color_estimators;
+            grad[i] += koeff * feat_grad[i] * num_feat_estimators * passed_data->pixels_per_feat / 2;
+            grad[i] /= weighted_num_voters;
         }
 
-        lkt::lm::VectorD grad_vec(6);
-        lkt::lm::DenseMatrixTraits::transposeAndMulByVec(jacobian, feat_errors, grad_vec);
-        double lkt_grad_norm2 = 0;
-        for (int i = 0; i < 6; ++i)
-        {
-            //grad[i] = grad_vec[i];
-            grad[i] += koeff * grad_vec[i] * passed_data->pixels_per_feat / 2;
-            grad[i] /= weighted_num_voters;
-            lkt_grad_norm2 += (grad_vec[i] * passed_data->pixels_per_feat / 2) * (grad_vec[i] * passed_data->pixels_per_feat / 2);
-        }
-        if (color_grad_norm2 > 0)
-        {
-            std::cout << "feat error = " << passed_data->feat_error << "; color error = " << passed_data->color_error << std::endl;
-            std::cout << "err value = " << err_value << std::endl;
-            std::cout << "grad norm ratio = " << sqrt(lkt_grad_norm2 / color_grad_norm2) << std::endl;
-        }
     }
+    std::cout << "feat error = " << passed_data->feat_error << "; color error = " << passed_data->color_error << std::endl;
+    std::cout << "err value = " << err_value << std::endl;
     return err_value;
     
 }
