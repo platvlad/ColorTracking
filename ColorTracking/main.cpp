@@ -232,8 +232,24 @@ void runOptimization(const std::string &directory_name, const std::string &metho
     while (true)
     {
         std::cout << "Frame " << frame_number << std::endl;
-        //pose = f_tracker.handleFrame(frame);
         
+        if (method == "lkt")
+        {
+            pose = f_tracker.handleFrame(processed_frame);
+            data.estimated_poses[frame_number] = pose;
+            cv::Mat3b flipped_frame;
+            cv::flip(frame, flipped_frame, 0);
+            data.writePng(flipped_frame, frame_number);
+            videoCapture >> frame;
+            process_frame(frame, processed_frame);
+            if (frame.empty())
+            {
+                break;
+            }
+            ++frame_number;
+            continue;
+        }
+
         object3D.updateHistograms(processed_frame, pose);
         data.estimated_poses[frame_number] = pose;
         cv::Mat3b flipped_frame;
@@ -311,6 +327,6 @@ int main()
     //GLuint VAO;
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
-    runOptimization("data/ir_ir_5_r", "slsqp_lkt");
+    runOptimization("data/foxes", "lkt");
     return 0;
 }
