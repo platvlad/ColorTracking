@@ -17,19 +17,22 @@ GaussNewtonPoseGetter::GaussNewtonPoseGetter(histograms::Object3d *object3d, con
 
 glm::mat4 GaussNewtonPoseGetter::getPose(const cv::Mat &frame, int mode)
 {
-    histograms::PoseEstimator estimator;
     double x[6] = { 0 };
     double grad[6] = { 0 };
+    double step[6] = { 0 };
     for (int i = 0; i < 6; ++i)
     {
         glm::mat4 transform_matrix;
-        transform_matrix = applyResultToPose(initial_pose, x);
+        //transform_matrix = applyResultToPose(initial_pose, x);
+        initial_pose = applyResultToPose(initial_pose, x);
         int histo_part = 10;
-        float current_value = estimator.estimateEnergy(*object3d, frame, transform_matrix, histo_part, false).first;
-        GradientHessianEstimator::getGradient(initial_pose, estimator, grad);
+        histograms::PoseEstimator estimator;
+        float current_value = estimator.estimateEnergy(*object3d, frame, initial_pose, histo_part, false).first;
+        GradientHessianEstimator::getGradient(initial_pose, estimator, grad, step);
         for (int j = 0; j < 6; ++j)
         {
-            x[j] += 0.01 * grad[j];
+            //x[j] += 0.01 * step[j];
+            x[j] = step[j];
         }
     }
     initial_pose = applyResultToPose(initial_pose, x);

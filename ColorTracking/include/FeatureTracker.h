@@ -27,5 +27,7 @@ public:
         const glm::mat4 &camera_matrix,
         const cv::Size &frame_size);
 
-    glm::mat4 handleFrame(cv::Mat3b &frame);
+    glm::mat4 handleFrame(const cv::Mat3b &frame);
+
+    void setPrevModel(const glm::mat4 &model);
 };

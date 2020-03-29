@@ -212,7 +212,11 @@ void runOptimization(const std::string &directory_name, const std::string &metho
     {
         poseGetter = new NewtonPoseGetter(&object3D, pose);
     }
-    else if (method == "slsqp")
+    else if (method == "gauss_newton")
+    {
+        poseGetter = new GaussNewtonPoseGetter(&object3D, pose);
+    }
+    else if (method == "slsqp" || method == "lkt_init")
     {
         poseGetter = new SLSQPPoseGetter(&object3D, pose);
     }
@@ -225,10 +229,18 @@ void runOptimization(const std::string &directory_name, const std::string &metho
         poseGetter = new SlsqpLktPoseGetter(&object3D, pose, processed_frame);
     }
     
-    PoseEstimator estimator;
+    
     const Renderer& renderer = object3D.getRenderer();
     const glm::mat4& camera_matrix = renderer.getCameraMatrix();
     FeatureTracker f_tracker(object3D.getMesh(), pose, camera_matrix,  frame.size());
+    
+    if (method == "lkt_init")
+    {
+        f_tracker.setPrevModel(pose);
+        pose = f_tracker.handleFrame(processed_frame);
+        poseGetter->setInitialPose(pose);
+    }
+
     while (true)
     {
         std::cout << "Frame " << frame_number << std::endl;
@@ -256,16 +268,22 @@ void runOptimization(const std::string &directory_name, const std::string &metho
         cv::flip(frame, flipped_frame, 0);
         data.writePng(flipped_frame, frame_number);
         
-        if (frame_number > 1)
-        {
-            glm::mat4 diff = get_diff_matr(prev_pose, pose);
-            prev_pose = pose;
-            pose = diff * pose;
-            poseGetter->setInitialPose(pose);
-        }
+        //if (frame_number > 1)
+        //{
+        //    glm::mat4 diff = get_diff_matr(prev_pose, pose);
+        //    prev_pose = pose;
+        //    pose = diff * pose;
+        //    poseGetter->setInitialPose(pose);
+        //}
 
         videoCapture >> frame;
         process_frame(frame, processed_frame);
+        if (method == "lkt_init")
+        {
+            f_tracker.setPrevModel(pose);
+            pose = f_tracker.handleFrame(processed_frame);
+            poseGetter->setInitialPose(pose);
+        }
         ++frame_number;
         if (frame.empty())
         {
@@ -278,7 +296,7 @@ void runOptimization(const std::string &directory_name, const std::string &metho
                 poseGetter->getPose(processed_frame, 0);
             }
         }
-        else if (method != "slsqp_lkt" && method != "slsqp")
+        else if (method != "slsqp_lkt" && method != "slsqp" && method != "lkt_init")
         {
             cv::Mat downsampled2;
             cv::Mat downsampled4;
@@ -290,7 +308,6 @@ void runOptimization(const std::string &directory_name, const std::string &metho
             poseGetter->getPose(downsampled4, 2);
             poseGetter->getPose(downsampled2, 1);
         }
-
         bool plot_energy = false;
         if (plot_energy && method == "slsqp_lkt")
         {
@@ -301,6 +318,8 @@ void runOptimization(const std::string &directory_name, const std::string &metho
         {
             pose = poseGetter->getPose(processed_frame, 0);
         }
+        
+        PoseEstimator estimator;
         std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, processed_frame, pose, true).first << std::endl;
         if (plot_energy)
         {
@@ -327,6 +346,6 @@ int main()
     //GLuint VAO;
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
-    runOptimization("data/foxes", "lkt");
+    runOptimization("data/foxes", "gauss_newton");
     return 0;
 }

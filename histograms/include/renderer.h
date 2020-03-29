@@ -23,7 +23,8 @@ private:
 
     void renderTriangle(Projection& maps, const std::vector<glm::vec4> &vertex_transforms, glm::uvec3& face) const;
 
-    static void renderTriangleWireframe(cv::Mat3b& color_map, glm::vec3& p0, glm::vec3& p1, glm::vec3& p2);
+    void renderTriangleFaceId(cv::Mat1f& depth_map, cv::Rect& roi, cv::Mat1i& face_ids, 
+        int face_num, glm::vec3& p0, glm::vec3& p1, glm::vec3& p2) const;
 
     static void updateROI(cv::Rect& roi, int x, int y);
 

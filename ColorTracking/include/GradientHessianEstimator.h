@@ -10,7 +10,8 @@ class GradientHessianEstimator
 public:
     static void getGradient(const glm::mat4 &initial_pose,
                             histograms::PoseEstimator &estimator,
-                            double* grad);
+                            double* grad,
+                            double* step);
 };
 
 

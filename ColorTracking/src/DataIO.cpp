@@ -127,10 +127,9 @@ void DataIO::writePng(cv::Mat3b frame, int frame_number)
     const Renderer& renderer = object3D.getRenderer();
     const histograms::Mesh& mesh = object3D.getMesh();
     glm::mat4 pose = estimated_poses[frame_number].pose;
-    //renderer.renderMesh(mesh, output, pose);
-    Projection maps = renderer.projectMesh2(mesh, pose, output, -1, false);
+    renderer.renderMesh(mesh, output, pose);
+    /*Projection maps = renderer.projectMesh2(mesh, pose, output, -1, false);
     cv::Mat1b& mask = maps.mask;
-//    cv::Rect roi =  maps.roi;
     for (int row = 0; row < output.rows; ++row)
     {
         for (int column = 0; column < output.cols; ++column)
@@ -144,7 +143,7 @@ void DataIO::writePng(cv::Mat3b frame, int frame_number)
                 cv::Vec3b abracadabra = frame(row, column);
             }
         }
-    }
+    }*/
     std::string frame_name = std::to_string(frame_number);
     frame_name = std::string(4 - frame_name.length(), '0') + frame_name;
     cv::Mat3b flipped_output;

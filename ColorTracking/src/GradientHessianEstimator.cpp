@@ -2,11 +2,12 @@
 #include "GradientHessianEstimator.h"
 
 void
-GradientHessianEstimator::getGradient(const glm::mat4 &initial_pose, histograms::PoseEstimator &estimator, double *grad)
+GradientHessianEstimator::getGradient(const glm::mat4 &initial_pose, histograms::PoseEstimator &estimator, double* grad, double* step)
 {
     for (int i = 0; i < 6; ++i)
     {
         grad[i] = 0.0;
+        step[i] = 0.0;
     }
     const cv::Mat1f& derivative_const_part = estimator.getDerivativeConstPart();
     const cv::Mat1i& num_voters = estimator.getNumVoters();
@@ -34,7 +35,7 @@ GradientHessianEstimator::getGradient(const glm::mat4 &initial_pose, histograms:
 
                 cv::Mat1d non_const_part = cv::Mat1d(dPhi) * on_border_gradient;
 
-                cv::Mat1d jacobian_in_pixel = -derivative_const_part(row, col) * non_const_part;
+                cv::Mat1d jacobian_in_pixel = derivative_const_part(row, col) * non_const_part;
 
                 cv::Mat1d jacobian_in_pixel_transposed = cv::Mat1d::zeros(6, 1);
 
@@ -55,7 +56,7 @@ GradientHessianEstimator::getGradient(const glm::mat4 &initial_pose, histograms:
 
                 for (int i = 0; i < 6; ++i)
                 {
-                    grad[i] -= non_const_part(0, i) * derivative_const_part(row, col);
+                    grad[i] += non_const_part(0, i) * derivative_const_part(row, col);
 
                 }
                 ++non_zero_pixels;
@@ -64,8 +65,12 @@ GradientHessianEstimator::getGradient(const glm::mat4 &initial_pose, histograms:
     }
     cv::Mat1d hessian_inverted = cv::Mat1d::zeros(6, 6);
     cv::invert(hessian, hessian_inverted);
-    cv::Mat1d step = hessian_inverted * jacobian_sum;
-    step = -step;
+    cv::Mat1d step_mat = hessian_inverted * jacobian_sum;
+    step_mat = -step_mat;
+    for (int i = 0; i < 6; ++i)
+    {
+        step[i] = step_mat(i, 0);
+    }
     if (non_zero_pixels > 0)
     {
         for (int i = 0; i < 6; ++i)

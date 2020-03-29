@@ -1,5 +1,6 @@
+#include <set>
+
 #include<opencv2/imgproc.hpp>
-//#include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
 #include <algorithm>
 
@@ -235,33 +236,74 @@ void Renderer::renderTriangle(Projection& maps, const std::vector<glm::vec4> &ve
     }
 }
 
+std::set<int> getFaceSet(cv::Mat1i &face_ids)
+{
+    std::set<int> result;
+    for (int row = 0; row < face_ids.rows; ++row)
+    {
+        for (int col = 0; col < face_ids.cols; ++col)
+        {
+            int face_id = face_ids(row, col);
+            if (face_id >= 0)
+            {
+                result.insert(face_id);
+            }
+        }
+    }
+    return result;
+}
+
 void Renderer::renderMesh(const histograms::Mesh &mesh, cv::Mat3b& frame, const glm::mat4 &pose) const
 {
     const std::vector<glm::uvec3>& faces = mesh.getFaces();
     const std::vector<glm::vec3>& vertices = mesh.getVertices();
+
+    std::vector<glm::vec3> vertex_projections(vertices.size());
+    std::vector<glm::vec4> vertex_transforms(vertices.size());
+    for (size_t i = 0; i < vertices.size(); ++i)
+    {
+        vertex_transforms[i] = transformVertex(vertices[i], pose);
+        vertex_projections[i] = projectTransformedVertex2(vertex_transforms[i]);
+    }
+
+    cv::Size frame_size = frame.size();
+    cv::Mat1f depth_map(frame_size, std::numeric_limits<float>::max());
+    cv::Rect roi;
+    cv::Mat1i face_ids(frame_size, -1);
+
     for (size_t i = 0; i < faces.size(); ++i)
     {
         glm::uvec3 face = faces[i];
-        glm::vec3 v0 = vertices[face[0]];
-        glm::vec3 v1 = vertices[face[1]];
-        glm::vec3 v2 = vertices[face[2]];
-        glm::vec4 tx0 = transformVertex(v0, pose);
-        glm::vec4 tx1 = transformVertex(v1, pose);
-        glm::vec4 tx2 = transformVertex(v2, pose);
+        
+        glm::vec3 p0 = vertex_projections[face[0]];
+        glm::vec3 p1 = vertex_projections[face[1]];
+        glm::vec3 p2 = vertex_projections[face[2]];
+        renderTriangleFaceId(depth_map, roi, face_ids, i, p0, p1, p2);
+    }
+    std::set<int> face_set = getFaceSet(face_ids(roi));
 
-        glm::vec3 p0 = projectTransformedVertex(tx0);
-        glm::vec3 p1 = projectTransformedVertex(tx1);
-        glm::vec3 p2 = projectTransformedVertex(tx2);
+    for (std::set<int>::iterator face_it = face_set.begin(); face_it != face_set.end(); ++face_it)
+    {
+        glm::uvec3 face = faces[*face_it];
+
+        glm::vec3& p0 = vertex_projections[face[0]];
+        glm::vec3& p1 = vertex_projections[face[1]];
+        glm::vec3& p2 = vertex_projections[face[2]];
+        std::vector<cv::Point> img_pts(3);
+        img_pts[0] = cv::Point(p0[0], p0[1]);
+        img_pts[1] = cv::Point(p1[0], p1[1]);
+        img_pts[2] = cv::Point(p2[0], p2[1]);
 
         if (p0 != glm::vec3() && p1 != glm::vec3() && p2 != glm::vec3())
         {
-            renderTriangleWireframe(frame, p0, p1, p2);
+            cv::polylines(frame, img_pts, true, cv::Scalar(0, 127, 0));
         }
-
     }
+    
 }
 
-void Renderer::renderTriangleWireframe(cv::Mat3b& color_map, glm::vec3 &p0, glm::vec3 &p1, glm::vec3 &p2)
+void Renderer::renderTriangleFaceId(cv::Mat1f& depth_map, cv::Rect& roi, cv::Mat1i& face_ids, 
+    int face_num, glm::vec3 &p0, glm::vec3 &p1, glm::vec3 &p2) const
 {
     roundXY(p0);  // inplace
     roundXY(p1);
@@ -283,29 +325,32 @@ void Renderer::renderTriangleWireframe(cv::Mat3b& color_map, glm::vec3 &p0, glm:
 
         float const alpha = i / totalHeight;
         float const beta = (i - (secondHalf ? p1.y - p0.y : 0))
-                           / segmentHeight;
+            / segmentHeight;
 
         glm::vec3 a(p0 + (p2 - p0) * alpha);
         glm::vec3 b(secondHalf ? (p1 + (p2 - p1) * beta)
-                               : (p0 + (p1 - p0) * beta));
+            : (p0 + (p1 - p0) * beta));
         if (a.x > b.x) std::swap(a, b);
 
         int const jMin = static_cast<int>(ceil(a.x));
         int const jMax = static_cast<int>(floor(b.x));
         bool const thinLine = jMin == jMax;
 
-        if (jMin >= 0 && y >= 0
-            && static_cast<size_t>(jMin) < color_map.cols
-            && static_cast<size_t>(y) < color_map.rows)
-        {
-            color_map.at<cv::Vec3b>(y, jMin) = cv::Vec3b(0, 128, 0);  // cv::Mat1i
-        }
+        for (int j = jMin; j <= jMax; ++j) {
+            int const x = j;
+            float const phi = thinLine ? 1.0f : (j - a.x) / (b.x - a.x);
+            glm::vec3 const p(a * 1.0f + (b - a) * phi);
 
-        if (jMax >= 0 && y >= 0
-            && static_cast<size_t>(jMax) < color_map.cols
-            && static_cast<size_t>(y) < color_map.rows)
-        {
-            color_map.at<cv::Vec3b>(y, jMax) = cv::Vec3b(0, 128, 0);
+            if (x < 0 || y < 0
+                || static_cast<size_t>(x) >= width
+                || static_cast<size_t>(y) >= height) {
+                continue;
+            }
+            if (depth_map(y, x) > p.z) {  // cv::Mat1f
+                depth_map(y, x) = p.z;
+                face_ids(y, x) = face_num;
+                updateROI(roi, x, y);
+            }
         }
     }
 }

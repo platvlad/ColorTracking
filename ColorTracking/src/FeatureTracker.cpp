@@ -28,9 +28,8 @@ FeatureTracker::FeatureTracker(const histograms::Mesh &mesh,
 }
 
 //assume input frame is flipped
-glm::mat4 FeatureTracker::handleFrame(cv::Mat3b &frame)
+glm::mat4 FeatureTracker::handleFrame(const cv::Mat3b &frame)
 {
-    std::cout << "Entering handleFrame method" << std::endl;
     cv::Mat1b gray_frame;
     cv::cvtColor(frame, gray_frame, CV_BGR2GRAY);
     if (prev_frame.empty())
@@ -38,8 +37,6 @@ glm::mat4 FeatureTracker::handleFrame(cv::Mat3b &frame)
         feature_info_list.addNewFeatures(gray_frame, mesh, init_model, projection);
         prev_frame = gray_frame;
         prev_model = init_model;
-        std::cout << "Exiting handleFrame method" << std::endl;
-        std::cout << prev_model[0][0] << std::endl;
         return init_model;
     }
     feature_info_list.moveFeaturesBySparseFlow(prev_frame, gray_frame);
@@ -54,10 +51,15 @@ glm::mat4 FeatureTracker::handleFrame(cv::Mat3b &frame)
     feature_info_list.filterOutliers(mvp, maxInlierError);
     feature_info_list.addNewFeatures(gray_frame, mesh, prev_model, projection);
 
-    feature_info_list.drawFeatures(frame, mvp);
-    Feature3DInfoList::drawMask(frame, mesh, prev_model, projection, frame_size);
+    //feature_info_list.drawFeatures(frame, mvp);
+    //Feature3DInfoList::drawMask(frame, mesh, prev_model, projection, frame_size);
 
     prev_frame = gray_frame;
     //cv::flip(flipped_frame, frame, 0);
     return prev_model;
+}
+
+void FeatureTracker::setPrevModel(const glm::mat4 &model)
+{
+    prev_model = model;
 }
