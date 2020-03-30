@@ -166,16 +166,16 @@ double SlsqpLktPoseGetter::energy_function(unsigned n, const double *x, double *
     //double lk_error = passed_data->lkt_koeff * passed_data->feat_error;
 
     double weighted_num_voters = num_color_estimators + koeff * passed_data->initial_feat_number * num_feat_estimators;
-    //double err_value = (lk_error + passed_data->color_error) / weighted_num_voters;
-    double err_value = feat_error * num_feat_estimators;
+    double err_value = (lk_error + passed_data->color_error) / weighted_num_voters;
+    //double err_value = feat_error * num_feat_estimators;
     if (grad)
     {
         for (int i = 0; i < 6; ++i)
         {
-            //grad[i] = color_grad[i] * num_color_estimators;
-            //grad[i] += koeff * feat_grad[i] * num_feat_estimators * passed_data->pixels_per_feat / 2;
-            //grad[i] /= weighted_num_voters;
-           grad[i] = feat_grad[i] * num_feat_estimators;
+            grad[i] = color_grad[i] * num_color_estimators;
+            grad[i] += koeff * feat_grad[i] * num_feat_estimators * passed_data->pixels_per_feat / 2;
+            grad[i] /= weighted_num_voters;
+            //grad[i] = feat_grad[i] * num_feat_estimators;
         }
 
     }

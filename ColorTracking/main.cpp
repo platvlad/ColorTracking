@@ -15,6 +15,12 @@
 #include <opencv2/calib3d.hpp>
 #include <GaussNewtonPoseGetter.h>
 #include <NewtonPoseGetter.h>
+#include "Tracker.h"
+#include "PyramideTracker.h"
+#include "LktInitTracker.h"
+#include "GroundTruthTracker.h"
+#include "SlsqpLktTracker.h"
+#include "LktTracker.h"
 
 #include "DataIO.h"
 #include "tests.h"
@@ -289,7 +295,7 @@ void runOptimization(const std::string &directory_name, const std::string &metho
         {
             break;
         }
-        PoseEstimator estimator;
+        
         if (method == "ground_truth")
         {
             if (frame_number == 2)
@@ -319,7 +325,8 @@ void runOptimization(const std::string &directory_name, const std::string &metho
         {
             pose = poseGetter->getPose(processed_frame, 0);
         }
-        
+
+        PoseEstimator estimator;
         std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, processed_frame, pose, 10).first << std::endl;
         if (plot_energy)
         {
@@ -340,12 +347,51 @@ void runOptimization(const std::string &directory_name, const std::string &metho
     }
 }
 
+void track(const std::string &directory_name, const std::string &method)
+{
+    Tracker* tracker = nullptr;
+    if (method == "newton")
+    {
+        tracker = new PyramideTracker<NewtonPoseGetter>(directory_name);
+    }
+    else if (method == "gauss_newton")
+    {
+        tracker = new PyramideTracker<GaussNewtonPoseGetter>(directory_name);
+    }
+    else if (method == "slsqp")
+    {
+        tracker = new PyramideTracker<SLSQPPoseGetter>(directory_name, 0);
+    }
+    else if (method == "lkt_init")
+    {
+        tracker = new LktInitTracker(directory_name);
+    }
+    else if (method == "ground_truth")
+    {
+        tracker = new GroundTruthTracker(directory_name);
+    }
+    else if (method == "slsqp_lkt")
+    {
+        tracker = new SlsqpLktTracker(directory_name);
+    }
+    else if (method == "lkt")
+    {
+        tracker = new LktTracker(directory_name);
+    }
+    tracker->run();
+    if (tracker != nullptr)
+    {
+        delete tracker;
+    }
+}
+
 int main()
 {
 //    Tests::runTests();
     //GLuint VAO;
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
-    runOptimization("data/ho_fm_f", "gauss_newton");
+    //runOptimization("data/ir_ir_5_r", "lkt");
+    track("data/ir_ir_5_r", "lkt");
     return 0;
 }

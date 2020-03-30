@@ -74,9 +74,13 @@ add_executable(ColorTracking
                include/LevenbergPoseGetter.h src/LevenbergPoseGetter.cpp 
                include/FeatureTracker.h src/FeatureTracker.cpp 
                include/Feature3DInfoList.h src/Feature3DInfoList.cpp 
-               include/GeomUtils.h src/GeomUtils.cpp
+               include/GeomUtils.h src/GeomUtils.cpp 
                include/Tracker.h src/Tracker.cpp
-               include/NewtonTracker.h src/NewtonTracker.cpp
+               include/PyramideTracker.h
+               include/LktInitTracker.h src/LktInitTracker.cpp
+               include/GroundTruthTracker.h src/GroundTruthTracker.cpp
+               include/SlsqpLktTracker.h src/SlsqpLktTracker.cpp
+               include/LktTracker.h src/LktTracker.cpp
               )
               
 set(LINK_LIBRARIES optimized ${OPTIMIZED_LIBRARIES} debug ${DEBUG_LIBRARIES})
