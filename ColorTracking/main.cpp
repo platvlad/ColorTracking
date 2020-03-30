@@ -274,13 +274,13 @@ void runOptimization(const std::string &directory_name, const std::string &metho
         cv::flip(frame, flipped_frame, 0);
         data.writePng(flipped_frame, frame_number);
         
-        //if (frame_number > 1)
-        //{
-        //    glm::mat4 diff = get_diff_matr(prev_pose, pose);
-        //    prev_pose = pose;
-        //    pose = diff * pose;
-        //    poseGetter->setInitialPose(pose);
-        //}
+        if (frame_number > 1)
+        {
+            glm::mat4 diff = get_diff_matr(prev_pose, pose);
+            prev_pose = pose;
+            pose = diff * pose;
+            poseGetter->setInitialPose(pose);
+        }
 
         videoCapture >> frame;
         process_frame(frame, processed_frame);
@@ -391,7 +391,7 @@ int main()
     //GLuint VAO;
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
-    //runOptimization("data/ir_ir_5_r", "lkt");
-    track("data/ir_ir_5_r", "lkt");
+    //runOptimization("data/ir_ir_5_r", "slsqp_lkt");
+    track("data/ir_ir_5_r", "slsqp_lkt");
     return 0;
 }

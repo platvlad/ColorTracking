@@ -22,6 +22,14 @@ void SlsqpLktTracker::run()
         if (frame.empty())
             break;
         ++frame_number;
+
+        if (frame_number > 2)
+        {
+            glm::mat4 optimization_init = extrapolate(prev_pose, pose);
+            pose_getter.setInitialPose(optimization_init);
+        }
+
+        prev_pose = pose;
         bool plot_energy = false;
         if (plot_energy)
         {

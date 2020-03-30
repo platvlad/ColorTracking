@@ -33,9 +33,12 @@ public:
                 break;
             ++frame_number;
 
-            //glm::mat4 optimization_init = extrapolate(prev_pose, pose);
-            glm::mat4 optimization_init = pose;
-            pose_getter.setInitialPose(optimization_init);
+            if (frame_number > 2)
+            {
+                glm::mat4 optimization_init = extrapolate(prev_pose, pose);
+                //glm::mat4 optimization_init = pose;
+                pose_getter.setInitialPose(optimization_init);
+            }
 
             prev_pose = pose;
             pose = getPoseOnPyramide(frame, pose_getter, pyramide_levels);
