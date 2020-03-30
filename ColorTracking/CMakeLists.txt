@@ -58,7 +58,7 @@ add_executable(ColorTracking
                main.cpp 
                include/DataIO.h src/DataIO.cpp 
                include/GroundTruthPoseGetter.h src/GroundTruthPoseGetter.cpp 
-               tests/tests.cpp tests/tests.h 
+               tests/tests.h tests/tests.cpp 
                include/test_runner/argparsing.hpp src/test_runner/argparsing.cpp
                include/test_runner/data.hpp src/test_runner/data.cpp
                include/test_runner/io.hpp src/test_runner/io.cpp
@@ -66,15 +66,17 @@ add_executable(ColorTracking
                include/SLSQPPoseGetter.h src/SLSQPPoseGetter.cpp 
                include/SlsqpLktPoseGetter.h src/SlsqpLktPoseGetter.cpp 
                include/PoseGetter.h 
-               src/GradientEstimator.cpp include/GradientEstimator.h 
-               src/GaussNewtonPoseGetter.cpp include/GaussNewtonPoseGetter.h 
-               src/GradientHessianEstimator.cpp include/GradientHessianEstimator.h 
-               src/NewtonPoseGetter.cpp include/NewtonPoseGetter.h 
-               src/GradientHonestHessianEstimator.cpp include/GradientHonestHessianEstimator.h 
-               src/LevenbergPoseGetter.cpp include/LevenbergPoseGetter.h 
-               src/FeatureTracker.cpp include/FeatureTracker.h
-               src/Feature3DInfoList.cpp include/Feature3DInfoList.h 
+               include/GradientEstimator.h src/GradientEstimator.cpp 
+               include/GaussNewtonPoseGetter.h src/GaussNewtonPoseGetter.cpp 
+               include/GradientHessianEstimator.h src/GradientHessianEstimator.cpp 
+               include/NewtonPoseGetter.h src/NewtonPoseGetter.cpp 
+               include/GradientHonestHessianEstimator.h src/GradientHonestHessianEstimator.cpp 
+               include/LevenbergPoseGetter.h src/LevenbergPoseGetter.cpp 
+               include/FeatureTracker.h src/FeatureTracker.cpp 
+               include/Feature3DInfoList.h src/Feature3DInfoList.cpp 
                include/GeomUtils.h src/GeomUtils.cpp
+               include/Tracker.h src/Tracker.cpp
+               include/NewtonTracker.h src/NewtonTracker.cpp
               )
               
 set(LINK_LIBRARIES optimized ${OPTIMIZED_LIBRARIES} debug ${DEBUG_LIBRARIES})

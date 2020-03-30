@@ -289,6 +289,7 @@ void runOptimization(const std::string &directory_name, const std::string &metho
         {
             break;
         }
+        PoseEstimator estimator;
         if (method == "ground_truth")
         {
             if (frame_number == 2)
@@ -319,8 +320,7 @@ void runOptimization(const std::string &directory_name, const std::string &metho
             pose = poseGetter->getPose(processed_frame, 0);
         }
         
-        PoseEstimator estimator;
-        std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, processed_frame, pose, true).first << std::endl;
+        std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, processed_frame, pose, 10).first << std::endl;
         if (plot_energy)
         {
             GroundTruthPoseGetter ground_truth_pose_getter = GroundTruthPoseGetter(data);
@@ -346,6 +346,6 @@ int main()
     //GLuint VAO;
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
-    runOptimization("data/foxes", "gauss_newton");
+    runOptimization("data/ho_fm_f", "gauss_newton");
     return 0;
 }
