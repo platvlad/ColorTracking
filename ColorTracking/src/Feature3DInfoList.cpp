@@ -75,7 +75,7 @@ void Feature3DInfoList::moveFeaturesBySparseFlow(const cv::Mat1b &prev_frame, co
     filterLKSuccess();
 }
 
-// return true if feature failed to trackby Lucas-Kanade
+// return true if feature failed to track by Lucas-Kanade
 bool Feature3DInfoList::lkFailed(Feature3DInfo& feat_3d_info)
 {
     return !feat_3d_info.feature_info.flowQuality.lukasKanadeSuccess;
@@ -139,7 +139,6 @@ void Feature3DInfoList::filterInvisible(const lkt::Mesh &mesh, const glm::mat4 &
     std::vector< boost::optional<std::pair<glm::vec3, size_t> > > unprojected =
         lkt::unproject(mesh, model, increased_proj, faceIds, imagePoints);
     std::set<int> face_set = getFaceSet(faceIds);
-    std::cout << "face set size = " << face_set.size() << std::endl;
     int filtered_feat_counter = 0;
     for (int i = 0; i < num_features; ++i)
     {
@@ -220,7 +219,6 @@ void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &
 
         cv::Mat1i faceIds = lkt::getFaceIds(mesh, model, projection, frame.size());
         std::set<int> face_set = getFaceSet(faceIds);
-        std::cout << "face set size = " << face_set.size() << std::endl;
         lkt::FeatureInfoList merged_feature_info_list = 
             featureDetector.mergeFeatureLists(old_feature_list, new_features.first, frame.size());
 
@@ -230,10 +228,15 @@ void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &
         std::map<size_t, size_t> old_feat_positions = getIdPositions(featInfos);
         std::vector<Feature3DInfo> new_vector(merged_feature_info_list.size());
         size_t new_vector_counter = 0;
+        glm::mat4 mvp = projection * model;
+        size_t old_pos_counter = 0;
+        size_t new_pos_counter = 0;
+        size_t fresh_counter = 0;
         for (int i = 0; i < merged_feature_info_list.size(); ++i)
         {
             lkt::FeatureInfo& feat = merged_feature_info_list[i];
             std::map<size_t, size_t>::iterator old_pos_iter = old_feat_positions.find(feat.id);
+            
             if (unprojected[i])
             {
                 if (old_pos_iter != old_feat_positions.end())
@@ -243,6 +246,38 @@ void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &
                     if (face_set.count(feat_3d_info.face_id))
                     {
                         new_vector[new_vector_counter] = featInfos[old_pos];
+                        lkt::FeatureInfo& feat_info = feat_3d_info.feature_info;
+                        //alternative object pose
+                        if (feat_3d_info.best_reproj >= 0)
+                        {
+                            
+                            float reprojection_error = lkt::computeReprojectionError2(mvp,
+                                feat_3d_info.object_pos,
+                                glm::vec2(feat_info.x, feat_info.y));
+                            if (reprojection_error < feat_3d_info.best_reproj)
+                                feat_3d_info.best_reproj = reprojection_error;
+                            float alt_reprojection_error = lkt::computeReprojectionError2(mvp,
+                                feat_3d_info.alt_object_pos,
+                                glm::vec2(feat_info.x, feat_info.y));
+                            if (alt_reprojection_error < feat_3d_info.best_reproj)
+                            {
+                                new_vector[new_vector_counter].object_pos = feat_3d_info.alt_object_pos;
+                                new_vector[new_vector_counter].best_reproj = alt_reprojection_error;
+                                ++new_pos_counter;
+                            }
+                            else
+                            {
+                                ++old_pos_counter;
+                            }
+                        }
+                        else
+                        {
+                            new_vector[new_vector_counter].best_reproj = lkt::computeReprojectionError2(mvp,
+                                feat_3d_info.object_pos,
+                                glm::vec2(feat_info.x, feat_info.y));
+                            ++fresh_counter;
+                        }
+                        new_vector[new_vector_counter].alt_object_pos = unprojected[i].get().first;
                         ++new_vector_counter;
                     }
                 }
@@ -251,6 +286,8 @@ void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &
                     Feature3DInfo feat_3d_info;
                     feat_3d_info.feature_info = merged_feature_info_list[i];
                     feat_3d_info.object_pos = unprojected_data.first;
+                    feat_3d_info.alt_object_pos = glm::vec3();
+                    feat_3d_info.best_reproj = -1;
                     feat_3d_info.face_id = unprojected_data.second;
                     new_vector[new_vector_counter] = feat_3d_info;
                     ++new_vector_counter;
@@ -258,6 +295,9 @@ void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &
                 }
             }
         }
+        std::cout << "old pos counter = " << old_pos_counter << std::endl;
+        std::cout << "new pos counter = " << new_pos_counter << std::endl;
+        std::cout << "fresh counter = " << fresh_counter << std::endl;
         new_vector.resize(new_vector_counter);
         featInfos = new_vector;
         //filterInvisible(mesh, model, projection, frame.size());

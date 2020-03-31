@@ -12,6 +12,8 @@ struct Feature3DInfo
 {
     lkt::FeatureInfo feature_info;
     glm::vec3 object_pos;
+    glm::vec3 alt_object_pos;
+    float best_reproj;
     size_t face_id;
 };
 

@@ -44,6 +44,8 @@ glm::mat4 LkPoseGetter::handleFrame(const cv::Mat3b &frame)
     prev_model = feature_info_list.solveEPnPRansac(prev_model, glm::mat4(1.0), projection, 1000, maxInlierError);
     glm::mat4 mvp = projection * prev_model;
     feature_info_list.filterOutliers(mvp, maxInlierError);
+
+    std::cout << "num features = " << feature_info_list.getFeatureCount() << std::endl;
     
     prev_model = feature_info_list.solvePnP(prev_model, glm::mat4(1.0), projection, lkt::lm::buildHuberAndTukeyBundle());
 

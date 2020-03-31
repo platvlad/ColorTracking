@@ -15,7 +15,7 @@ void LktInitTracker::run()
 
     const Renderer& renderer = object3D.getRenderer();
     const glm::mat4& camera_matrix = renderer.getCameraMatrix();
-    FeatureTracker f_tracker(object3D.getMesh(), pose, camera_matrix, frame.size());
+    LkPoseGetter f_tracker(object3D.getMesh(), pose, camera_matrix, frame.size());
     f_tracker.handleFrame(frame);
 
     while (!frame.empty())
@@ -35,6 +35,7 @@ void LktInitTracker::run()
         pose = color_pose_getter.getPose(frame, 0);
         histograms::PoseEstimator estimator;
         std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, frame, pose, 10).first << std::endl;
+        f_tracker.addNewFeatures(pose);
 
         bool plot_energy = false;
         if (plot_energy)
