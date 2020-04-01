@@ -26,7 +26,6 @@
 #include "tests.h"
 
 #include "lkt/Features.hpp"
-#include "FeatureTracker.h"
 
 using namespace histograms;
 
@@ -245,6 +244,6 @@ int main()
     //GLuint VAO;
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
-    track("data/bi_ml_r", "lkt_init");
+    track("data/ir_ir_5_r", "lkt_init");
     return 0;
 }

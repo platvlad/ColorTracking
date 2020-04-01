@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include "SLSQPPoseGetter.h"
-#include "FeatureTracker.h"
+#include "LkPoseGetter.h"
 
 void LktInitTracker::run()
 {
@@ -31,9 +31,10 @@ void LktInitTracker::run()
         ++frame_number;
         glm::mat4 feat_pose = f_tracker.handleFrame(frame);
         color_pose_getter.setInitialPose(feat_pose);
+        histograms::PoseEstimator estimator;
+        std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, frame, feat_pose, 10).first << std::endl;
 
         pose = color_pose_getter.getPose(frame, 0);
-        histograms::PoseEstimator estimator;
         std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, frame, pose, 10).first << std::endl;
         f_tracker.addNewFeatures(pose);
 
