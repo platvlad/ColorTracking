@@ -185,7 +185,7 @@ void Projection::computeHeaviside()
     }
 }
 
-cv::Size Projection::getSize()
+cv::Size Projection::getSize() const
 {
     return cv::Size(width, height);
 }

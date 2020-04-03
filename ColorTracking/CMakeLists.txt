@@ -81,6 +81,9 @@ add_executable(ColorTracking
                include/GroundTruthTracker.h src/GroundTruthTracker.cpp
                include/SlsqpLktTracker.h src/SlsqpLktTracker.cpp
                include/LktTracker.h src/LktTracker.cpp
+               include/DataIO2.h src/DataIO2.cpp 
+               include/GradientEstimator2.h src/GradientEstimator2.cpp 
+               include/Tracker2.h src/Tracker2.cpp
               )
               
 set(LINK_LIBRARIES optimized ${OPTIMIZED_LIBRARIES} debug ${DEBUG_LIBRARIES})

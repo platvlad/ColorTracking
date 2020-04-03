@@ -1,6 +1,7 @@
 #include "SlsqpLktTracker.h"
 
 #include <iostream>
+#include "PoseEstimator.h"
 #include "SlsqpLktPoseGetter.h"
 
 void SlsqpLktTracker::run()

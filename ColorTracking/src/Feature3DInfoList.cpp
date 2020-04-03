@@ -97,7 +97,13 @@ glm::mat4 Feature3DInfoList::solveEPnPRansac(
 {
     std::vector<glm::vec3> pts_3d = getObjectPosVector();
     std::vector<glm::vec2> pts_2d = getImagePtsVector();
-    return lkt::solveEPnPRansac(pts_3d, pts_2d, prev_model, view, projection, iter_count, maxInlierError).get_value_or(prev_model);
+    boost::optional<glm::mat4> epnp_ransac_result = 
+        lkt::solveEPnPRansac(pts_3d, pts_2d, prev_model, view, projection, iter_count, maxInlierError);
+    if (!epnp_ransac_result.has_value())
+    {
+        std::cout << "EPnPRansac failed" << std::endl;
+    }
+    return epnp_ransac_result.get_value_or(prev_model);
 }
 
 glm::mat4 Feature3DInfoList::solvePnP(
@@ -271,13 +277,7 @@ void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &
                                 feat_3d_info.alt_object_pos,
                                 glm::vec2(feat_info.x, feat_info.y));
                             if (alt_reprojection_error < feat_3d_info.best_reproj)
-                            {
-                                std::cout << "feat id = " << old_pos_iter->first << std::endl;
-                                std::cout << "old: (" << feat_3d_info.object_pos[0] << ", " << feat_3d_info.object_pos[1] << ", " << feat_3d_info.object_pos[2] << ")" << std::endl;
-                                std::cout << "new: (" << feat_3d_info.alt_object_pos[0] << ", " << feat_3d_info.alt_object_pos[1] << ", " << feat_3d_info.alt_object_pos[2] << ")" << std::endl;
-                                std::cout << "old reprojection error = " << feat_3d_info.best_reproj << std::endl;
-                                std::cout << "new reprojection error = " << alt_reprojection_error << std::endl;
-                                
+                            {   
                                 feat_3d_info.object_pos = feat_3d_info.alt_object_pos;
                                 feat_3d_info.best_reproj = alt_reprojection_error;
                                 feat_3d_info.face_id = unprojected[i].get().second;

@@ -1,4 +1,4 @@
-#pragma comment(lib, "glew32.lib")
+//#pragma comment(lib, "glew32.lib")
 
 #include <iostream>
 #include <fstream>
@@ -23,6 +23,7 @@
 #include "LktTracker.h"
 
 #include "DataIO.h"
+#include "DataIO2.h"
 #include "tests.h"
 
 #include "lkt/Features.hpp"
@@ -203,22 +204,25 @@ void process_frame(const cv::Mat3b &input, cv::Mat3b &output)
 void track(const std::string &directory_name, const std::string &method)
 {
     Tracker* tracker = nullptr;
-    if (method == "newton")
+    //if (method == "newton")
+    //{
+    //    tracker = new PyramideTracker<NewtonPoseGetter>(directory_name);
+    //}
+    //else if (method == "gauss_newton")
+    //{
+    //    tracker = new PyramideTracker<GaussNewtonPoseGetter>(directory_name);
+    //}
+    if (method == "slsqp")
     {
-        tracker = new PyramideTracker<NewtonPoseGetter>(directory_name);
+        Tracker2* tracker2 = new PyramideTracker<SLSQPPoseGetter>(directory_name, 0);
+        tracker2->run();
+        delete tracker2;
+        return;
     }
-    else if (method == "gauss_newton")
-    {
-        tracker = new PyramideTracker<GaussNewtonPoseGetter>(directory_name);
-    }
-    else if (method == "slsqp")
-    {
-        tracker = new PyramideTracker<SLSQPPoseGetter>(directory_name, 0);
-    }
-    else if (method == "lkt_init")
-    {
-        tracker = new LktInitTracker(directory_name);
-    }
+    //else if (method == "lkt_init")
+    //{
+    //    tracker = new LktInitTracker(directory_name);
+    //}
     else if (method == "ground_truth")
     {
         tracker = new GroundTruthTracker(directory_name);
@@ -244,6 +248,6 @@ int main()
     //GLuint VAO;
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
-    track("data/ir_ir_5_r", "lkt_init");
+    track("data/foxes", "slsqp");
     return 0;
 }

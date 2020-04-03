@@ -21,6 +21,8 @@ class LkPoseGetter
     glm::mat4 prev_model;
     cv::Size frame_size;
 
+    double estimateEnergy(const glm::mat4 &pose);
+
 public:
     LkPoseGetter(const histograms::Mesh &mesh,
         const glm::mat4 &init_pose,

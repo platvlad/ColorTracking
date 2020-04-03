@@ -2,14 +2,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <opencv2/calib3d.hpp>
 #include <iostream>
-#include <GradientEstimator.h>
+#include <GradientEstimator2.h>
 #include "GradientHessianEstimator.h"
 #include "PoseEstimator.h"
 
 
 double SLSQPPoseGetter::previous[6] = { 0 };
 
-SLSQPPoseGetter::SLSQPPoseGetter(histograms::Object3d* object3d, const glm::mat4& initial_pose)
+SLSQPPoseGetter::SLSQPPoseGetter(histograms::Object3d2* object3d, const glm::mat4& initial_pose)
 {
     pass_to_optimization = PassToOptimization();
     pass_to_optimization.object = object3d;
@@ -78,7 +78,7 @@ glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params)
 
 
 
-void plotRodriguesDirection(const histograms::Object3d &object3d,
+void plotRodriguesDirection(const histograms::Object3d2 &object3d,
                             const cv::Mat &frame,
                             const glm::mat4 &estimated_pose,
                             const glm::mat4 &real_pose,
@@ -98,7 +98,7 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
     }
 
     PassToOptimization* passed_data = reinterpret_cast<PassToOptimization*>(my_func_data);
-    histograms::Object3d* object = passed_data->object;
+    histograms::Object3d2* object = passed_data->object;
     cv::Mat& frame = passed_data->frame;
     int histo_part = (passed_data->mode == 0) ? 1 : 10;
     histo_part = 10;
@@ -106,12 +106,11 @@ double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *gra
     glm::mat4& initial_pose = passed_data->initial_pose;
 
     glm::mat4 transform_matrix = applyResultToPose(initial_pose, x);
-    histograms::PoseEstimator estimator;
+    histograms::PoseEstimator2 estimator;
     float current_value = estimator.estimateEnergy(*object, frame, transform_matrix, histo_part, false).first;
-
     if (grad)
     {
-        GradientEstimator::getGradient(initial_pose, estimator, grad);
+        GradientEstimator2::getGradient(initial_pose, estimator, grad);
         //GradientHessianEstimator::getGradient(initial_pose, estimator, grad);
     }
     ++passed_data->iteration_number;

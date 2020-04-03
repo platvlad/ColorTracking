@@ -4,6 +4,7 @@
 #include "nlopt.hpp"
 
 #include "lkt/PnPObjective.hpp"
+#include "Object3d.h"
 
 #include "SLSQPPoseGetter.h"
 #include "PoseGetter.h"

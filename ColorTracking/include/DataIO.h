@@ -32,10 +32,11 @@ public:
 
     int getNumFrames() const;
 
+    static histograms::Mesh getMesh(const boost::filesystem::path& path);
+
 private:
     float mesh_scale_factor;
 
-    static histograms::Mesh getMesh(const boost::filesystem::path& path);
 
     static glm::mat4 getCamera(const boost::filesystem::path& path, int height = 512);
 

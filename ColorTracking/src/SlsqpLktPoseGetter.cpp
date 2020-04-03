@@ -11,6 +11,7 @@
 #include "lkt/inliers.hpp"
 
 #include <GradientEstimator.h>
+#include "PoseEstimator.h"
 
 glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params);
 

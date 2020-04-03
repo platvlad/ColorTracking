@@ -5,14 +5,15 @@
 #include "nlopt.h"
 #include "nlopt.hpp"
 
-#include <PoseEstimator.h>
+#include "Object3d2.h"
+#include <PoseEstimator2.h>
 #include "PoseGetter.h"
 
 struct PassToOptimization
 {
     cv::Mat frame;
     glm::mat4 initial_pose;
-    histograms::Object3d* object;
+    histograms::Object3d2* object;
     float delta_step[6];
     int num_iterations;
     int iteration_number;
@@ -33,7 +34,7 @@ class SLSQPPoseGetter : public PoseGetter
     static double energy_function(unsigned n, const double *x, double *grad, void *my_func_data);
 
 public:
-    SLSQPPoseGetter(histograms::Object3d* object3d, const glm::mat4& initial_pose);
+    SLSQPPoseGetter(histograms::Object3d2* object3d, const glm::mat4& initial_pose);
     glm::mat4 getPose(const cv::Mat& frame, int mode);
     glm::mat4 getPose(const cv::Mat& frame);
     virtual void setInitialPose(const glm::mat4 &pose);

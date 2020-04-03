@@ -47,7 +47,7 @@ public:
 
     void computeHeaviside();
 
-    cv::Size getSize();
+    cv::Size getSize() const;
 };
 
 

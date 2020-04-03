@@ -35,7 +35,10 @@ add_library(histograms
             include/projection.h src/projection.cpp 
             include/mesh.h src/mesh.cpp 
             include/renderer.h src/renderer.cpp 
-            include/MeshRenderer.h src/MeshRenderer.cpp)
+            include/MeshRenderer.h src/MeshRenderer.cpp
+            include/Object3d2.h src/Object3d2.cpp
+            include/histogram2.h src/histogram2.cpp
+            include/PoseEstimator2.h src/PoseEstimator2.cpp)
 
 TARGET_LINK_LIBRARIES(histograms debug ${DEBUG_LIBRARIES})
 TARGET_LINK_LIBRARIES(histograms optimized ${OPTIMIZED_LIBRARIES})
