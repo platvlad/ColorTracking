@@ -1,6 +1,6 @@
-#include "LktTracker.h"
+#include "tracker/LktTracker.h"
 
-#include "LkPoseGetter.h"
+#include "pose_getter/LkPoseGetter.h"
 
 void LktTracker::run()
 {

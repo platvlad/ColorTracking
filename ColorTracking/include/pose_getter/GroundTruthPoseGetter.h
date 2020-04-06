@@ -2,7 +2,7 @@
 #define COLORTRACKING_GROUNDTRUTHPOSEGETTER_H
 #include <glm/mat4x4.hpp>
 #include <boost/filesystem/path.hpp>
-#include "PoseGetter.h"
+#include "pose_getter/PoseGetter.h"
 #include "DataIO.h"
 
 class GroundTruthPoseGetter : public PoseGetter

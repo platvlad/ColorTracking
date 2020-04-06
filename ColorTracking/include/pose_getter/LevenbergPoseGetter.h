@@ -4,7 +4,7 @@
 
 #include <Object3d.h>
 #include <PoseEstimator.h>
-#include "PoseGetter.h"
+#include "pose_getter/PoseGetter.h"
 
 class LevenbergPoseGetter: public PoseGetter
 {

@@ -12,9 +12,9 @@ namespace histograms
                              prob_bg(),
                              visited(false)
     {
-        if (Histogram::window_masks.find(radius) == Histogram::window_masks.end())
+        if (window_masks.find(radius) == window_masks.end())
         {
-            Histogram::window_masks.insert(std::make_pair(radius, CircleWindow(radius).getMask()));
+            window_masks.insert(std::make_pair(radius, CircleWindow(radius).getMask()));
         }
     }
 
@@ -31,8 +31,8 @@ namespace histograms
             {
                 for (int k = 0; k < COLORS_PER_CHANNEL; ++k)
                 {
-                    prob_bg[i][j][k] *= (1 - Histogram::alpha_b);
-                    prob_fg[i][j][k] *= (1 - Histogram::alpha_f);
+                    prob_bg[i][j][k] *= (1 - alpha_b);
+                    prob_fg[i][j][k] *= (1 - alpha_f);
                 }
             }
         }
@@ -55,24 +55,24 @@ namespace histograms
                     if (local_square.heaviside(row_on_local_square, col_on_local_square) > 0.5)
                     {
                         prob_fg[blue][green][red] += visited ?
-                                                     Histogram::alpha_f / num_foreground :
+                                                     alpha_f / num_foreground :
                                                      1 / num_foreground;
                     }
                     else
                     {
                         prob_bg[blue][green][red] += visited ?
-                                                     Histogram::alpha_b / num_background :
+                                                     alpha_b / num_background :
                                                      1 / num_background;
                     }
                 }
                 else
                 {
                     prob_fg[blue][green][red] += visited ?
-                            local_square.heaviside(row_on_local_square, col_on_local_square) * Histogram::alpha_f /
+                            local_square.heaviside(row_on_local_square, col_on_local_square) * alpha_f /
                             num_foreground :
                             local_square.heaviside(row_on_local_square, col_on_local_square) / num_foreground;
                     prob_bg[blue][green][red] += visited ?
-                            (1 - local_square.heaviside(row_on_local_square, col_on_local_square)) * Histogram::alpha_b /
+                            (1 - local_square.heaviside(row_on_local_square, col_on_local_square)) * alpha_b /
                             num_background :
                             (1 - local_square.heaviside(row_on_local_square, col_on_local_square)) / num_background;
                 }

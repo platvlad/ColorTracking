@@ -1,4 +1,4 @@
-#include <GroundTruthPoseGetter.h>
+#include <pose_getter/GroundTruthPoseGetter.h>
 #include <DataIO.h>
 
 GroundTruthPoseGetter::GroundTruthPoseGetter(const DataIO &dataIO) : current_frame(1),

@@ -1,8 +1,8 @@
-#include "LktInitTracker.h"
+#include "tracker/LktInitTracker.h"
 
 #include <iostream>
-#include "SLSQPPoseGetter.h"
-#include "LkPoseGetter.h"
+#include "pose_getter/SLSQPPoseGetter.h"
+#include "pose_getter/LkPoseGetter.h"
 
 void LktInitTracker::run()
 {

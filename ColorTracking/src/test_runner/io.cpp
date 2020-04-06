@@ -17,14 +17,6 @@ namespace testrunner
 
 namespace
 {
-    void parseNode(boost::filesystem::path const &configPath,
-                   YAML::Node &node)
-    {
-        boost::filesystem::ifstream configStream(configPath);
-        YAML::Parser parser(configStream);
-        parser.GetNextDocument(node);
-    }
-
 
     template<class T>
     T readMat(YAML::Node const &node)
@@ -35,7 +27,7 @@ namespace
             YAML::Node const &row = node[rowIdx];
             int const colCount = static_cast<int>(row.size());
             for (int colIdx = 0; colIdx < colCount; ++colIdx) {
-                row[colIdx] >> mat[colIdx][rowIdx];
+                mat[colIdx][rowIdx] = row[colIdx].as<T::value_type>();
             }
         }
         return mat;
@@ -48,15 +40,14 @@ namespace
         T vec;
         int const nodeSize = static_cast<int>(node.size());
         for (int i = 0; i < nodeSize; ++i) {
-            node[i] >> vec[i];
+            vec[i] = node[i].as<T::value_type>();
         }
         return vec;
     }
 
     void operator >>(YAML::Node const &node, Fixation::State &state)
     {
-        std::string str;
-        node >> str;
+        std::string str = node.as<std::string>();
         if (str == "free") {
             state = Fixation::FREE;
         } else if (str == "fixed") {
@@ -84,12 +75,32 @@ namespace
     }
 
     template<class T>
+    T readElem(YAML::Node const &node)
+    {
+        return node.as<T>();
+    }
+
+    template<>
+    glm::mat4 readElem<glm::mat4>(YAML::Node const &node)
+    {
+        return readPosition(node);
+    }
+
+    template<>
+    Fixation::State readElem<Fixation::State>(YAML::Node const &node)
+    {
+        Fixation::State state;
+        node >> state;
+        return state;
+    }
+
+    template<class T>
     std::vector<T> readVector(YAML::Node const &node)
     {
         std::vector<T> vec(node.size());
         int const nodeSize = static_cast<int>(node.size());
         for (int i = 0; i < nodeSize; ++i) {
-            node[i] >> vec[i];
+            vec[i] = readElem<T>(node[i]);
         }
         return vec;
     }
@@ -112,20 +123,18 @@ namespace
     {
         std::pair<int, Pose> frameAndPose;
 
-        node["frame"] >> frameAndPose.first;
+        frameAndPose.first = node["frame"].as<int>();
 
         frameAndPose.second.pose = readPosition(node["pose"]);
 
-        YAML::Node const *bonesNode = node.FindValue("bones");
-        if (bonesNode) {
+        if (YAML::Node const bonesNode = node["bones"]) {
             frameAndPose.second.bones =
-                    readVector<glm::mat4>(*bonesNode);
+                    readVector<glm::mat4>(bonesNode);
         }
 
-        YAML::Node const *facemodsNode = node.FindValue("facemods");
-        if (facemodsNode) {
+        if (YAML::Node const facemodsNode = node["facemods"]) {
             frameAndPose.second.facemods =
-                    readVector<double>(*facemodsNode);
+                    readVector<double>(facemodsNode);
         }
 
         return frameAndPose;
@@ -135,8 +144,8 @@ namespace
 
 glm::mat4 readCamera(boost::filesystem::path const &configPath)
 {
-    YAML::Node docNode;
-    parseNode(configPath, docNode);
+    boost::filesystem::ifstream configStream(configPath);
+    YAML::Node docNode = YAML::Load(configStream);
     YAML::Node const &matNode = docNode["matrix"];
     return readMat<glm::mat4>(matNode);
 }
@@ -144,8 +153,8 @@ glm::mat4 readCamera(boost::filesystem::path const &configPath)
 
 std::map<int, Pose> readPoses(boost::filesystem::path const &configPath)
 {
-    YAML::Node docNode;
-    parseNode(configPath, docNode);
+    boost::filesystem::ifstream configStream(configPath);
+    YAML::Node docNode = YAML::Load(configStream);
 
     YAML::Node const &framesNode = docNode["frames"];
     std::map<int, Pose> allPoses;
@@ -160,22 +169,20 @@ std::map<int, Pose> readPoses(boost::filesystem::path const &configPath)
 
 Fixations readFixations(boost::filesystem::path const &configPath)
 {
-    YAML::Node docNode;
-    parseNode(configPath, docNode);
+    boost::filesystem::ifstream configStream(configPath);
+    YAML::Node docNode = YAML::Load(configStream);
 
     Fixations fixations;
 
-    YAML::Node const *poseNode = docNode.FindValue("pose");
-    if (poseNode) {
-        fixations.pose = readFixation(*poseNode);
+    if (YAML::Node const poseNode = docNode["pose"]) {
+        fixations.pose = readFixation(poseNode);
     }
 
-    YAML::Node const *bonesNode = docNode.FindValue("bones");
-    if (bonesNode) {
-        int const nodeSize = static_cast<int>(bonesNode->size());
+    if (YAML::Node const bonesNode = docNode["bones"]) {
+        int const nodeSize = static_cast<int>(bonesNode.size());
         fixations.bones.reserve(nodeSize);
         for (int i = 0; i < nodeSize; ++i) {
-            fixations.bones.push_back(readFixation((*bonesNode)[i]));
+            fixations.bones.push_back(readFixation(bonesNode[i]));
         }
     }
 
@@ -185,11 +192,10 @@ Fixations readFixations(boost::filesystem::path const &configPath)
 
 float readDiameter(boost::filesystem::path const &path)
 {
-    YAML::Node docNode;
-    parseNode(path, docNode);
+    boost::filesystem::ifstream stream(path);
+    YAML::Node docNode = YAML::Load(stream);
 
-    float diameter;
-    docNode["diameter"] >> diameter;
+    float diameter = docNode["diameter"].as<float>();
 
     return diameter;
 }

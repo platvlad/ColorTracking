@@ -1,9 +1,9 @@
-#include "SLSQPPoseGetter.h"
+#include "pose_getter/SLSQPPoseGetter.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <opencv2/calib3d.hpp>
 #include <iostream>
-#include <GradientEstimator.h>
-#include "GradientHessianEstimator.h"
+#include <estimator/GradientEstimator.h>
+#include "estimator/GradientHessianEstimator.h"
 #include "PoseEstimator.h"
 
 

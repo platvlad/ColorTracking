@@ -1,7 +1,7 @@
 #pragma once
 
 #include "DataIO.h"
-#include "PoseGetter.h"
+#include "pose_getter/PoseGetter.h"
 
 void plotEnergy(const histograms::Object3d& object3d, const cv::Mat3b& frame, 
     const glm::mat4& pose, int frame_number, std::string directory_name);

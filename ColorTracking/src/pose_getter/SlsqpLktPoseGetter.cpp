@@ -1,4 +1,4 @@
-#include "SlsqpLktPoseGetter.h"
+#include "pose_getter/SlsqpLktPoseGetter.h"
 
 #include <iostream>
 #include <fstream>
@@ -10,7 +10,7 @@
 #include "lkt/lmsolver/ParametersFixer.hpp"
 #include "lkt/inliers.hpp"
 
-#include <GradientEstimator.h>
+#include <estimator/GradientEstimator.h>
 
 glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params);
 

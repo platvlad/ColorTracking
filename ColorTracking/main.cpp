@@ -9,18 +9,18 @@
 #include <GL/glew.h>
 
 #include <PoseEstimator.h>
-#include <GroundTruthPoseGetter.h>
-#include <SLSQPPoseGetter.h>
-#include <SlsqpLktPoseGetter.h>
+#include <pose_getter/GroundTruthPoseGetter.h>
+#include <pose_getter/SLSQPPoseGetter.h>
+#include <pose_getter/SlsqpLktPoseGetter.h>
 #include <opencv2/calib3d.hpp>
-#include <GaussNewtonPoseGetter.h>
-#include <NewtonPoseGetter.h>
-#include "Tracker.h"
-#include "PyramideTracker.h"
-#include "LktInitTracker.h"
-#include "GroundTruthTracker.h"
-#include "SlsqpLktTracker.h"
-#include "LktTracker.h"
+#include <pose_getter/GaussNewtonPoseGetter.h>
+#include <pose_getter/NewtonPoseGetter.h>
+#include "tracker/Tracker.h"
+#include "tracker/PyramideTracker.h"
+#include "tracker/LktInitTracker.h"
+#include "tracker/GroundTruthTracker.h"
+#include "tracker/SlsqpLktTracker.h"
+#include "tracker/LktTracker.h"
 
 #include "DataIO.h"
 #include "tests.h"

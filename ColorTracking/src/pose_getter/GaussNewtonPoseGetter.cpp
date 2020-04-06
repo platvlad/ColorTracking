@@ -3,8 +3,8 @@
 //
 
 #include <PoseEstimator.h>
-#include <GradientHessianEstimator.h>
-#include "GaussNewtonPoseGetter.h"
+#include <estimator/GradientHessianEstimator.h>
+#include "pose_getter/GaussNewtonPoseGetter.h"
 
 #include <fstream>
 

@@ -5,8 +5,8 @@
 
 #include "lkt/PnPObjective.hpp"
 
-#include "SLSQPPoseGetter.h"
-#include "PoseGetter.h"
+#include "pose_getter/SLSQPPoseGetter.h"
+#include "pose_getter/PoseGetter.h"
 #include "Feature3DInfoList.h"
 
 class SlsqpLktPoseGetter : public PoseGetter

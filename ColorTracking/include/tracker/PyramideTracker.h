@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Tracker.h"
+#include "tracker/Tracker.h"
 
 template<class Optimizer>
 class PyramideTracker: public Tracker

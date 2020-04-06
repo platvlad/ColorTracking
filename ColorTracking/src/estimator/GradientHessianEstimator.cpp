@@ -1,5 +1,5 @@
-#include <GradientEstimator.h>
-#include "GradientHessianEstimator.h"
+#include <estimator/GradientEstimator.h>
+#include "estimator/GradientHessianEstimator.h"
 
 void
 GradientHessianEstimator::getGradient(const glm::mat4 &initial_pose, histograms::PoseEstimator &estimator, double* grad, double* step)

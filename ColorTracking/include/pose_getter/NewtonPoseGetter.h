@@ -2,7 +2,7 @@
 #define COLORTRACKING_NEWTONPOSEGETTER_H
 
 #include <Object3d.h>
-#include "PoseGetter.h"
+#include "pose_getter/PoseGetter.h"
 #include <PoseEstimator.h>
 
 

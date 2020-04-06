@@ -1,8 +1,8 @@
-#include "GroundTruthTracker.h"
+#include "tracker/GroundTruthTracker.h"
 
 #include <iostream>
 #include "PoseEstimator.h"
-#include "GroundTruthPoseGetter.h"
+#include "pose_getter/GroundTruthPoseGetter.h"
 
 void GroundTruthTracker::run()
 {

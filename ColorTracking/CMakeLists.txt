@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(ColorTracking)
 
-set(CMAKE_CXX_STANDARD 98)
+set(CMAKE_CXX_STANDARD 17)
 
 set(Boost_USE_STATIC_LIBS ON)
 set(BOOST_ROOT ${PROJECT_SOURCE_DIR}/../deps/boost_1_72_0)
@@ -20,7 +20,7 @@ set(DEBUG_LIBRARIES
         ${GLM_LIBS}
         ${Boost_LIBRARIES}
         ${NLOPT_LIBRARIES}
-        debug ${PROJECT_SOURCE_DIR}/deps/yaml-cpp-release-0.3.0/build/Debug/libyaml-cppmdd.lib
+        debug ${PROJECT_SOURCE_DIR}/deps/yaml-cpp-master/build/Debug/yaml-cppd.lib
         debug ${PROJECT_SOURCE_DIR}/../histograms/build/Debug/histograms.lib
         debug ${PROJECT_SOURCE_DIR}/../lkt-tracker-library/build/Debug/lkttracker.lib
         debug ${PROJECT_SOURCE_DIR}/../deps/glew-2.1.0/build/vc15/lib/Debug/glew32d.lib
@@ -33,7 +33,7 @@ set(OPTIMIZED_LIBRARIES
         ${GLM_LIBS}
         ${Boost_LIBRARIES}
         ${NLOPT_LIBRARIES}
-        optimized ${PROJECT_SOURCE_DIR}/deps/yaml-cpp-release-0.3.0/build/Release/libyaml-cppmd.lib
+        optimized ${PROJECT_SOURCE_DIR}/deps/yaml-cpp-master/build/Release/yaml-cpp.lib
         optimized ${PROJECT_SOURCE_DIR}/../histograms/build/Release/histograms.lib
         optimized ${PROJECT_SOURCE_DIR}/../lkt-tracker-library/build/Release/lkttracker.lib
         optimized ${PROJECT_SOURCE_DIR}/../deps/glew-2.1.0/build/vc15/lib/Release/glew32.lib
@@ -46,7 +46,7 @@ INCLUDE_DIRECTORIES(
         ${GLM_INCLUDE_DIRS}
         ${PROJECT_SOURCE_DIR}/deps/include
         ${NLOPT_INCLUDE_DIRS}
-        ${PROJECT_SOURCE_DIR}/deps/yaml-cpp-release-0.3.0/include
+        ${PROJECT_SOURCE_DIR}/deps/yaml-cpp-master/include
         ../deps/include
         ${PROJECT_SOURCE_DIR}/../histograms/include
         ${PROJECT_SOURCE_DIR}/../lkt-tracker-library/include
@@ -56,31 +56,31 @@ INCLUDE_DIRECTORIES(
 
 add_executable(ColorTracking 
                main.cpp 
-               include/DataIO.h src/DataIO.cpp 
-               include/GroundTruthPoseGetter.h src/GroundTruthPoseGetter.cpp 
                tests/tests.h tests/tests.cpp 
+               include/DataIO.h src/DataIO.cpp 
+               include/GeomUtils.h src/GeomUtils.cpp 
+               include/Feature3DInfoList.h src/Feature3DInfoList.cpp 
+               include/estimator/GradientEstimator.h src/estimator/GradientEstimator.cpp 
+               include/estimator/GradientHonestHessianEstimator.h src/estimator/GradientHonestHessianEstimator.cpp 
+               include/estimator/GradientHessianEstimator.h src/estimator/GradientHessianEstimator.cpp 
                include/test_runner/argparsing.hpp src/test_runner/argparsing.cpp
                include/test_runner/data.hpp src/test_runner/data.cpp
                include/test_runner/io.hpp src/test_runner/io.cpp
+               include/pose_getter/GroundTruthPoseGetter.h src/pose_getter/GroundTruthPoseGetter.cpp 
+               include/pose_getter/SLSQPPoseGetter.h src/pose_getter/SLSQPPoseGetter.cpp 
+               include/pose_getter/SlsqpLktPoseGetter.h src/pose_getter/SlsqpLktPoseGetter.cpp 
+               include/pose_getter/PoseGetter.h 
+               include/pose_getter/GaussNewtonPoseGetter.h src/pose_getter/GaussNewtonPoseGetter.cpp 
+               include/pose_getter/NewtonPoseGetter.h src/pose_getter/NewtonPoseGetter.cpp 
+               include/pose_getter/LevenbergPoseGetter.h src/pose_getter/LevenbergPoseGetter.cpp 
+               include/pose_getter/LkPoseGetter.h src/pose_getter/LkPoseGetter.cpp 
+               include/tracker/Tracker.h src/tracker/Tracker.cpp
+               include/tracker/PyramideTracker.h
+               include/tracker/LktInitTracker.h src/tracker/LktInitTracker.cpp
+               include/tracker/GroundTruthTracker.h src/tracker/GroundTruthTracker.cpp
+               include/tracker/SlsqpLktTracker.h src/tracker/SlsqpLktTracker.cpp
+               include/tracker/LktTracker.h src/tracker/LktTracker.cpp
                include/utils/OptProcessor.hpp src/utils/OptProcessor.cpp 
-               include/SLSQPPoseGetter.h src/SLSQPPoseGetter.cpp 
-               include/SlsqpLktPoseGetter.h src/SlsqpLktPoseGetter.cpp 
-               include/PoseGetter.h 
-               include/GradientEstimator.h src/GradientEstimator.cpp 
-               include/GaussNewtonPoseGetter.h src/GaussNewtonPoseGetter.cpp 
-               include/GradientHessianEstimator.h src/GradientHessianEstimator.cpp 
-               include/NewtonPoseGetter.h src/NewtonPoseGetter.cpp 
-               include/GradientHonestHessianEstimator.h src/GradientHonestHessianEstimator.cpp 
-               include/LevenbergPoseGetter.h src/LevenbergPoseGetter.cpp 
-               include/LkPoseGetter.h src/LkPoseGetter.cpp 
-               include/Feature3DInfoList.h src/Feature3DInfoList.cpp 
-               include/GeomUtils.h src/GeomUtils.cpp 
-               include/Tracker.h src/Tracker.cpp
-               include/PyramideTracker.h
-               include/LktInitTracker.h src/LktInitTracker.cpp
-               include/GroundTruthTracker.h src/GroundTruthTracker.cpp
-               include/SlsqpLktTracker.h src/SlsqpLktTracker.cpp
-               include/LktTracker.h src/LktTracker.cpp
               )
               
 set(LINK_LIBRARIES optimized ${OPTIMIZED_LIBRARIES} debug ${DEBUG_LIBRARIES})
