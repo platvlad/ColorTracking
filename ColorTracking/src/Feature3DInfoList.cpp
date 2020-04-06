@@ -110,11 +110,7 @@ glm::mat4 Feature3DInfoList::solvePnP(
     std::vector<glm::vec2> pts_2d = getImagePtsVector();
     glm::mat4 mvp = projection * view * model;
 
-    std::cout << "pts_3d size = " << pts_3d.size() << std::endl;
-    std::cout << "pts_2d size = " << pts_2d.size() << std::endl;
-    glm::mat4 result = lkt::solvePnP(pts_3d, pts_2d, model, view, projection, lossFunctions);
-
-    return result;
+    return lkt::solvePnP(pts_3d, pts_2d, model, view, projection, lossFunctions);
 }
 
 void Feature3DInfoList::filterOutliers(const glm::mat4 &mvp, float maxInlierError)
@@ -231,11 +227,6 @@ void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &
         std::vector<Feature3DInfo> new_vector(merged_feature_info_list.size());
         size_t new_vector_counter = 0;
         glm::mat4 mvp = projection * model;
-        size_t old_pos_counter = 0;
-        size_t new_pos_counter = 0;
-        size_t fresh_counter = 0;
-        size_t good_frame = 0;
-        std::cout << "merged feature info list size = " << merged_feature_info_list.size() << std::endl;
         for (int i = 0; i < merged_feature_info_list.size(); ++i)
         {
             lkt::FeatureInfo& feat = merged_feature_info_list[i];
@@ -261,31 +252,16 @@ void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &
                             if (reprojection_error < feat_3d_info.best_reproj)
                             {
                                 feat_3d_info.best_reproj = reprojection_error;
-                                ++good_frame;
-                                if (old_pos_iter->first == 3)
-                                {
-                                    std::cout << "reprojection error on good frame = " << reprojection_error << std::endl;
-                                }
                             }
                             float alt_reprojection_error = lkt::computeReprojectionError2(mvp,
                                 feat_3d_info.alt_object_pos,
                                 glm::vec2(feat_info.x, feat_info.y));
                             if (alt_reprojection_error < feat_3d_info.best_reproj)
                             {
-                                std::cout << "feat id = " << old_pos_iter->first << std::endl;
-                                std::cout << "old: (" << feat_3d_info.object_pos[0] << ", " << feat_3d_info.object_pos[1] << ", " << feat_3d_info.object_pos[2] << ")" << std::endl;
-                                std::cout << "new: (" << feat_3d_info.alt_object_pos[0] << ", " << feat_3d_info.alt_object_pos[1] << ", " << feat_3d_info.alt_object_pos[2] << ")" << std::endl;
-                                std::cout << "old reprojection error = " << feat_3d_info.best_reproj << std::endl;
-                                std::cout << "new reprojection error = " << alt_reprojection_error << std::endl;
-                                
+     
                                 feat_3d_info.object_pos = feat_3d_info.alt_object_pos;
                                 feat_3d_info.best_reproj = alt_reprojection_error;
                                 feat_3d_info.face_id = unprojected[i].get().second;
-                                ++new_pos_counter;
-                            }
-                            else
-                            {
-                                ++old_pos_counter;
                             }
                         }
                         else
@@ -293,7 +269,6 @@ void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &
                             feat_3d_info.best_reproj = lkt::computeReprojectionError2(mvp,
                                 feat_3d_info.object_pos,
                                 glm::vec2(feat_info.x, feat_info.y));
-                            ++fresh_counter;
                         }
                         feat_3d_info.alt_object_pos = unprojected[i].get().first;
                         new_vector[new_vector_counter] = feat_3d_info;
@@ -314,13 +289,9 @@ void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &
                 }
             }
         }
-        std::cout << "old pos counter = " << old_pos_counter << std::endl;
-        std::cout << "new pos counter = " << new_pos_counter << std::endl;
-        std::cout << "fresh counter = " << fresh_counter << std::endl;
-        std::cout << "good frame counter = " << good_frame << std::endl;
+
         new_vector.resize(new_vector_counter);
         featInfos = new_vector;
-        std::cout << "new featInfos size = " << featInfos.size() << std::endl;
         //filterInvisible(mesh, model, projection, frame.size());
     }
     else {

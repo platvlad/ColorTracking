@@ -1,4 +1,4 @@
-#pragma comment(lib, "glew32.lib")
+//#pragma comment(lib, "glew32.lib")
 
 #include <iostream>
 #include <fstream>
@@ -245,5 +245,6 @@ int main()
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
     track("data/ir_ir_5_r", "lkt_init");
+
     return 0;
 }
