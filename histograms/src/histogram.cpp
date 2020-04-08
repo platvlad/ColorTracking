@@ -165,8 +165,18 @@ namespace histograms
 
     float Histogram::voteColor(uchar blue, uchar green, uchar red, float eta_f, float eta_b) const
     {
-        float for_fore = eta_f * prob_fg[blue][green][red];
-        float for_back = eta_b * prob_bg[blue][green][red];
+        float for_fore, for_back;
+        if (eta_f <= 5 * eta_b && eta_b <= 5 * eta_f)
+        {
+            for_fore = eta_f * prob_fg[blue][green][red];
+            for_back = eta_b * prob_bg[blue][green][red];
+            
+        }
+        else
+        {
+            for_fore = prob_fg[blue][green][red];
+            for_back = prob_bg[blue][green][red];
+        }
         if (for_fore > 0 || for_back > 0)
         {
             return for_fore / (for_fore + for_back);

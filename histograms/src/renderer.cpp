@@ -296,7 +296,7 @@ void Renderer::renderMesh(const histograms::Mesh &mesh, cv::Mat3b& frame, const 
 
         if (p0 != glm::vec3() && p1 != glm::vec3() && p2 != glm::vec3())
         {
-            cv::polylines(frame, img_pts, true, cv::Scalar(0, 127, 0));
+            cv::polylines(frame, img_pts, true, cv::Scalar(0, 127, 0, 0.5));
         }
     }
     

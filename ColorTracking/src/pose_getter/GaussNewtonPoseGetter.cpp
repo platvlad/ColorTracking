@@ -34,8 +34,36 @@ void GaussNewtonPoseGetter::plot2Points(const cv::Mat &frame, const glm::mat4 &i
         glm::mat4 current_pose = applyResultToPose(init, current_step);
         histograms::PoseEstimator estimator;
         float current_value = estimator.estimateEnergy(*object3d, frame, current_pose, 10, false).first;
+        
         fout << "  - frame: " << step_num - left + 1 << std::endl;
         fout << "    error: " << current_value << std::endl;
+    }
+    fout.close();
+}
+
+void GaussNewtonPoseGetter::plotGradients(const cv::Mat &frame, const glm::mat4 &init, double* params, const std::string &file_name)
+{
+    size_t num_points = 100;
+    size_t anchor_pts_dist = num_points / 2;
+    int left = -anchor_pts_dist;
+    int right = 3 * anchor_pts_dist;
+    double iteration_step[6] = { params[0] / anchor_pts_dist, params[1] / anchor_pts_dist, params[2] / anchor_pts_dist,
+                                 params[3] / anchor_pts_dist, params[4] / anchor_pts_dist, params[5] / anchor_pts_dist };
+    std::ofstream fout(file_name);
+    fout << "frames:" << std::endl;
+    for (int step_num = left; step_num <= right; ++step_num)
+    {
+        double current_step[6] = { iteration_step[0] * step_num, iteration_step[1] * step_num, iteration_step[2] * step_num,
+                                   iteration_step[3] * step_num, iteration_step[4] * step_num, iteration_step[5] * step_num };
+        glm::mat4 current_pose = applyResultToPose(init, current_step);
+        histograms::PoseEstimator estimator;
+        float current_value = estimator.estimateEnergy(*object3d, frame, current_pose, 10, false).first;
+        double grad[6] = { 0 };
+        double step[6] = { 0 };
+        GradientHessianEstimator::getGradient(initial_pose, estimator, grad, step);
+        double ratio = step[3] / params[3];
+        fout << "  - frame: " << step_num - left + 1 << std::endl;
+        fout << "    error: " << ratio << std::endl;
     }
     fout.close();
 }

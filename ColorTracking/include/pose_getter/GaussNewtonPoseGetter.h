@@ -12,6 +12,8 @@ class GaussNewtonPoseGetter : public PoseGetter
 
     void plot2Points(const cv::Mat &frame, const glm::mat4 &init, double* params, const std::string &file_name);
 
+    void plotGradients(const cv::Mat &frame, const glm::mat4 &init, double* params, const std::string &file_name);
+
 public:
     GaussNewtonPoseGetter(histograms::Object3d* object3d, const glm::mat4& initial_pose);
 

@@ -7,7 +7,7 @@ class PyramideTracker: public Tracker
 {
     size_t pyramide_levels;
 public:
-    PyramideTracker(const std::string &directory_name, size_t pyramide_levels = 3) :
+    PyramideTracker(const std::string &directory_name, size_t pyramide_levels = 2) :
         Tracker(directory_name),
         pyramide_levels(pyramide_levels)
     {

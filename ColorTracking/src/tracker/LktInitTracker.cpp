@@ -30,10 +30,29 @@ void LktInitTracker::run()
             break;
         ++frame_number;
         glm::mat4 feat_pose = f_tracker.handleFrame(frame);
-        color_pose_getter.setInitialPose(feat_pose);
         histograms::PoseEstimator estimator;
+        if (frame_number > 2)
+        {
+            float feat_pose_error = estimator.estimateEnergy(object3D, frame, feat_pose, 100).first;
+            glm::mat4 extrapolated = extrapolate(prev_pose, pose);
+            float extrapolated_pose_error = estimator.estimateEnergy(object3D, frame, extrapolated, 100).first;
+            if (extrapolated_pose_error < feat_pose_error)
+            {
+                color_pose_getter.setInitialPose(extrapolated);
+            }
+            else
+            {
+                color_pose_getter.setInitialPose(feat_pose);
+            }
+        }
+        else
+        {
+            color_pose_getter.setInitialPose(feat_pose);
+        }
+        
         std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, frame, feat_pose, 10).first << std::endl;
 
+        prev_pose = pose;
         pose = color_pose_getter.getPose(frame, 0);
         std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, frame, pose, 10).first << std::endl;
         f_tracker.addNewFeatures(pose);

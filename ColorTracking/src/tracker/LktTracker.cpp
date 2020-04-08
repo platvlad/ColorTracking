@@ -1,5 +1,6 @@
 #include "tracker/LktTracker.h"
 
+#include <iostream>
 #include "pose_getter/LkPoseGetter.h"
 
 void LktTracker::run()
@@ -13,6 +14,7 @@ void LktTracker::run()
     LkPoseGetter f_tracker(object3D.getMesh(), pose, camera_matrix, frame.size());
     while (!frame.empty())
     {
+        std::cout << "Frame " << frame_number << std::endl;
         pose = f_tracker.handleFrame(frame);
         data.estimated_poses[frame_number] = pose;
         data.writePng(frame, frame_number);
