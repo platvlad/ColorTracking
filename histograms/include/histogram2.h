@@ -14,6 +14,8 @@ namespace histograms
         float prob_fg[COLORS_PER_CHANNEL][COLORS_PER_CHANNEL][COLORS_PER_CHANNEL];
         float prob_bg[COLORS_PER_CHANNEL][COLORS_PER_CHANNEL][COLORS_PER_CHANNEL];
 
+        float skill = 0;
+
         static float alpha_f;
         static float alpha_b;
 
@@ -32,6 +34,8 @@ namespace histograms
         void update(const std::vector<std::pair<cv::Vec3b, float> > &color_heaviside);
 
         float voteColor(const cv::Vec3b &color, float eta_f, float eta_b) const;
+
+        float getSkill() const;
     };
 
 }

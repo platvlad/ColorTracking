@@ -13,6 +13,7 @@ namespace histograms
         Projection projection;
         cv::Mat1f derivative_const_part;
         cv::Mat1f votes_fg;
+        int frame_offset;
         const Renderer* renderer;
 
         double getDirac(int row, int col) const;
@@ -31,6 +32,8 @@ namespace histograms
         const Renderer* getRenderer() const;
 
         const glm::mat4 getPose() const;
+
+        int getFrameOffset() const;
 
     };
 }

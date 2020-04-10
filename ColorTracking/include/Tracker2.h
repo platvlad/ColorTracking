@@ -12,10 +12,12 @@ class Tracker2
 protected:
     DataIO2 data;
 
+    void processFrame(const cv::Mat3b & input, cv::Mat3b & output, bool hsv);
+
     virtual void processFrame(const cv::Mat3b &input, cv::Mat3b &output);
 
     cv::Mat3b getFrame();
-    glm::mat4 getPoseOnPyramide(const cv::Mat3b &frame, PoseGetter &pose_getter, int num_levels = 3);
+    glm::mat4 getPoseOnPyramide(const cv::Mat3b &frame, PoseGetter &pose_getter, size_t num_levels = 3);
     glm::mat4 extrapolate(const glm::mat4 &prev_pose, const glm::mat4 &curr_pose);
 
 public:

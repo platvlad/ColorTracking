@@ -31,7 +31,6 @@ DataIO2::DataIO2(const std::string& directory_name) : directory_name(directory_n
     float zNear = getZNear(pose);
     Renderer renderer = Renderer(camera_matrix, zNear, zNear * 10000, width, height);
     object3D2 = histograms::Object3d2(mesh, renderer);
-    object3D2 = histograms::Object3d2(mesh, renderer);
 }
 
 glm::mat4 DataIO2::getCamera(const boost::filesystem::path& path, int height)

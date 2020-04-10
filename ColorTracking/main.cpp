@@ -248,6 +248,6 @@ int main()
     //GLuint VAO;
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
-    track("data/foxes", "slsqp");
+    track("data/ir_ir_5_r", "slsqp");
     return 0;
 }

@@ -10,11 +10,32 @@ namespace histograms
     const float Object3d2::lambda = 0.1;
 
     Object3d2::Object3d2(const Mesh& mesh, const Renderer& renderer) : 
-        frame_offset(20),
+        frame_offset(40),
         mesh(mesh),
         renderer(renderer),
         histograms(32, Histogram2())
     {
+        common_histogram = new Histogram2();
+    }
+
+    Object3d2::Object3d2(const Object3d2 & other)
+    {
+        frame_offset = other.frame_offset;
+        renderer = other.renderer;
+        mesh = other.mesh;
+        histograms = other.histograms;
+        common_histogram = new Histogram2(*(other.common_histogram));
+    }
+
+    Object3d2 & Object3d2::operator=(const Object3d2 & other)
+    {
+        delete common_histogram;
+        frame_offset = other.frame_offset;
+        renderer = other.renderer;
+        mesh = other.mesh;
+        histograms = other.histograms;
+        common_histogram = new Histogram2(*(other.common_histogram));
+        return *this;
     }
 
     int Object3d2::getHistogram(cv::Vec3f transformed_pt, const glm::mat4 & pose_inv)
@@ -85,23 +106,29 @@ namespace histograms
         }
         cv::Mat3f transformed_pts = getTransformedBorderPoints(projection);
 
-        const cv::Mat1f& signed_distance = projection.signed_distance;
-        const cv::Mat1b& mask = projection.mask;
-        const cv::Mat1f& heaviside = projection.heaviside;
+        cv::Mat1f& signed_distance = projection.signed_distance;
+        cv::Mat1b& mask = projection.mask;
+        cv::Mat1f& heaviside = projection.heaviside;
         cv::Size projection_size = projection.getSize();
         glm::mat4 pose_inv = glm::inverse(pose);
 
         std::vector<std::pair<cv::Vec3b, float> > color_heavisides[32];
+        std::vector<std::pair<cv::Vec3b, float> > common_color_heavisides;
 
         for (int row = 0; row < projection_size.height; ++row)
         {
             for (int col = 0; col < projection_size.width; ++col)
             {
-                cv::Vec3f transformed_pt = transformed_pts(row, col);
-                int histo_num = getHistogram(transformed_pt, pose_inv);
-                cv::Vec3b& color_value = projection.color_map(row, col);
-                float heaviside_value = projection.heaviside(row, col);
-                color_heavisides[histo_num].push_back(std::pair<cv::Vec3b, float>(color_value, heaviside_value));
+                if (abs(signed_distance(row, col)) <= frame_offset)
+                {
+                    cv::Vec3f transformed_pt = transformed_pts(row, col);
+                    int histo_num = getHistogram(transformed_pt, pose_inv);
+                    cv::Vec3b& color_value = projection.color_map(row, col);
+                    float heaviside_value = projection.heaviside(row, col);
+                    std::pair<cv::Vec3b, float> color_heaviside_pair(color_value, heaviside_value);
+                    color_heavisides[histo_num].push_back(color_heaviside_pair);
+                    common_color_heavisides.push_back(color_heaviside_pair);
+                }
             }
         }
 
@@ -109,6 +136,7 @@ namespace histograms
         {
             histograms[i].update(color_heavisides[i]);
         }
+        common_histogram->update(common_color_heavisides);
 
     }
 
@@ -131,11 +159,14 @@ namespace histograms
     {
         cv::Size projection_size = projection.getSize();
         cv::Mat1f votes_fg = cv::Mat1f::zeros(projection_size);
+        const cv::Mat1f& signed_distance = projection.signed_distance;
 
         cv::Mat3f transformed_pts = getTransformedBorderPoints(projection);
         glm::mat4 pose_inv = glm::inverse(pose);
         float eta_f[32] = { 0 };
         float eta_b[32] = { 0 };
+        float common_eta_f = 0;
+        float common_eta_b = 0;
 
         cv::Mat1b histo_nums = cv::Mat1b::zeros(projection_size);
 
@@ -143,28 +174,59 @@ namespace histograms
         {
             for (int col = 0; col < projection_size.width; ++col)
             {
-                cv::Vec3f transformed_pt = transformed_pts(row, col);
-                int histo_num = getHistogram(transformed_pt, pose_inv);
-                const cv::Vec3b& color_value = projection.color_map(row, col);
-                float heaviside_value = projection.heaviside(row, col);
-                eta_f[histo_num] += heaviside_value;
-                eta_b[histo_num] += 1 - heaviside_value;
-                histo_nums(row, col) = histo_num;
+                if (abs(signed_distance(row, col)) <= frame_offset)
+                {
+                    cv::Vec3f transformed_pt = transformed_pts(row, col);
+                    int histo_num = getHistogram(transformed_pt, pose_inv);
+                    const cv::Vec3b& color_value = projection.color_map(row, col);
+                    float heaviside_value = projection.heaviside(row, col);
+                    eta_f[histo_num] += heaviside_value;
+                    eta_b[histo_num] += 1 - heaviside_value;
+                    common_eta_f += heaviside_value;
+                    common_eta_b += 1 - heaviside_value;
+                    histo_nums(row, col) = histo_num;
+                }
             }
         }
+
+        float histo_skills[32];
+        for (size_t i = 0; i < 32; ++i)
+        {
+            histo_skills[i] = histograms[i].getSkill();
+        }
+        float common_histo_skill = common_histogram->getSkill();
+        float sufficient_skill = common_histo_skill / 32;
 
         for (int row = 0; row < projection_size.height; ++row)
         {
             for (int col = 0; col < projection_size.width; ++col)
             {
-                float heaviside_value = projection.heaviside(row, col);
-                int histo_num = histo_nums(row, col);
-                cv::Vec3b color = projection.color_map(row, col);
-                votes_fg(row, col) = histograms[histo_num].voteColor(color, eta_f[histo_num], eta_b[histo_num]);
+                if (abs(signed_distance(row, col)) <= frame_offset)
+                {
+                    float heaviside_value = projection.heaviside(row, col);
+                    int histo_num = histo_nums(row, col);
+                    cv::Vec3b color = projection.color_map(row, col);
+                    float histo_vote = histograms[histo_num].voteColor(color, eta_f[histo_num], eta_b[histo_num]);
+                    float histo_skill = histo_skills[histo_num];
+                    if (histo_skill >= sufficient_skill)
+                    {
+                        votes_fg(row, col) = histo_vote;
+                    }
+                    else
+                    {
+                        float common_vote = common_histogram->voteColor(color, common_eta_f, common_eta_b);
+                        votes_fg(row, col) = (histo_vote * histo_skill + common_vote * (sufficient_skill - histo_skill)) / sufficient_skill;
+                    }
+                }
             }
         }
 
         return votes_fg;
+    }
+
+    Object3d2::~Object3d2()
+    {
+        delete common_histogram;
     }
 
 }

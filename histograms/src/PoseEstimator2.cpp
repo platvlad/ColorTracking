@@ -12,23 +12,32 @@ namespace histograms
         this->pose = pose;
         renderer = &(object.getRenderer());
         const Mesh& mesh = object.getMesh();
-        int frame_offset = object.getFrameOffset();
+        frame_offset = object.getFrameOffset();
         projection = renderer->projectMesh2(mesh, pose, frame, frame_offset);
+        cv::Mat1f& signed_distance = projection.signed_distance;
         votes_fg = object.findColorForeground(projection, frame, pose);
         
         float error_sum = 0;
+        size_t num_estimators = 0;
         for (int row = 0; row < votes_fg.rows; ++row)
         {
             for (int col = 0; col < votes_fg.cols; ++col)
             {
-                float heaviside_value = projection.heaviside(row, col);
-                float foreground_vote = votes_fg(row, col);
-                error_sum -= log(heaviside_value * foreground_vote +
-                    (1 - heaviside_value) * (1 - foreground_vote));
+                if (abs(signed_distance(row, col)) <= frame_offset)
+                {
+                    float heaviside_value = projection.heaviside(row, col);
+                    float foreground_vote = votes_fg(row, col);
+                    error_sum -= log(heaviside_value * foreground_vote +
+                        (1 - heaviside_value) * (1 - foreground_vote));
+                    ++num_estimators;
+                }
             }
         }
-        size_t num_estimators = votes_fg.size().area();
-        return std::pair<float, size_t>(error_sum / num_estimators, num_estimators);
+        if (num_estimators > 0)
+        {
+            return std::pair<float, size_t>(error_sum / num_estimators, num_estimators);
+        }
+        return std::pair<float, size_t>(std::numeric_limits<float>::max(), 0);
     }
 
     double PoseEstimator2::getDirac(int row, int col) const
@@ -42,16 +51,19 @@ namespace histograms
     {
         if (derivative_const_part.empty())
         {
-            const cv::Mat1f& heaviside = projection.heaviside;
+            cv::Mat1f& heaviside = projection.heaviside;
+            cv::Mat1f& signed_distance = projection.signed_distance;
             derivative_const_part = cv::Mat1f(heaviside.size(), -1);
             for (int row = 0; row < derivative_const_part.rows; ++row)
             {
                 for (int col = 0; col < derivative_const_part.cols; ++col)
                 {
-                    
-                    float pf = votes_fg(row, col);
-                    derivative_const_part(row, col) =
-                        (2 * pf - 1) * getDirac(row, col) / (heaviside(row, col) * (2 * pf - 1) + 1 - pf);
+                    if (abs(signed_distance(row, col)) <= frame_offset)
+                    {
+                        float pf = votes_fg(row, col);
+                        derivative_const_part(row, col) =
+                            (2 * pf - 1) * getDirac(row, col) / (heaviside(row, col) * (2 * pf - 1) + 1 - pf);
+                    }
                 }
             }
         }
@@ -69,5 +81,10 @@ namespace histograms
     const glm::mat4 PoseEstimator2::getPose() const
     {
         return pose;
+    }
+
+    int PoseEstimator2::getFrameOffset() const
+    {
+        return frame_offset;
     }
 }

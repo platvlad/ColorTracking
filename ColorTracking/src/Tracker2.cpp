@@ -4,6 +4,27 @@ Tracker2::Tracker2(const std::string &directory_name) : data(directory_name)
 {
 }
 
+void Tracker2::processFrame(const cv::Mat3b & input, cv::Mat3b & output, bool hsv)
+{
+    if (!input.empty())
+    {
+        if (!hsv)
+        {
+            cv::flip(input, output, 0);
+            return;
+        }
+        cv::Mat3b flipped_frame;
+        cv::flip(input, flipped_frame, 0);
+        cv::cvtColor(flipped_frame, output, CV_BGR2HSV);
+        std::vector<cv::Mat1b> hsv_channels;
+        cv::split(output, hsv_channels);
+        cv::equalizeHist(hsv_channels[0], hsv_channels[0]);
+        cv::equalizeHist(hsv_channels[1], hsv_channels[1]);
+        //cv::equalizeHist(hsv_channels[2], hsv_channels[2]);
+        cv::merge(hsv_channels, output);
+    }
+}
+
 void Tracker2::processFrame(const cv::Mat3b & input, cv::Mat3b & output)
 {
     if (!input.empty())
@@ -22,7 +43,7 @@ cv::Mat3b Tracker2::getFrame()
     return processed_frame;
 }
 
-glm::mat4 Tracker2::getPoseOnPyramide(const cv::Mat3b & frame, PoseGetter & pose_getter, int num_levels)
+glm::mat4 Tracker2::getPoseOnPyramide(const cv::Mat3b & frame, PoseGetter & pose_getter, size_t num_levels)
 {
     std::vector<cv::Mat3b> pyramide(num_levels);
     if (num_levels > 0)

@@ -108,6 +108,8 @@ GradientEstimator2::getGradient(const glm::mat4 &initial_pose,
 
     std::vector<cv::Mat1d> on_border_gradients = getGradientInPoint(initial_pose, estimator);
 
+    int frame_offset = estimator.getFrameOffset();
+
     int non_zero_pixels = 0;
 
     for (int row = 0; row < signed_distance.rows; ++row)
@@ -115,7 +117,7 @@ GradientEstimator2::getGradient(const glm::mat4 &initial_pose,
         for (int col = 0; col < signed_distance.cols; ++col)
         {
             //if (num_voters(row, col) > 0)
-            if (true)
+            if (abs(signed_distance(row, col)) <= frame_offset)
             {
                 cv::Matx12d dPhi = getSignedDistanceGradient(signed_distance, row, col);
 

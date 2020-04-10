@@ -33,8 +33,6 @@ SLSQPPoseGetter::SLSQPPoseGetter(histograms::Object3d2* object3d, const glm::mat
     pass_to_optimization.delta_step[5] = step_size * max_translation_shift;
 
     opt = nlopt_create(NLOPT_LD_SLSQP, 6);
-    //opt = nlopt_create(NLOPT_LN_NELDERMEAD, 6);
-    //opt = nlopt_create(NLOPT_LD_LBFGS, 6);
     nlopt_set_min_objective(opt, energy_function, &pass_to_optimization);
     nlopt_set_ftol_rel(opt, 1e-5);
     nlopt_set_maxeval(opt, pass_to_optimization.num_iterations);
