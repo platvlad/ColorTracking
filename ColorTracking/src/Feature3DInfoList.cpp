@@ -78,13 +78,15 @@ void Feature3DInfoList::moveFeaturesBySparseFlow(const cv::Mat1b &prev_frame, co
 // return true if feature failed to track by Lucas-Kanade
 bool Feature3DInfoList::lkFailed(Feature3DInfo& feat_3d_info)
 {
-    return !feat_3d_info.feature_info.flowQuality.lukasKanadeSuccess;
+    //return !feat_3d_info.feature_info.flowQuality.lukasKanadeSuccess;
+    return feat_3d_info.feature_info.flowQuality.forwardBackwardErr > 0.02;
 }
 
 // remove all features whose tracking failed
 void Feature3DInfoList::filterLKSuccess()
 {
     std::remove_if(featInfos.begin(), featInfos.end(), lkFailed);
+    
 }
 
 //find new pose solving epnp ransac on current features

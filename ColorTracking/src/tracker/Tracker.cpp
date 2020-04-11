@@ -4,33 +4,29 @@ Tracker::Tracker(const std::string &directory_name) : data(directory_name)
 {
 }
 
-void Tracker::processFrame(const cv::Mat3b & input, cv::Mat3b & output, bool hsv)
+cv::Mat3b Tracker::processFrame(const cv::Mat3b &input)
 {
-    if (!input.empty())
-    {
-        if (!hsv)
-        {
-            cv::flip(input, output, 0);
-            return;
-        }
-        cv::Mat3b flipped_frame;
-        cv::flip(input, flipped_frame, 0);
-        cv::cvtColor(flipped_frame, output, CV_BGR2HSV);
-        std::vector<cv::Mat1b> hsv_channels;
-        cv::split(output, hsv_channels);
-        cv::equalizeHist(hsv_channels[2], hsv_channels[2]);
-        cv::merge(hsv_channels, output);
-    }
+    return input;
+    /*cv::Mat3b output;
+    cv::cvtColor(input, output, CV_BGR2HSV);
+    std::vector<cv::Mat1b> hsv_channels;
+    cv::split(output, hsv_channels);
+    cv::equalizeHist(hsv_channels[2], hsv_channels[2]);
+    cv::merge(hsv_channels, output);
+    return output;*/
 }
 
-cv::Mat3b Tracker::getFrame(bool hsv)
+cv::Mat3b Tracker::getFrame()
 {
     cv::VideoCapture& videoCapture = data.videoCapture;
     cv::Mat3b frame;
     videoCapture >> frame;
-    cv::Mat3b processed_frame;
-    processFrame(frame, processed_frame, hsv);
-    return processed_frame;
+    cv::Mat3b flipped;
+    if (!frame.empty())
+    {
+        cv::flip(frame, flipped, 0);
+    }
+    return flipped;
 }
 
 glm::mat4 Tracker::getPoseOnPyramide(const cv::Mat3b & frame, PoseGetter & pose_getter, size_t num_levels)
