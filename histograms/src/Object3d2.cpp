@@ -1,6 +1,7 @@
 #include <set>
 #include <iostream>
 #include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 #include "mesh.h"
 #include "Object3d2.h"
@@ -96,7 +97,7 @@ namespace histograms
         return transformed_pts;
     }
 
-    void Object3d2::updateHistograms(const cv::Mat3b& frame, const glm::mat4& pose)
+    void Object3d2::updateHistograms(const cv::Mat3b& frame, const glm::mat4& pose, bool debug_info)
     {
         Projection projection = renderer.projectMesh2(mesh, pose, frame, frame_offset);
 
@@ -115,6 +116,8 @@ namespace histograms
         std::vector<std::pair<cv::Vec3b, float> > color_heavisides[32];
         std::vector<std::pair<cv::Vec3b, float> > common_color_heavisides;
 
+        cv::Mat3b histo_nums = cv::Mat3b::zeros(projection_size);
+
         for (int row = 0; row < projection_size.height; ++row)
         {
             for (int col = 0; col < projection_size.width; ++col)
@@ -128,8 +131,17 @@ namespace histograms
                     std::pair<cv::Vec3b, float> color_heaviside_pair(color_value, heaviside_value);
                     color_heavisides[histo_num].push_back(color_heaviside_pair);
                     common_color_heavisides.push_back(color_heaviside_pair);
+                    if (debug_info)
+                    {
+                        histo_nums(row, col) = cv::Vec3b(histo_num * 8, (histo_num + 1) * 16 % 255, (histo_num + 2) * 24 % 255);
+                    }
                 }
             }
+        }
+
+        if (debug_info)
+        {
+            cv::imwrite("C:\\MyProjects\\repo\\VSProjects\\ColorTracking\\ColorTracking\\build\\data\\debug_frames\\histo_nums.png", histo_nums);
         }
 
         for (int i = 0; i < 32; ++i)

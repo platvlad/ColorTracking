@@ -34,7 +34,7 @@ namespace histograms
 
         Object3d2& operator=(const Object3d2 &other);
 
-        void updateHistograms(const cv::Mat3b& frame, const glm::mat4& pose);
+        void updateHistograms(const cv::Mat3b& frame, const glm::mat4& pose, bool debug_info = false);
 
         const Mesh& getMesh() const;
 

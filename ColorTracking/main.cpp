@@ -219,10 +219,13 @@ void track(const std::string &directory_name, const std::string &method)
         delete tracker2;
         return;
     }
-    //else if (method == "lkt_init")
-    //{
-    //    tracker = new LktInitTracker(directory_name);
-    //}
+    else if (method == "lkt_init")
+    {
+        Tracker2* tracker2 = new LktInitTracker(directory_name);
+        tracker2->run();
+        delete tracker2;
+        return;
+    }
     else if (method == "ground_truth")
     {
         tracker = new GroundTruthTracker(directory_name);
@@ -248,6 +251,6 @@ int main()
     //GLuint VAO;
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
-    track("data/ir_ir_5_r", "slsqp");
+    track("data/Vorona", "lkt_init");
     return 0;
 }

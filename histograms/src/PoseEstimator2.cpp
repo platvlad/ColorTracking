@@ -1,6 +1,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <iostream>
+#include <opencv2/highgui/highgui.hpp>
 
 #include "PoseEstimator2.h"
 
@@ -19,6 +20,7 @@ namespace histograms
         
         float error_sum = 0;
         size_t num_estimators = 0;
+        cv::Mat1f errors = cv::Mat1f::zeros(projection.getSize());
         for (int row = 0; row < votes_fg.rows; ++row)
         {
             for (int col = 0; col < votes_fg.cols; ++col)
@@ -27,12 +29,32 @@ namespace histograms
                 {
                     float heaviside_value = projection.heaviside(row, col);
                     float foreground_vote = votes_fg(row, col);
-                    error_sum -= log(heaviside_value * foreground_vote +
-                        (1 - heaviside_value) * (1 - foreground_vote));
+                    if (debug_info)
+                    {
+                        float current_error = -log(heaviside_value * foreground_vote +
+                            (1 - heaviside_value) * (1 - foreground_vote));
+                        errors(row, col) = current_error * 255 / 2;
+                        error_sum += current_error;
+                    }
+                    else
+                    {
+                        error_sum -= log(heaviside_value * foreground_vote +
+                            (1 - heaviside_value) * (1 - foreground_vote));
+                    }
                     ++num_estimators;
                 }
             }
         }
+
+        if (debug_info)
+        {
+            cv::Mat1b heaviside_copy = cv::Mat1b();
+            cv::imwrite("C:\\MyProjects\\repo\\VSProjects\\ColorTracking\\ColorTracking\\build\\data\\debug_frames\\errors2.png",
+                errors);
+            cv::imwrite("C:\\MyProjects\\repo\\VSProjects\\ColorTracking\\ColorTracking\\build\\data\\debug_frames\\color2.png",
+                projection.color_map);
+        }
+
         if (num_estimators > 0)
         {
             return std::pair<float, size_t>(error_sum / num_estimators, num_estimators);

@@ -77,6 +77,8 @@ public:
         int frame_number = 1;
         cv::Mat3b frame = getFrame();
         glm::mat4 prev_pose = pose;
+
+        
         while (!frame.empty())
         {
             object3D.updateHistograms(frame, pose);
