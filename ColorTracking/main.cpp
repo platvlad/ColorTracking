@@ -186,20 +186,6 @@ void plotRodriguesDirection(const Object3d &object3d,
     fout.close();
 }
 
-void process_frame(const cv::Mat3b &input, cv::Mat3b &output)
-{
-    if (!input.empty())
-    {
-        cv::Mat3b flipped_frame;
-        cv::flip(input, output, 0);
-        //cv::cvtColor(flipped_frame, output, CV_BGR2HSV);
-        //std::vector<cv::Mat1b> hsv_channels;
-        //cv::split(output, hsv_channels);
-        //cv::equalizeHist(hsv_channels[2], hsv_channels[2]);
-        //cv::merge(hsv_channels, output);
-    }
-}
-
 void track(const std::string &directory_name, const std::string &method)
 {
     Tracker* tracker = nullptr;
@@ -244,7 +230,7 @@ int main()
     //GLuint VAO;
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
-    track("data/Vorona", "lkt");
+    track("data/ir_ir_5_r", "slsqp");
 
     return 0;
 }
