@@ -37,7 +37,8 @@ namespace histograms
                 }
             }
         }
-        skill *= (1 - alpha_f);
+        fg_skill *= (1 - alpha_f);
+        bg_skill *= (1 - alpha_f); // or 1 - alpha_b???
     }
 
     void Histogram2::update(const std::vector<std::pair<cv::Vec3b, float> > &color_heaviside)
@@ -47,6 +48,9 @@ namespace histograms
         float eta_b = num_pts - eta_f;
 
         scaleHistogram();
+
+        float curr_fg_skill = 0;
+        float curr_bg_skill = 0;
 
         for (int i = 0; i < num_pts; ++i)
         {
@@ -61,8 +65,16 @@ namespace histograms
             prob_bg[blue][green][red] += visited ?
                 (1 - heaviside_value) * alpha_b / eta_b :
                 (1 - heaviside_value) / eta_b;
+            curr_fg_skill += heaviside_value;
+            curr_bg_skill += (1 - heaviside_value);
         }
-        skill += num_pts;
+        if (curr_fg_skill > 0 || curr_bg_skill > 0)
+        {
+            curr_fg_skill *= alpha_f;
+            curr_bg_skill *= alpha_f; // or alpha_b???
+        }
+        fg_skill += curr_fg_skill;
+        bg_skill += curr_bg_skill;
         visited = true;
     }
 
@@ -79,8 +91,8 @@ namespace histograms
         }
         else
         {
-            for_fore = prob_fg[blue][green][red];
-            for_back = prob_bg[blue][green][red];
+            for_fore = prob_fg[blue][green][red] * fg_skill;
+            for_back = prob_bg[blue][green][red] * bg_skill;
         }
 
         if (for_fore == 0 && for_back == 0)
@@ -90,7 +102,7 @@ namespace histograms
 
     float Histogram2::getSkill() const
     {
-        return skill;
+        return fg_skill + bg_skill;
     }
 
 }

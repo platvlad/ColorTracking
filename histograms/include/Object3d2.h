@@ -42,7 +42,11 @@ namespace histograms
 
         const Renderer& getRenderer() const;
 
-        cv::Mat1f findColorForeground(const Projection &projection, const cv::Mat3b &frame, const glm::mat4 &pose) const;
+        cv::Mat1f findColorForeground(
+            const Projection &projection, 
+            const cv::Mat3b &frame, 
+            const glm::mat4 &pose, 
+            bool debug_info = false) const;
 
         ~Object3d2();
     };

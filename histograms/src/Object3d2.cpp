@@ -69,17 +69,14 @@ namespace histograms
             for (int col = 0; col < maps_size.width; ++col)
             {
                 float signed_distance_value = projection.signed_distance(row, col);
-                if (signed_distance_value < 0)
+                if (signed_distance_value < 0 && signed_distance_value >= -1.5)
                 {
                     cv::Vec3f depth_value = projection.depth_map(row, col);
                     cv::Vec3f transformed_pt = depth_value;
                     transformed_pt[2] = -transformed_pt[2];
                     transformed_pts(row, col) = transformed_pt;
-                    if (signed_distance_value >= -1.5)
-                    {
-                        int label = projection.nearest_labels(row, col);
-                        labels_transformed_pts[label] = transformed_pt;
-                    }
+                    int label = projection.nearest_labels(row, col);
+                    labels_transformed_pts[label] = transformed_pt;
                 }
                 
             }
@@ -88,11 +85,8 @@ namespace histograms
         {
             for (int col = 0; col < maps_size.width; ++col)
             {
-                if (projection.signed_distance(row, col) >= 0)
-                {
-                    int label = projection.nearest_labels(row, col);
-                    transformed_pts(row, col) = labels_transformed_pts[label];
-                }
+                int label = projection.nearest_labels(row, col);
+                transformed_pts(row, col) = labels_transformed_pts[label];
             }
         }
         return transformed_pts;
@@ -135,14 +129,13 @@ namespace histograms
                     if (debug_info)
                     {
                         histo_nums(row, col) = cv::Vec3b(histo_num * 8, (histo_num + 1) * 16 % 255, (histo_num + 2) * 24 % 255);
+                        if (signed_distance(row, col) >= 0)
+                        {
+                            histo_nums(row, col)[0] *= 0.8f;
+                        }
                     }
                 }
             }
-        }
-
-        if (debug_info)
-        {
-            cv::imwrite("C:\\MyProjects\\repo\\VSProjects\\ColorTracking\\ColorTracking\\build\\data\\debug_frames\\histo_nums.png", histo_nums);
         }
 
         for (int i = 0; i < 32; ++i)
@@ -168,7 +161,11 @@ namespace histograms
         return renderer;
     }
 
-    cv::Mat1f Object3d2::findColorForeground(const Projection &projection, const cv::Mat3b & frame, const glm::mat4 & pose) const
+    cv::Mat1f Object3d2::findColorForeground(
+        const Projection &projection, 
+        const cv::Mat3b & frame, 
+        const glm::mat4 & pose, 
+        bool debug_info) const
     {
         cv::Size projection_size = projection.getSize();
         cv::Mat1f votes_fg = cv::Mat1f::zeros(projection_size);
@@ -182,6 +179,7 @@ namespace histograms
         float common_eta_b = 0;
 
         cv::Mat1b histo_nums = cv::Mat1b::zeros(projection_size);
+        cv::Mat3b histo_nums_debug = cv::Mat3b::zeros(projection_size);
 
         for (int row = 0; row < projection_size.height; ++row)
         {
@@ -230,8 +228,23 @@ namespace histograms
                         float common_vote = common_histogram->voteColor(color, common_eta_f, common_eta_b);
                         votes_fg(row, col) = (histo_vote * histo_skill + common_vote * (sufficient_skill - histo_skill)) / sufficient_skill;
                     }
+                    if (debug_info)
+                    {
+                        histo_nums_debug(row, col) = cv::Vec3b(histo_num * 8, (histo_num + 1) * 16 % 255, (histo_num + 2) * 24 % 255);
+                        if (signed_distance(row, col) < 0)
+                        {
+                            histo_nums_debug(row, col)[0] *= 0.8f;
+                        }
+                    }
                 }
             }
+        }
+
+        if (debug_info)
+        {
+            cv::imwrite(
+                "C:\\MyProjects\\repo\\VSProjects\\ColorTracking\\ColorTracking\\build\\data\\debug_frames\\histo_nums.png", 
+                histo_nums_debug);
         }
 
         return votes_fg;

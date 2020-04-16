@@ -16,7 +16,7 @@ namespace histograms
         frame_offset = object.getFrameOffset();
         projection = renderer->projectMesh2(mesh, pose, frame, frame_offset);
         cv::Mat1f& signed_distance = projection.signed_distance;
-        votes_fg = object.findColorForeground(projection, frame, pose);
+        votes_fg = object.findColorForeground(projection, frame, pose, debug_info);
         
         float error_sum = 0;
         size_t num_estimators = 0;

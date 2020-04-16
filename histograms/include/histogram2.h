@@ -14,7 +14,8 @@ namespace histograms
         float prob_fg[COLORS_PER_CHANNEL][COLORS_PER_CHANNEL][COLORS_PER_CHANNEL];
         float prob_bg[COLORS_PER_CHANNEL][COLORS_PER_CHANNEL][COLORS_PER_CHANNEL];
 
-        float skill = 0;
+        float fg_skill = 0;
+        float bg_skill = 0;
 
         static float alpha_f;
         static float alpha_b;
