@@ -39,11 +39,12 @@ namespace histograms
         return *this;
     }
 
-    int Object3d2::getHistogram(cv::Vec3f transformed_pt, const glm::mat4 & pose_inv)
+    int Object3d2::getHistogram(cv::Vec3f transformed_pt, const glm::mat4 & pose_inv) const
     {
         glm::vec4 transformed_hom(transformed_pt[0], transformed_pt[1], transformed_pt[2], 1.0f);
         glm::vec4 obj_pt_3d_hom = pose_inv * transformed_hom;
         glm::vec3 obj_pt(obj_pt_3d_hom);
+        obj_pt = obj_pt - mesh.getCenter();
         obj_pt = glm::normalize(obj_pt);
         int histo_class = obj_pt.x > 0 ? 1 : 0;
         histo_class *= 2;

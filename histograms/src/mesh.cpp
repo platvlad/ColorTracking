@@ -48,6 +48,7 @@ namespace histograms
             float x_dim = x_up - x_low;
             float y_dim = y_up - y_low;
             float z_dim = z_up - z_low;
+            center = glm::vec3((x_low + x_up) / 2, (y_low + y_up) / 2, (z_low + z_up) / 2);
             bb_diameter = sqrt(x_dim * x_dim + y_dim * y_dim + z_dim * z_dim);
         }
 
@@ -95,6 +96,11 @@ namespace histograms
         output_file.close();
     }
 
+    const glm::vec3 & Mesh::getCenter() const
+    {
+        return center;
+    }
+
     void Mesh::fitDiameterToFive()
     {
         if (bb_diameter == 0)
@@ -106,6 +112,7 @@ namespace histograms
         {
             vertices[i] /= scale_factor;
         }
+        center /= scale_factor;
         bb_diameter = 5;
     }
 

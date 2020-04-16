@@ -71,10 +71,18 @@ namespace histograms
         int blue = color[0] / bin_size;
         int green = color[1] / bin_size;
         int red = color[2] / bin_size;
-        float for_fore = eta_f * prob_fg[blue][green][red];
-        float for_back = eta_b * prob_bg[blue][green][red];
-        //float for_fore = prob_fg[blue][green][red];
-        //float for_back = prob_bg[blue][green][red];
+        float for_fore, for_back;
+        if (eta_b * 5 >= eta_f && eta_f * 5 >= eta_b)
+        {
+            for_fore = eta_f * prob_fg[blue][green][red];
+            for_back = eta_b * prob_bg[blue][green][red];
+        }
+        else
+        {
+            for_fore = prob_fg[blue][green][red];
+            for_back = prob_bg[blue][green][red];
+        }
+
         if (for_fore == 0 && for_back == 0)
             return 0.5f;
         return for_fore / (for_fore + for_back);

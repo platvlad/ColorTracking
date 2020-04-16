@@ -13,6 +13,7 @@ namespace histograms
         std::vector<glm::vec3> vertices;
         std::vector<glm::uvec3> faces;
 
+        glm::vec3 center;
         float bb_diameter;
 
     public:
@@ -29,6 +30,8 @@ namespace histograms
         void fitDiameterToFive();
 
         void exportWithPose(const std::string &file_name, const glm::mat4 &pose) const;
+
+        const glm::vec3& getCenter() const;
 
     };
 }

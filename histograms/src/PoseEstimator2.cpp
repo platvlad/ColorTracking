@@ -49,9 +49,9 @@ namespace histograms
         if (debug_info)
         {
             cv::Mat1b heaviside_copy = cv::Mat1b();
-            cv::imwrite("C:\\MyProjects\\repo\\VSProjects\\ColorTracking\\ColorTracking\\build\\data\\debug_frames\\errors2.png",
+            cv::imwrite("C:\\MyProjects\\repo\\VSProjects\\ColorTracking\\ColorTracking\\build\\data\\debug_frames\\errors.png",
                 errors);
-            cv::imwrite("C:\\MyProjects\\repo\\VSProjects\\ColorTracking\\ColorTracking\\build\\data\\debug_frames\\color2.png",
+            cv::imwrite("C:\\MyProjects\\repo\\VSProjects\\ColorTracking\\ColorTracking\\build\\data\\debug_frames\\color.png",
                 projection.color_map);
         }
 

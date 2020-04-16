@@ -81,7 +81,7 @@ public:
         
         while (!frame.empty())
         {
-            object3D.updateHistograms(frame, pose);
+            object3D.updateHistograms(frame, pose, frame_number == 4);
             data.estimated_poses[frame_number] = pose;
             data.writePng(frame, frame_number);
 
@@ -101,6 +101,11 @@ public:
             pose = getPoseOnPyramide(frame, pose_getter, pyramide_levels);
             histograms::PoseEstimator2 estimator;
             std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, frame, pose, 10).first << std::endl;
+            if (frame_number == 4)
+            {
+                glm::mat4 real_pose = data.getPose(frame_number);
+                std::cout << frame_number << " real " << estimator.estimateEnergy(object3D, frame, real_pose, 10, true).first << std::endl;
+            }
             bool plot_energy = false;
             if (plot_energy)
             {

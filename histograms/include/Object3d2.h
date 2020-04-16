@@ -23,7 +23,7 @@ namespace histograms
 
         Histogram2* common_histogram;
 
-        static int getHistogram(cv::Vec3f transformed_pt, const glm::mat4 &pose_inv);
+        int getHistogram(cv::Vec3f transformed_pt, const glm::mat4 &pose_inv) const;
 
         static cv::Mat3f getTransformedBorderPoints(const Projection &projection);
 
