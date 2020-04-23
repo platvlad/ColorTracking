@@ -51,6 +51,51 @@ namespace histograms
                 uchar blue = local_square.color_map(row_on_local_square, col_on_local_square)[0] / binSize;
                 uchar green = local_square.color_map(row_on_local_square, col_on_local_square)[1] / binSize;
                 uchar red = local_square.color_map(row_on_local_square, col_on_local_square)[2] / binSize;
+                float acc_blue = local_square.color_map(row_on_local_square, col_on_local_square)[0] / static_cast<float>(binSize);
+                float acc_green = local_square.color_map(row_on_local_square, col_on_local_square)[1] / static_cast<float>(binSize);
+                float acc_red = local_square.color_map(row_on_local_square, col_on_local_square)[2] / static_cast<float>(binSize);
+                float frac_blue = acc_blue - blue;
+                float frac_green = acc_green - green;
+                float frac_red = acc_red - red;
+                uchar alt_blue = blue;
+                uchar alt_green = green;
+                uchar alt_red = red;
+                float blue_weight = 0;
+                float green_weight = 0;
+                float red_weight = 0;
+                if (frac_blue > 0.5f && blue < COLORS_PER_CHANNEL - 1)
+                {
+                    alt_blue = blue + 1;
+                    blue_weight = (frac_blue - 0.5) / (1.5 - frac_blue);
+                }
+                else if (frac_blue <= 0.5f && blue > 0)
+                {
+                    alt_blue = blue - 1;
+                    blue_weight = (0.5 - frac_blue) / (0.5 + frac_blue);
+                }
+                if (frac_green > 0.5f && green < COLORS_PER_CHANNEL - 1)
+                {
+                    alt_green = green + 1;
+                    green_weight = (frac_green - 0.5) / (1.5 - frac_green);
+                }
+                else if (frac_green <= 0.5f && green > 0)
+                {
+                    alt_green = green - 1;
+                    green_weight = (0.5 - frac_green) / (0.5 + frac_green);
+                }
+                if (frac_red > 0.5f && red < COLORS_PER_CHANNEL - 1)
+                {
+                    alt_red = red + 1;
+                    red_weight = (frac_red - 0.5) / (1.5 - frac_red);
+                }
+                else if (frac_red <= 0.5f && red > 0)
+                {
+                    alt_red = red - 1;
+                    red_weight = (0.5 - frac_red) / (0.5 + frac_red);
+                }
+                float weight = 1 + blue_weight + green_weight + red_weight;
+                
+                
                 if (strict_classification) {
                     if (local_square.heaviside(row_on_local_square, col_on_local_square) > 0.5)
                     {
@@ -69,12 +114,39 @@ namespace histograms
                 {
                     prob_fg[blue][green][red] += visited ?
                             local_square.heaviside(row_on_local_square, col_on_local_square) * alpha_f /
-                            num_foreground :
-                            local_square.heaviside(row_on_local_square, col_on_local_square) / num_foreground;
+                            (num_foreground * weight) :
+                            local_square.heaviside(row_on_local_square, col_on_local_square) / (num_foreground * weight);
                     prob_bg[blue][green][red] += visited ?
                             (1 - local_square.heaviside(row_on_local_square, col_on_local_square)) * alpha_b /
-                            num_background :
-                            (1 - local_square.heaviside(row_on_local_square, col_on_local_square)) / num_background;
+                            (num_background * weight) :
+                            (1 - local_square.heaviside(row_on_local_square, col_on_local_square)) / (num_background * weight);
+
+                    prob_fg[alt_blue][green][red] += visited ?
+                        blue_weight * local_square.heaviside(row_on_local_square, col_on_local_square) * alpha_f /
+                        (num_foreground * weight) :
+                        blue_weight * local_square.heaviside(row_on_local_square, col_on_local_square) / (num_foreground * weight);
+                    prob_bg[alt_blue][green][red] += visited ?
+                        blue_weight * (1 - local_square.heaviside(row_on_local_square, col_on_local_square)) * alpha_b /
+                        (num_background * weight) :
+                        blue_weight * (1 - local_square.heaviside(row_on_local_square, col_on_local_square)) / (num_background * weight);
+
+                    prob_fg[blue][alt_green][red] += visited ?
+                        green_weight * local_square.heaviside(row_on_local_square, col_on_local_square) * alpha_f /
+                        (num_foreground * weight) :
+                        green_weight * local_square.heaviside(row_on_local_square, col_on_local_square) / (num_foreground * weight);
+                    prob_bg[blue][alt_green][red] += visited ?
+                        green_weight * (1 - local_square.heaviside(row_on_local_square, col_on_local_square)) * alpha_b /
+                        (num_background * weight) :
+                        green_weight * (1 - local_square.heaviside(row_on_local_square, col_on_local_square)) / (num_background * weight);
+
+                    prob_fg[blue][green][alt_red] += visited ?
+                        red_weight * local_square.heaviside(row_on_local_square, col_on_local_square) * alpha_f /
+                        (num_foreground * weight) :
+                        red_weight * local_square.heaviside(row_on_local_square, col_on_local_square) / (num_foreground * weight);
+                    prob_bg[blue][green][alt_red] += visited ?
+                        red_weight * (1 - local_square.heaviside(row_on_local_square, col_on_local_square)) * alpha_b /
+                        (num_background * weight) :
+                        red_weight * (1 - local_square.heaviside(row_on_local_square, col_on_local_square)) / (num_background * weight);
                 }
             }
         }
@@ -220,7 +292,57 @@ namespace histograms
                 uchar blue = color_map(row_on_local_square, col_on_local_square)[0] / bin_size;
                 uchar green = color_map(row_on_local_square, col_on_local_square)[1] / bin_size;
                 uchar red = color_map(row_on_local_square, col_on_local_square)[2] / bin_size;
-                votes(row_on_local_square, col_on_local_square) += voteColor(blue, green, red, eta_f, eta_b);
+
+                float acc_blue = local_square.color_map(row_on_local_square, col_on_local_square)[0] / static_cast<float>(bin_size);
+                float acc_green = local_square.color_map(row_on_local_square, col_on_local_square)[1] / static_cast<float>(bin_size);
+                float acc_red = local_square.color_map(row_on_local_square, col_on_local_square)[2] / static_cast<float>(bin_size);
+                float frac_blue = acc_blue - blue;
+                float frac_green = acc_green - green;
+                float frac_red = acc_red - red;
+                uchar alt_blue = blue;
+                uchar alt_green = green;
+                uchar alt_red = red;
+                float blue_weight = 0;
+                float green_weight = 0;
+                float red_weight = 0;
+                if (frac_blue > 0.5f && blue < COLORS_PER_CHANNEL - 1)
+                {
+                    alt_blue = blue + 1;
+                    blue_weight = (frac_blue - 0.5) / (1.5 - frac_blue);
+                }
+                else if (frac_blue <= 0.5f && blue > 0)
+                {
+                    alt_blue = blue - 1;
+                    blue_weight = (0.5 - frac_blue) / (0.5 + frac_blue);
+                }
+                if (frac_green > 0.5f && green < COLORS_PER_CHANNEL - 1)
+                {
+                    alt_green = green + 1;
+                    green_weight = (frac_green - 0.5) / (1.5 - frac_green);
+                }
+                else if (frac_green <= 0.5f && green > 0)
+                {
+                    alt_green = green - 1;
+                    green_weight = (0.5 - frac_green) / (0.5 + frac_green);
+                }
+                if (frac_red > 0.5f && red < COLORS_PER_CHANNEL - 1)
+                {
+                    alt_red = red + 1;
+                    red_weight = (frac_red - 0.5) / (1.5 - frac_red);
+                }
+                else if (frac_red <= 0.5f && red > 0)
+                {
+                    alt_red = red - 1;
+                    red_weight = (0.5 - frac_red) / (0.5 + frac_red);
+                }
+                float weight = 1 + blue_weight + green_weight + red_weight;
+                weight = 1;
+
+                votes(row_on_local_square, col_on_local_square) += voteColor(blue, green, red, eta_f, eta_b) / weight;
+                //votes(row_on_local_square, col_on_local_square) += blue_weight * voteColor(alt_blue, green, red, eta_f, eta_b) / weight;
+                //votes(row_on_local_square, col_on_local_square) += green_weight * voteColor(blue, alt_green, red, eta_f, eta_b) / weight;
+                //votes(row_on_local_square, col_on_local_square) += red_weight * voteColor(blue, green, alt_red, eta_f, eta_b) / weight;
+
                 ++numVoters(row_on_local_square, col_on_local_square);
             }
         }

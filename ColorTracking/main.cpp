@@ -199,7 +199,7 @@ void track(const std::string &directory_name, const std::string &method)
     }
     else if (method == "slsqp")
     {
-        tracker = new PyramideTracker<SLSQPPoseGetter>(directory_name);
+        tracker = new PyramideTracker<SLSQPPoseGetter>(directory_name, 0);
     }
     else if (method == "lkt_init")
     {
@@ -230,7 +230,7 @@ int main()
     //GLuint VAO;
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
-    track("data/ir_ir_5_r", "slsqp");
+    track("data/bi_ir_5_l", "slsqp");
 
     return 0;
 }
