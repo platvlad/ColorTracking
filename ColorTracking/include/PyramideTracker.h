@@ -76,35 +76,53 @@ public:
 
         int frame_number = 1;
         cv::Mat3b frame = getFrame();
+        cv::Mat3b processed_frame;
+        equalizeHSV(frame, processed_frame);
         glm::mat4 prev_pose = pose;
-
+        glm::mat4 prev_prev_pose = prev_pose;
         
         while (!frame.empty())
         {
-            object3D.updateHistograms(frame, pose, frame_number == 4);
+            object3D.updateHistograms(processed_frame, pose);
             data.estimated_poses[frame_number] = pose;
             data.writePng(frame, frame_number);
 
             frame = getFrame();
             if (frame.empty())
                 break;
+            equalizeHSV(frame, processed_frame);
             ++frame_number;
 
             if (frame_number > 2)
             {
-                glm::mat4 optimization_init = extrapolate(prev_pose, pose);
+                glm::mat4 optimization_init;
+                if (frame_number > 3)
+                {
+                    optimization_init = extrapolate(prev_prev_pose, prev_pose, pose);
+                }
+                else
+                {
+                    optimization_init = extrapolate(prev_pose, pose);
+                }
                 //glm::mat4 optimization_init = pose;
                 pose_getter.setInitialPose(optimization_init);
             }
 
+            if (frame_number == 12)
+            {
+                bool for_debug = true;
+            }
+
+            prev_prev_pose = prev_pose;
             prev_pose = pose;
-            pose = getPoseOnPyramide(frame, pose_getter, pyramide_levels);
+            pose = getPoseOnPyramide(processed_frame, pose_getter, pyramide_levels);
             histograms::PoseEstimator2 estimator;
-            std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, frame, pose, 10).first << std::endl;
-            if (frame_number == 4)
+            std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, processed_frame, pose, 10).first << std::endl;
+            if (frame_number == 12)
             {
                 glm::mat4 real_pose = data.getPose(frame_number);
-                std::cout << frame_number << " real " << estimator.estimateEnergy(object3D, frame, real_pose, 10, true).first << std::endl;
+                std::cout << frame_number << " real " << estimator.estimateEnergy(object3D, processed_frame, real_pose, 10, 1).first << std::endl; 
+                std::cout << frame_number << " estimated " << estimator.estimateEnergy(object3D, processed_frame, pose, 10, 2).first << std::endl;
             }
             bool plot_energy = false;
             if (plot_energy)

@@ -14,7 +14,7 @@ public:
 
     static void getGradient(const glm::mat4 &initial_pose,
                             histograms::PoseEstimator2 &estimator,
-                            double* grad);
+                            double* grad, bool debug_info = false);
 
 
 };

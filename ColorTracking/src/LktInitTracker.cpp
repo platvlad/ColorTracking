@@ -9,8 +9,11 @@ void LktInitTracker::run()
     histograms::Object3d2& object3D = data.object3D2;
     glm::mat4 pose = data.getPose(1);
     glm::mat4 prev_pose = pose;
+    glm::mat4 prev_prev_pose = prev_pose;
     int frame_number = 1;
     cv::Mat3b frame = getFrame();
+    cv::Mat3b processed_frame;
+    equalizeHSV(frame, processed_frame);
     SLSQPPoseGetter color_pose_getter(&object3D, pose);
 
     const Renderer& renderer = object3D.getRenderer();
@@ -20,7 +23,7 @@ void LktInitTracker::run()
 
     while (!frame.empty())
     {
-        object3D.updateHistograms(frame, pose);
+        object3D.updateHistograms(processed_frame, pose);
         data.estimated_poses[frame_number] = pose;
         data.writePng(frame, frame_number);
         f_tracker.setPrevModel(pose);
@@ -28,14 +31,44 @@ void LktInitTracker::run()
         frame = getFrame();
         if (frame.empty())
             break;
+        equalizeHSV(frame, processed_frame);
         ++frame_number;
         glm::mat4 feat_pose = f_tracker.handleFrame(frame);
-        color_pose_getter.setInitialPose(feat_pose);
         histograms::PoseEstimator2 estimator;
-        std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, frame, feat_pose, 10).first << std::endl;
 
-        pose = color_pose_getter.getPose(frame, 0);
-        std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, frame, pose, 10).first << std::endl;
+        if (frame_number > 2)
+        {
+            float feat_pose_error = estimator.estimateEnergy(object3D, processed_frame, feat_pose, 100).first;
+            glm::mat4 extrapolated;
+            if (frame_number > 3)
+            {
+                extrapolated = extrapolate(prev_prev_pose, prev_pose, pose);
+            }
+            else
+            {
+                extrapolated = extrapolate(prev_pose, pose);
+            }
+            float extrapolated_pose_error = estimator.estimateEnergy(object3D, processed_frame, extrapolated, 100).first;
+            std::cout << "feat pose error = " << feat_pose_error << std::endl;
+            std::cout << "extrapolated pose error = " << extrapolated_pose_error << std::endl;
+            if (extrapolated_pose_error < feat_pose_error)
+            {
+                color_pose_getter.setInitialPose(extrapolated);
+            }
+            else
+            {
+                color_pose_getter.setInitialPose(feat_pose);
+            }
+        }
+        else
+        {
+            color_pose_getter.setInitialPose(feat_pose);
+        }
+
+        prev_prev_pose = prev_pose;
+        prev_pose = pose;
+        pose = color_pose_getter.getPose(processed_frame, 0);
+        std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, processed_frame, pose, 10).first << std::endl;
         f_tracker.addNewFeatures(pose);
 
         bool plot_energy = false;

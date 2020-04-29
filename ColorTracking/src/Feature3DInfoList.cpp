@@ -241,7 +241,6 @@ void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &
         size_t new_pos_counter = 0;
         size_t fresh_counter = 0;
         size_t good_frame = 0;
-        std::cout << "merged feature info list size = " << merged_feature_info_list.size() << std::endl;
         for (int i = 0; i < merged_feature_info_list.size(); ++i)
         {
             lkt::FeatureInfo& feat = merged_feature_info_list[i];
@@ -268,10 +267,6 @@ void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &
                             {
                                 feat_3d_info.best_reproj = reprojection_error;
                                 ++good_frame;
-                                if (old_pos_iter->first == 3)
-                                {
-                                    std::cout << "reprojection error on good frame = " << reprojection_error << std::endl;
-                                }
                             }
                             float alt_reprojection_error = lkt::computeReprojectionError2(mvp,
                                 feat_3d_info.alt_object_pos,
@@ -314,13 +309,8 @@ void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &
                 }
             }
         }
-        std::cout << "old pos counter = " << old_pos_counter << std::endl;
-        std::cout << "new pos counter = " << new_pos_counter << std::endl;
-        std::cout << "fresh counter = " << fresh_counter << std::endl;
-        std::cout << "good frame counter = " << good_frame << std::endl;
         new_vector.resize(new_vector_counter);
         featInfos = new_vector;
-        std::cout << "new featInfos size = " << featInfos.size() << std::endl;
         //filterInvisible(mesh, model, projection, frame.size());
     }
     else {

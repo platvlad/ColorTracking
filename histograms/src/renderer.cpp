@@ -294,9 +294,12 @@ void Renderer::renderMesh(const histograms::Mesh &mesh, cv::Mat3b& frame, const 
         img_pts[1] = cv::Point(p1[0], p1[1]);
         img_pts[2] = cv::Point(p2[0], p2[1]);
 
+        std::vector<std::vector<cv::Point> > img_pts_vector(1, img_pts);
+
         if (p0 != glm::vec3() && p1 != glm::vec3() && p2 != glm::vec3())
         {
             cv::polylines(frame, img_pts, true, cv::Scalar(0, 127, 0));
+            //cv::fillPoly(frame, img_pts_vector, cv::Scalar(0, 127, 0));
         }
     }
     

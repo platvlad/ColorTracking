@@ -1,6 +1,7 @@
 #include "GradientEstimator2.h"
 
 #include <iostream>
+#include <opencv2/highgui/highgui.hpp>
 
 std::vector<cv::Mat1d> GradientEstimator2::getGradientInPoint(const glm::mat4 &initial_pose,
                                                              const histograms::PoseEstimator2 &estimator)
@@ -94,7 +95,7 @@ cv::Matx12d GradientEstimator2::getSignedDistanceGradient(const cv::Mat1f &signe
 void
 GradientEstimator2::getGradient(const glm::mat4 &initial_pose,
                                histograms::PoseEstimator2 &estimator,
-                               double* grad)
+                               double* grad, bool debug_info)
 {
     for (int i = 0; i < 6; ++i)
     {
@@ -111,6 +112,8 @@ GradientEstimator2::getGradient(const glm::mat4 &initial_pose,
     int frame_offset = estimator.getFrameOffset();
 
     int non_zero_pixels = 0;
+
+    cv::Mat1f grad_y = cv::Mat1f::zeros(projection.getSize());
 
     for (int row = 0; row < signed_distance.rows; ++row)
     {
@@ -133,9 +136,17 @@ GradientEstimator2::getGradient(const glm::mat4 &initial_pose,
                         int for_debug = 1;
                     }
                 }
+                if (debug_info)
+                {
+                    grad_y(row, col) = (non_const_part(0, 4) * derivative_const_part(row, col) + 255) / 2;
+                }
                 ++non_zero_pixels;
             }
         }
+    }
+    if (debug_info)
+    {
+        cv::imwrite("C:\\MyProjects\\repo\\VSProjects\\ColorTracking\\ColorTracking\\build\\data\\debug_frames\\grad_y.png", grad_y);
     }
     if (non_zero_pixels > 0)
     {

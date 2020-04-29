@@ -127,9 +127,21 @@ void DataIO::writePng(cv::Mat3b frame, int frame_number)
     const Renderer& renderer = object3D.getRenderer();
     const histograms::Mesh& mesh = object3D.getMesh();
     glm::mat4 pose = estimated_poses[frame_number].pose;
-    renderer.renderMesh(mesh, output, pose);
+    Projection projection = renderer.projectMesh2(mesh, pose, output, 40);
+    cv::Size projection_size = projection.getSize();
+    //renderer.renderMesh(mesh, output, pose);
     std::string frame_name = std::to_string(frame_number);
     frame_name = std::string(4 - frame_name.length(), '0') + frame_name;
+    for (int row = 0; row < projection_size.height; ++row)
+    {
+        for (int col = 0; col < projection_size.width; ++col)
+        {
+            if (projection.signed_distance(row, col) < 0)
+            {
+                projection.color_map(row, col) = cv::Vec3b(0, 128, 0);
+            }
+        }
+    }
     cv::Mat3b flipped_output;
     cv::flip(output, flipped_output, 0);
     cv::imwrite(directory_name + "/output_frames/" + frame_name + ".png", flipped_output);

@@ -8,7 +8,7 @@
 namespace histograms
 {
     std::pair<float, size_t> PoseEstimator2::estimateEnergy(const Object3d2 &object, const cv::Mat3b &frame,
-        const glm::mat4 &pose, int histo_part, bool debug_info)
+        const glm::mat4 &pose, int histo_part, int debug_number)
     {
         this->pose = pose;
         renderer = &(object.getRenderer());
@@ -16,7 +16,7 @@ namespace histograms
         frame_offset = object.getFrameOffset();
         projection = renderer->projectMesh2(mesh, pose, frame, frame_offset);
         cv::Mat1f& signed_distance = projection.signed_distance;
-        votes_fg = object.findColorForeground(projection, frame, pose, debug_info);
+        votes_fg = object.findColorForeground(projection, frame, pose, debug_number);
         
         float error_sum = 0;
         size_t num_estimators = 0;
@@ -29,7 +29,7 @@ namespace histograms
                 {
                     float heaviside_value = projection.heaviside(row, col);
                     float foreground_vote = votes_fg(row, col);
-                    if (debug_info)
+                    if (debug_number > 0)
                     {
                         float current_error = -log(heaviside_value * foreground_vote +
                             (1 - heaviside_value) * (1 - foreground_vote));
@@ -46,12 +46,14 @@ namespace histograms
             }
         }
 
-        if (debug_info)
+        if (debug_number > 0)
         {
             cv::Mat1b heaviside_copy = cv::Mat1b();
-            cv::imwrite("C:\\MyProjects\\repo\\VSProjects\\ColorTracking\\ColorTracking\\build\\data\\debug_frames\\errors.png",
+            cv::imwrite("C:\\MyProjects\\repo\\VSProjects\\ColorTracking\\ColorTracking\\build\\data\\debug_frames\\errors" + 
+                std::to_string(debug_number) + ".png",
                 errors);
-            cv::imwrite("C:\\MyProjects\\repo\\VSProjects\\ColorTracking\\ColorTracking\\build\\data\\debug_frames\\color.png",
+            cv::imwrite("C:\\MyProjects\\repo\\VSProjects\\ColorTracking\\ColorTracking\\build\\data\\debug_frames\\color" + 
+                std::to_string(debug_number) + ".png",
                 projection.color_map);
         }
 

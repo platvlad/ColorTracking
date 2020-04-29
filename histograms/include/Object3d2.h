@@ -46,7 +46,7 @@ namespace histograms
             const Projection &projection, 
             const cv::Mat3b &frame, 
             const glm::mat4 &pose, 
-            bool debug_info = false) const;
+            int debug_number = 0) const;
 
         ~Object3d2();
     };

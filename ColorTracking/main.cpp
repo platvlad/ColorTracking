@@ -251,6 +251,22 @@ int main()
     //GLuint VAO;
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
-    track("data/Vorona", "slsqp");
+    
+    track("data/ir_ir_5_r", "lkt_init");
+   
+    //std::cout << "ho_fm_r" << std::endl;
+    //track("data/opt_small/house/ho_fm_r", "lkt_init");
+    //std::cout << "jet_ir_3_b" << std::endl;
+    //track("data/opt_small/jet/je_ir_3_b", "lkt");
+    //std::cout << "ch_ml_l" << std::endl;
+    //track("data/opt_small/chest/ch_ml_l", "lkt");
+    //std::cout << "ir_or_5_f" << std::endl;
+    //track("data/opt_small/ironman/ir_or_5_f", "slsqp");
+    //std::cout << "so_tr_4_l" << std::endl;
+    //track("data/opt_small/soda/so_tr_4_l", "slsqp");
+    //std::cout << "ir_zo_2_r" << std::endl;
+    //track("data/opt_small/ironman/ir_zo_2_r", "slsqp");
+    //std::cout << "bi_fl_b" << std::endl;
+    //track("data/opt_small/bike/bi_fl_b", "lkt");
     return 0;
 }

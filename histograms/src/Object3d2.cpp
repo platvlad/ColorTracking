@@ -165,7 +165,7 @@ namespace histograms
         const Projection &projection, 
         const cv::Mat3b & frame, 
         const glm::mat4 & pose, 
-        bool debug_info) const
+        int debug_number) const
     {
         cv::Size projection_size = projection.getSize();
         cv::Mat1f votes_fg = cv::Mat1f::zeros(projection_size);
@@ -228,7 +228,7 @@ namespace histograms
                         float common_vote = common_histogram->voteColor(color, common_eta_f, common_eta_b);
                         votes_fg(row, col) = (histo_vote * histo_skill + common_vote * (sufficient_skill - histo_skill)) / sufficient_skill;
                     }
-                    if (debug_info)
+                    if (debug_number > 0)
                     {
                         histo_nums_debug(row, col) = cv::Vec3b(histo_num * 8, (histo_num + 1) * 16 % 255, (histo_num + 2) * 24 % 255);
                         if (signed_distance(row, col) < 0)
@@ -240,10 +240,12 @@ namespace histograms
             }
         }
 
-        if (debug_info)
+        if (debug_number > 0)
         {
             cv::imwrite(
-                "C:\\MyProjects\\repo\\VSProjects\\ColorTracking\\ColorTracking\\build\\data\\debug_frames\\histo_nums.png", 
+                "C:\\MyProjects\\repo\\VSProjects\\ColorTracking\\ColorTracking\\build\\data\\debug_frames\\histo_nums" + 
+                std::to_string(debug_number) + 
+                ".png", 
                 histo_nums_debug);
         }
 
