@@ -8,6 +8,7 @@ Tracker2::Tracker2(const std::string &directory_name) : data(directory_name)
 
 void Tracker2::equalizeHSV(const cv::Mat3b &input, cv::Mat3b &output)
 {
+    //output = input;
     cv::cvtColor(input, output, CV_BGR2HSV);
     std::vector<cv::Mat1b> hsv_channels;
     cv::split(output, hsv_channels);

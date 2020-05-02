@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <filesystem>
+#include <boost/filesystem.hpp>
 #include <opencv2/highgui.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -236,7 +238,10 @@ void track(const std::string &directory_name, const std::string &method)
     }
     else if (method == "lkt")
     {
-        tracker = new LktTracker(directory_name);
+        Tracker2* tracker2 = new LktTracker(directory_name);
+        tracker2->run();
+        delete tracker2;
+        return;
     }
     tracker->run();
     if (tracker != nullptr)
@@ -252,21 +257,53 @@ int main()
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
     
-    track("data/ir_ir_5_r", "lkt_init");
+   //track("data/opt_small/house/ho_fm_r", "lkt");
+
+   boost::filesystem::path opt_small_directory("data/opt_small");
+    std::vector<std::string> opt_objects_directories;
+    for (auto& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(opt_small_directory), {}))
+    {
+        boost::filesystem::path object_dir_path(entry);
+        if (boost::filesystem::is_directory(object_dir_path))
+        {
+            boost::filesystem::path object_dir_name = object_dir_path.filename();
+            for (auto& case_entry : boost::make_iterator_range(boost::filesystem::directory_iterator(object_dir_path), {}))
+            {
+                boost::filesystem::path case_entry_path(case_entry);
+                boost::filesystem::path case_name = case_entry_path.filename();
+                if (boost::filesystem::is_directory(case_entry_path))
+                {
+                    std::cout << case_entry << std::endl;
+                    try
+                    {
+                        //track(case_entry.path().string(), "lkt");
+                        track(case_entry.path().string(), "lkt_init");
+                        track(case_entry.path().string(), "slsqp");
+                    }
+                    catch (std::exception& ex)
+                    {
+                        std::cout << case_entry << " failed" << std::endl;
+                    }
+                }
+            }
+        }
+    }
    
     //std::cout << "ho_fm_r" << std::endl;
-    //track("data/opt_small/house/ho_fm_r", "lkt_init");
+    //track("data/opt_small/house/ho_fm_r", "slsqp");
     //std::cout << "jet_ir_3_b" << std::endl;
     //track("data/opt_small/jet/je_ir_3_b", "lkt");
     //std::cout << "ch_ml_l" << std::endl;
-    //track("data/opt_small/chest/ch_ml_l", "lkt");
+    //track("data/opt_small/chest/ch_ml_l", "slsqp");
     //std::cout << "ir_or_5_f" << std::endl;
-    //track("data/opt_small/ironman/ir_or_5_f", "slsqp");
+    //track("data/opt_small/ironman/ir_or_5_f", "lkt");
     //std::cout << "so_tr_4_l" << std::endl;
     //track("data/opt_small/soda/so_tr_4_l", "slsqp");
     //std::cout << "ir_zo_2_r" << std::endl;
-    //track("data/opt_small/ironman/ir_zo_2_r", "slsqp");
+    //track("data/opt_small/ironman/ir_zo_2_r", "lkt");
     //std::cout << "bi_fl_b" << std::endl;
-    //track("data/opt_small/bike/bi_fl_b", "lkt");
+    //track("data/opt_small/bike/bi_fl_b", "lkt_init");
+    //std::cout << "je_tr_5_r" << std::endl;
+    //track("data/opt_small/jet/je_tr_5_r", "lkt_init");
     return 0;
 }

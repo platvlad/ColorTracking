@@ -193,6 +193,10 @@ void Renderer::renderTriangle(Projection& maps, const std::vector<glm::vec4> &ve
     float const totalHeight = p2.y - p0.y;
     for (int i = 0; i < totalHeight; ++i) {
         int const y = yMin + i;
+        if (y >= height)
+            break;
+        if (y < 0)
+            continue;
         bool const secondHalf = secondHalfPrecalc || i > p1.y - p0.y;
         float const segmentHeight = secondHalf ? p2.y - p1.y : p1.y - p0.y;
 
@@ -216,6 +220,10 @@ void Renderer::renderTriangle(Projection& maps, const std::vector<glm::vec4> &ve
         bool const thinLine = jMin == jMax;
         for (int j = jMin; j <= jMax; ++j) {
             int const x = j;
+            if (x >= width)
+                break;
+            if (x < 0)
+                continue;
             float const phi = thinLine ? 1.0f : (j - a.x) / (b.x - a.x);
             glm::vec3 const p(a * 1.0f + (b - a) * phi);
             glm::vec4 const tx_p(tx_a * 1.0f + (tx_b - tx_a) * phi);

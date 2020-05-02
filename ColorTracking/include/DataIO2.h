@@ -22,7 +22,7 @@ public:
 
     explicit DataIO2(const std::string& directory_name);
 
-    void writePositions();
+    void writePositions(const std::string &file_name = "output.yml");
 
     void writePng(cv::Mat3b frame, int frame_number);
 

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Tracker.h"
+#include "Tracker2.h"
 
-class LktTracker : public Tracker
+class LktTracker : public Tracker2
 {
 public:
-    LktTracker(const std::string &directory_name) : Tracker(directory_name) {}
+    LktTracker(const std::string &directory_name) : Tracker2(directory_name) {}
     void run() override;
 };

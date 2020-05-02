@@ -23,9 +23,10 @@ void LktInitTracker::run()
 
     while (!frame.empty())
     {
+        std::cout << "frame number = " << frame_number << std::endl;
         object3D.updateHistograms(processed_frame, pose);
         data.estimated_poses[frame_number] = pose;
-        data.writePng(frame, frame_number);
+        //data.writePng(frame, frame_number);
         f_tracker.setPrevModel(pose);
         
         frame = getFrame();
@@ -37,10 +38,12 @@ void LktInitTracker::run()
         histograms::PoseEstimator2 estimator;
 
         if (frame_number > 2)
+        //if (false)
         {
             float feat_pose_error = estimator.estimateEnergy(object3D, processed_frame, feat_pose, 100).first;
             glm::mat4 extrapolated;
-            if (frame_number > 3)
+            //if (frame_number > 3)
+            if (false)
             {
                 extrapolated = extrapolate(prev_prev_pose, prev_pose, pose);
             }
@@ -49,8 +52,8 @@ void LktInitTracker::run()
                 extrapolated = extrapolate(prev_pose, pose);
             }
             float extrapolated_pose_error = estimator.estimateEnergy(object3D, processed_frame, extrapolated, 100).first;
-            std::cout << "feat pose error = " << feat_pose_error << std::endl;
-            std::cout << "extrapolated pose error = " << extrapolated_pose_error << std::endl;
+            //std::cout << "feat pose error = " << feat_pose_error << std::endl;
+            //std::cout << "extrapolated pose error = " << extrapolated_pose_error << std::endl;
             if (extrapolated_pose_error < feat_pose_error)
             {
                 color_pose_getter.setInitialPose(extrapolated);
@@ -68,7 +71,7 @@ void LktInitTracker::run()
         prev_prev_pose = prev_pose;
         prev_pose = pose;
         pose = color_pose_getter.getPose(processed_frame, 0);
-        std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, processed_frame, pose, 10).first << std::endl;
+        //std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, processed_frame, pose, 10).first << std::endl;
         f_tracker.addNewFeatures(pose);
 
         bool plot_energy = false;
@@ -80,5 +83,5 @@ void LktInitTracker::run()
         }
         
     }
-    data.writePositions();
+    data.writePositions("output.yml");
 }
