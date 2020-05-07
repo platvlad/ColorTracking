@@ -25,9 +25,14 @@ public:
         glm::mat4 prev_pose = pose;
         while (!frame.empty())
         {
+            std::cout << frame_number << std::endl;
+            if (frame_number == 51)
+            {
+                bool for_debug = true;
+            }
             object3D.updateHistograms(processed_frame, pose);
             data.estimated_poses[frame_number] = pose;
-            data.writePng(processed_frame, frame_number);
+            //data.writePng(processed_frame, frame_number);
 
             frame = getFrame();
             if (frame.empty())
@@ -45,7 +50,7 @@ public:
             prev_pose = pose;
             pose = getPoseOnPyramide(processed_frame, pose_getter, pyramide_levels);
             histograms::PoseEstimator estimator;
-            std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, processed_frame, pose, 10).first << std::endl;
+            //std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, processed_frame, pose, 10).first << std::endl;
             bool plot_energy = false;
             if (plot_energy)
             {
@@ -54,6 +59,6 @@ public:
                 //data.writePlots(frame, frame_number, pose);
             }
         }
-        data.writePositions();
+        data.writePositions("");
     }
 };

@@ -22,7 +22,7 @@ public:
 
     explicit DataIO(const std::string& directory_name);
 
-    void writePositions();
+    void writePositions(const std::string &tracking_method = "");
 
     void writePng(cv::Mat3b frame, int frame_number);
 

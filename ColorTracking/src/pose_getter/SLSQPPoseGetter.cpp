@@ -91,24 +91,17 @@ glm::mat4 applyResultToParams(const glm::mat4& matr, double p0, double p1, doubl
 
 double SLSQPPoseGetter::energy_function(unsigned n, const double *x, double *grad, void *my_func_data)
 {
-    double to_debug[6];
-    for (int i = 0; i < 6; ++i)
-    {
-        to_debug[i] = x[i];
-    }
-
     PassToOptimization* passed_data = reinterpret_cast<PassToOptimization*>(my_func_data);
     histograms::Object3d* object = passed_data->object;
     cv::Mat& frame = passed_data->frame;
     int histo_part = (passed_data->mode == 0) ? 1 : 10;
-    histo_part = 10;
-
+    //histo_part = 10;
+    histo_part = 1;
     glm::mat4& initial_pose = passed_data->initial_pose;
 
     glm::mat4 transform_matrix = applyResultToPose(initial_pose, x);
     histograms::PoseEstimator estimator;
     float current_value = estimator.estimateEnergy(*object, frame, transform_matrix, histo_part, false).first;
-
     if (grad)
     {
         GradientEstimator::getGradient(initial_pose, estimator, grad);

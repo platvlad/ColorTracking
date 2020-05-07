@@ -1,6 +1,5 @@
 #include <set>
-//#include <opencv2/imgcodecs.hpp>
-//#include <opencv2/opencv.hpp>
+#include <iostream>
 #include <opencv2/core/core.hpp>
 
 #include "mesh.h"
@@ -33,7 +32,6 @@ namespace histograms
     void Object3d::updateHistograms(const cv::Mat3b& frame, const glm::mat4& pose)
     {
         Projection projection = renderer.projectMesh2(mesh, pose, frame, histogram_radius);
-
         const std::vector<glm::vec3>& vertices = mesh.getVertices();
 
         if (projection.hasEmptyProjection())
@@ -44,29 +42,33 @@ namespace histograms
         const cv::Mat1b& mask = projection.mask;
         const cv::Mat1f& heaviside = projection.heaviside;
         cv::Size projection_size = projection.getSize();
-
         //project vertices
         for (size_t i = 0; i < vertices.size(); ++i)
         {
+            
             glm::vec3 pixel = projection.vertex_projections[i];
-//            int column = static_cast<int>(pixel.x);
-//            int row = static_cast<int>(pixel.y);
+            
+            //            int column = static_cast<int>(pixel.x);
+            //            int row = static_cast<int>(pixel.y);
             int column = floor(pixel.x);
             int row = floor(pixel.y);
-            if (abs(signed_distance.at<float>(row, column)) < dist_to_contour + 0.5f)
+            if (row >= 0 && row < signed_distance.rows && column >= 0 && column < signed_distance.cols)
             {
-                // check visibility?
-                // signed distance computed is a bit larger since it is distance from exterior pixels, not from real curve
-                // therefore real distance is smaller up to 0.5 px
-                if (row >= 0 && row < projection_size.height && column >= 0 && column < projection_size.width)
+                if (abs(signed_distance.at<float>(row, column)) < dist_to_contour + 0.5f)
                 {
-                    int center_on_patch_x = std::min(column, histogram_radius);
-                    int center_on_patch_y = std::min(row, histogram_radius);
-                    cv::Rect patch_square = projection.getPatchSquare(column, row);
-                    Projection patch = projection(patch_square);
+                    // check visibility?
+                    // signed distance computed is a bit larger since it is distance from exterior pixels, not from real curve
+                    // therefore real distance is smaller up to 0.5 px
+                    if (row >= 0 && row < projection_size.height && column >= 0 && column < projection_size.width)
+                    {
+                        int center_on_patch_x = std::min(column, histogram_radius);
+                        int center_on_patch_y = std::min(row, histogram_radius);
+                        cv::Rect patch_square = projection.getPatchSquare(column, row);
+                        Projection patch = projection(patch_square);
 
-                    histograms[i].update(patch, center_on_patch_x, center_on_patch_y);
+                        histograms[i].update(patch, center_on_patch_x, center_on_patch_y);
 
+                    }
                 }
             }
         }

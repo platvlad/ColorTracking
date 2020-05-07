@@ -99,6 +99,11 @@ glm::mat4 Feature3DInfoList::solveEPnPRansac(
 {
     std::vector<glm::vec3> pts_3d = getObjectPosVector();
     std::vector<glm::vec2> pts_2d = getImagePtsVector();
+    if (pts_3d.size() < 5)
+    {
+        return prev_model;
+    }
+    std::cout << "solving EPnPRansac on " << pts_3d.size() << " points" << std::endl;
     return lkt::solveEPnPRansac(pts_3d, pts_2d, prev_model, view, projection, iter_count, maxInlierError).get_value_or(prev_model);
 }
 
@@ -111,8 +116,12 @@ glm::mat4 Feature3DInfoList::solvePnP(
     std::vector<glm::vec3> pts_3d = getObjectPosVector();
     std::vector<glm::vec2> pts_2d = getImagePtsVector();
     glm::mat4 mvp = projection * view * model;
-
-    return lkt::solvePnP(pts_3d, pts_2d, model, view, projection, lossFunctions);
+    if (pts_3d.size() > 2)
+    {
+        std::cout << "solving pnp on " << pts_3d.size() << " points" << std::endl;
+        return lkt::solvePnP(pts_3d, pts_2d, model, view, projection, lossFunctions);
+    }
+    return model;
 }
 
 void Feature3DInfoList::filterOutliers(const glm::mat4 &mvp, float maxInlierError)
@@ -120,7 +129,10 @@ void Feature3DInfoList::filterOutliers(const glm::mat4 &mvp, float maxInlierErro
     std::vector<glm::vec3> pts_3d = getObjectPosVector();
     std::vector<glm::vec2> pts_2d = getImagePtsVector();    
     std::vector<size_t> inliers = lkt::findInliers(mvp, maxInlierError, pts_3d, pts_2d);
-    filterByIndices(inliers);
+    if (inliers.size() > 5)
+    {
+        filterByIndices(inliers);
+    }
 }
 
 void Feature3DInfoList::filterInvisible(const lkt::Mesh &mesh, const glm::mat4 &model, const glm::mat4 &projection, const cv::Size &frame_size)

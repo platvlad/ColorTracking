@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <boost/filesystem.hpp>
 #include <opencv2/highgui.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -230,7 +231,39 @@ int main()
     //GLuint VAO;
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
-    track("data/bi_ir_5_l", "slsqp");
+    //track("data/bi_ir_5_l", "lkt_init");
+
+    boost::filesystem::path opt_small_directory("data/opt_small");
+    for (auto& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(opt_small_directory), {}))
+    {
+        boost::filesystem::path object_dir_path(entry);
+        if (boost::filesystem::is_directory(object_dir_path))
+        {
+            boost::filesystem::path object_dir_name = object_dir_path.filename();
+            for (auto& case_entry : boost::make_iterator_range(boost::filesystem::directory_iterator(object_dir_path), {}))
+            {
+                boost::filesystem::path case_entry_path(case_entry);
+                boost::filesystem::path case_name = case_entry_path.filename();
+                if (boost::filesystem::is_directory(case_entry_path))
+                {
+                    if (object_dir_name == "soda" && case_name == "so_fl_f")
+                    {
+                        std::cout << case_entry << std::endl;
+                        try
+                        {
+                            //track(case_entry.path().string(), "lkt");
+                            track(case_entry.path().string(), "slsqp");
+                            track(case_entry.path().string(), "lkt_init");
+                        }
+                        catch (std::exception& ex)
+                        {
+                            std::cout << case_entry << " failed" << std::endl;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     return 0;
 }

@@ -110,9 +110,9 @@ float DataIO::getZNear(const glm::mat4& pose)
     return distance * 0.01f;
 }
 
-void DataIO::writePositions()
+void DataIO::writePositions(const std::string &tracking_method)
 {
-    boost::filesystem::path output_yml_path(directory_name + "/output.yml");
+    boost::filesystem::path output_yml_path(directory_name + "/output_" + tracking_method + ".yml");
     for (int i = 1; i <= estimated_poses.size(); ++i)
     {
         estimated_poses[i].pose[3] *= mesh_scale_factor;

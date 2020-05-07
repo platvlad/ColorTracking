@@ -170,6 +170,8 @@ float heaviside_parametrized(float x, float s)
 
 void Projection::computeHeaviside()
 {
+    if (width == 0 && height == 0)
+        return;
     float* signed_distance_ptr = signed_distance.ptr<float>();
     float* heaviside_ptr = heaviside.ptr<float>();
     int i = 0;

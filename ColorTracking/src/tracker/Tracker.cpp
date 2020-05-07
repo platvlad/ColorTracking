@@ -7,13 +7,13 @@ Tracker::Tracker(const std::string &directory_name) : data(directory_name)
 cv::Mat3b Tracker::processFrame(const cv::Mat3b &input)
 {
     return input;
-    //cv::Mat3b output;
-    //cv::cvtColor(input, output, CV_BGR2HSV);
-    //std::vector<cv::Mat1b> hsv_channels;
-    //cv::split(output, hsv_channels);
-    //cv::equalizeHist(hsv_channels[2], hsv_channels[2]);
-    //cv::merge(hsv_channels, output);
-    //return output;
+    cv::Mat3b output;
+    cv::cvtColor(input, output, CV_BGR2HSV);
+    std::vector<cv::Mat1b> hsv_channels;
+    cv::split(output, hsv_channels);
+    cv::equalizeHist(hsv_channels[2], hsv_channels[2]);
+    cv::merge(hsv_channels, output);
+    return output;
 }
 
 cv::Mat3b Tracker::getFrame()
