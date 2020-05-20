@@ -10,7 +10,7 @@
 #include "lkt/lmsolver/ParametersFixer.hpp"
 #include "lkt/inliers.hpp"
 
-#include <GradientEstimator.h>
+#include <GradientEstimator2.h>
 #include "PoseEstimator.h"
 
 glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params);
@@ -33,7 +33,7 @@ std::vector<double> rodriguesFromTransform(const glm::mat4& matr)
     return result;
 }
 
-SlsqpLktPoseGetter::SlsqpLktPoseGetter(histograms::Object3d* object3d, const glm::mat4& initial_pose, const cv::Mat3b &init_frame) :
+SlsqpLktPoseGetter::SlsqpLktPoseGetter(histograms::Object3d2* object3d, const glm::mat4& initial_pose, const cv::Mat3b &init_frame) :
     initial_pose(initial_pose),
     num_iterations(12),
     object(object3d),
@@ -78,15 +78,15 @@ std::pair<float, size_t> SlsqpLktPoseGetter::colorEnergy(const glm::mat4 &transf
     double *grad, 
     SlsqpLktPoseGetter *passed_data)
 {
-    histograms::Object3d* object = passed_data->object;
+    histograms::Object3d2* object = passed_data->object;
     cv::Mat& frame = passed_data->frame;
     int histo_part = 10;
-    histograms::PoseEstimator estimator;
+    histograms::PoseEstimator2 estimator;
     std::pair<float, size_t> color_error_estimators = estimator.estimateEnergy(*object, frame, transform_matrix, histo_part, false);
     glm::mat4& initial_pose = passed_data->initial_pose;
     if (grad)
     {
-        GradientEstimator::getGradient(initial_pose, estimator, grad);
+        GradientEstimator2::getGradient(initial_pose, estimator, grad);
     }
     return color_error_estimators;
 }
@@ -155,8 +155,8 @@ double SlsqpLktPoseGetter::energy_function(unsigned n, const double *x, double *
     float color_error = color_error_num.first;
     float feat_error = feat_error_num.first;
     size_t num_feat_estimators = feat_error_num.second;
-    double koeff = 2e-6 * passed_data->color_feat_err_koeff;
-    std::cout << "koeff = " << koeff << std::endl;
+    double koeff = 1 * passed_data->color_feat_err_koeff;
+    //std::cout << "koeff = " << koeff << std::endl;
 
     // full errors with virtual voters
     passed_data->feat_error = feat_error * num_feat_estimators * passed_data->pixels_per_feat / 2;
@@ -180,7 +180,7 @@ double SlsqpLktPoseGetter::energy_function(unsigned n, const double *x, double *
         }
 
     }
-    std::cout << "feat error = " << passed_data->feat_error << "; color error = " << passed_data->color_error << std::endl;
+    //std::cout << "feat error = " << passed_data->feat_error << "; color error = " << passed_data->color_error << std::endl;
     std::cout << "err value = " << err_value << std::endl;
     return err_value;
     
@@ -218,7 +218,7 @@ double SlsqpLktPoseGetter::energy_function_for_plot(const double *x, std::string
     std::vector<double> feat_errors(num_measurements);
     lkt::lm::VectorViewD err(feat_errors);
     lkt::lm::DenseMatrix jacobian(num_measurements, 6, 0);
-    histograms::PoseEstimator estimator;
+    histograms::PoseEstimator2 estimator;
     std::pair<float, size_t> color_error_estimators = estimator.estimateEnergy(*object, frame, transform_matrix, histo_part, false);
     size_t num_color_estimators = color_error_estimators.second;
     double color_err = color_error_estimators.first * num_color_estimators;
@@ -235,6 +235,7 @@ double SlsqpLktPoseGetter::energy_function_for_plot(const double *x, std::string
     cv::Mat1d err_matr = err_transposed * err_vector;
     double koeff = 4e-6;
     double lk_error = err_matr(0, 0) * pixels_per_feat / 2;
+    //double lk_error = featEnergy(transform_matrix, nullptr, this).first;
     double lk_error_koeff = koeff * lk_error;
     double weighted_num_voters = num_color_estimators + koeff * initial_feat_number * num_measurements / 2;
     double err_value = (lk_error_koeff + color_err) / weighted_num_voters;

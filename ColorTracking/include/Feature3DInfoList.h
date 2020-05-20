@@ -57,6 +57,8 @@ public:
     std::vector<glm::vec3> getObjectPosVector();
     std::vector<glm::vec2> getImagePtsVector();
 
+    float getAvgReprojectionError(const glm::mat4 &mvp) const;
+
     size_t size() const;
 
     glm::mat4 solveEPnPRansac(

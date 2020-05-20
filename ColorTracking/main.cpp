@@ -128,12 +128,12 @@ void plotEnergy(const Object3d& object3d, const cv::Mat3b& frame, const glm::mat
         angles[pose_number] = rotation_step * pt;
         offsets[pose_number] = translation_step * pt;
     }
-    plotColorRotation(object3d, frame, pose, angles, glm::vec3(1.0, 0.0, 0.0), rot_x_file);
-    plotColorRotation(object3d, frame, pose, angles, glm::vec3(0.0, 1.0, 0.0), rot_y_file);
-    plotColorRotation(object3d, frame, pose, angles, glm::vec3(0.0, 0.0, 1.0), rot_z_file);
+    //plotColorRotation(object3d, frame, pose, angles, glm::vec3(1.0, 0.0, 0.0), rot_x_file);
+    //plotColorRotation(object3d, frame, pose, angles, glm::vec3(0.0, 1.0, 0.0), rot_y_file);
+    //plotColorRotation(object3d, frame, pose, angles, glm::vec3(0.0, 0.0, 1.0), rot_z_file);
     plotColorTranslation(object3d, frame, pose, offsets, glm::vec3(1.0, 0.0, 0.0), tr_x_file);
-    plotColorTranslation(object3d, frame, pose, offsets, glm::vec3(1.0, 0.0, 0.0), tr_x_file);
-    plotColorTranslation(object3d, frame, pose, offsets, glm::vec3(1.0, 0.0, 0.0), tr_x_file);
+    //plotColorTranslation(object3d, frame, pose, offsets, glm::vec3(1.0, 0.0, 0.0), tr_x_file);
+    //plotColorTranslation(object3d, frame, pose, offsets, glm::vec3(1.0, 0.0, 0.0), tr_x_file);
     
 }
 
@@ -234,7 +234,10 @@ void track(const std::string &directory_name, const std::string &method)
     }
     else if (method == "slsqp_lkt")
     {
-        tracker = new SlsqpLktTracker(directory_name);
+        Tracker2* tracker2 = new SlsqpLktTracker(directory_name);
+        tracker2->run();
+        delete tracker2;
+        return;
     }
     else if (method == "lkt")
     {
@@ -257,10 +260,9 @@ int main()
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
     
-   //track("data/opt_small/house/ho_fm_r", "lkt");
+   //track("data/ir_ir_5_r", "slsqp");
 
    boost::filesystem::path opt_small_directory("data/opt_small");
-    std::vector<std::string> opt_objects_directories;
     for (auto& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(opt_small_directory), {}))
     {
         boost::filesystem::path object_dir_path(entry);
@@ -273,17 +275,21 @@ int main()
                 boost::filesystem::path case_name = case_entry_path.filename();
                 if (boost::filesystem::is_directory(case_entry_path))
                 {
-                    std::cout << case_entry << std::endl;
-                    try
-                    {
-                        //track(case_entry.path().string(), "lkt");
-                        track(case_entry.path().string(), "lkt_init");
-                        track(case_entry.path().string(), "slsqp");
-                    }
-                    catch (std::exception& ex)
-                    {
-                        std::cout << case_entry << " failed" << std::endl;
-                    }
+                    
+                    
+                        std::cout << case_entry << std::endl;
+                        try
+                        {
+                            //track(case_entry.path().string(), "lkt");
+                            track(case_entry.path().string(), "lkt_init");
+                            //track(case_entry.path().string(), "slsqp");
+                            //track(case_entry.path().string(), "slsqp_lkt");
+                        }
+                        catch (...)
+                        {
+                            std::cout << case_entry << " failed" << std::endl;
+                        }
+                    
                 }
             }
         }

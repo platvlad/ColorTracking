@@ -68,6 +68,60 @@ public:
     {
     };
 
+    void plotColorTranslation(
+        const cv::Mat3b &frame,
+        const glm::mat4& pose,
+        const std::vector<float> &offsets,
+        const glm::vec3& axis,
+        std::string file_name)
+    {
+        std::ofstream fout_tr(file_name);
+        fout_tr << "frames:" << std::endl;
+        for (int i = 0; i < offsets.size(); ++i)
+        {
+            glm::vec3 offset_vector(axis.x * offsets[i], axis.y * offsets[i], axis.z * offsets[i]);
+            glm::mat4 transform = glm::translate(pose, offset_vector);
+            histograms::PoseEstimator2 estimator;
+            fout_tr << "  - frame: " << i + 1 << std::endl;
+            fout_tr << "    error: " << estimator.estimateEnergy(data.object3D2, frame, transform).first << std::endl;
+        }
+        fout_tr.close();
+    }
+
+    void plotEnergy(const cv::Mat3b& frame, const glm::mat4& pose, int frame_number)
+    {
+        histograms::Object3d2& object3d = data.object3D2;
+        std::string directory_name = data.directory_name;
+        int num_points = 100;
+        float max_rotation = 0.1f;
+        float max_translation = 0.1f * object3d.getMesh().getBBDiameter();
+        float rotation_step = max_rotation / static_cast<float>(num_points);
+        float translation_step = max_translation / static_cast<float>(num_points);
+        std::string base_file_name =
+            directory_name + "/plots/" + std::to_string(frame_number);
+        std::string rot_x_file = base_file_name + "rot_x.yml";
+        std::string rot_y_file = base_file_name + "rot_y.yml";
+        std::string rot_z_file = base_file_name + "rot_z.yml";
+        std::string tr_x_file = base_file_name + "tr_x.yml";
+        std::string tr_y_file = base_file_name + "tr_y.yml";
+        std::string tr_z_file = base_file_name + "tr_z.yml";
+        std::vector<float> angles(2 * num_points + 1);
+        std::vector<float> offsets(2 * num_points + 1);
+        for (int pt = -num_points; pt <= num_points; ++pt)
+        {
+            int pose_number = pt + num_points;
+            angles[pose_number] = rotation_step * pt;
+            offsets[pose_number] = translation_step * pt;
+        }
+        //plotColorRotation(object3d, frame, pose, angles, glm::vec3(1.0, 0.0, 0.0), rot_x_file);
+        //plotColorRotation(object3d, frame, pose, angles, glm::vec3(0.0, 1.0, 0.0), rot_y_file);
+        //plotColorRotation(object3d, frame, pose, angles, glm::vec3(0.0, 0.0, 1.0), rot_z_file);
+        plotColorTranslation(frame, pose, offsets, glm::vec3(1.0, 0.0, 0.0), tr_x_file);
+        //plotColorTranslation(object3d, frame, pose, offsets, glm::vec3(0.0, 1.0, 0.0), tr_x_file);
+        //plotColorTranslation(object3d, frame, pose, offsets, glm::vec3(0.0, 0.0, 1.0), tr_x_file);
+
+    }
+
     void run() override
     {
         histograms::Object3d2& object3D = data.object3D2;
@@ -90,14 +144,14 @@ public:
             }
             object3D.updateHistograms(processed_frame, pose);
             data.estimated_poses[frame_number] = pose;
-            //data.writePng(frame, frame_number);
+            //data.writePng(rgb_frame, frame_number);
 
             frame = getFrame();
             if (frame.empty())
                 break;
             equalizeHSV(frame, processed_frame);
             ++frame_number;
-
+            histograms::PoseEstimator2 estimator;
             if (frame_number > 2)
             //if (false)
             {
@@ -112,7 +166,16 @@ public:
                     optimization_init = extrapolate(prev_pose, pose);
                 }
                 //glm::mat4 optimization_init = pose;
-                pose_getter.setInitialPose(optimization_init);
+                if (estimator.estimateEnergy(object3D, processed_frame, optimization_init).first < 
+                    estimator.estimateEnergy(object3D, processed_frame, pose).first)
+                {
+                    pose_getter.setInitialPose(optimization_init);
+                }
+                else
+                {
+                    //pose_getter.setInitialPose(pose);
+                    pose_getter.setInitialPose(optimization_init);
+                }
             }
 
             if (frame_number == 12)
@@ -123,7 +186,7 @@ public:
             prev_prev_pose = prev_pose;
             prev_pose = pose;
             pose = getPoseOnPyramide(processed_frame, pose_getter, pyramide_levels);
-            histograms::PoseEstimator2 estimator;
+            
             //std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, processed_frame, pose, 10).first << std::endl;
             /*if (frame_number == 12)
             {

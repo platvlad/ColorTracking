@@ -229,6 +229,26 @@ lkt::FeatureInfoList Feature3DInfoList::getFeatureInfoList(const std::vector<Fea
     return result;
 }
 
+float Feature3DInfoList::getAvgReprojectionError(const glm::mat4 &mvp) const
+{
+    size_t feature_num = featInfos.size();
+    float reprojection_error_sum = 0;
+    for (int i = 0; i < feature_num; ++i)
+    {
+        const Feature3DInfo& feat_3D_info = featInfos[i];
+        const glm::vec3& pt_3d = feat_3D_info.object_pos;
+        const lkt::FeatureInfo& feat_info = feat_3D_info.feature_info;
+        reprojection_error_sum += sqrt(lkt::computeReprojectionError2(mvp,
+            pt_3d,
+            glm::vec2(feat_info.x, feat_info.y)));
+    }
+    if (feature_num > 0)
+    {
+        return reprojection_error_sum / feature_num;
+    }
+    return std::numeric_limits<float>::max();
+}
+
 void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &mesh, const glm::mat4 &model, const glm::mat4 &projection)
 {
     lkt::Features::FeaturesAndCorners new_features = featureDetector.detectFeaturesAndCorners(frame);

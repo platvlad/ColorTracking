@@ -26,7 +26,7 @@ void LktInitTracker::run()
         std::cout << "frame number = " << frame_number << std::endl;
         object3D.updateHistograms(processed_frame, pose);
         data.estimated_poses[frame_number] = pose;
-        //data.writePng(frame, frame_number);
+        data.writePng(frame, frame_number);
         f_tracker.setPrevModel(pose);
         
         frame = getFrame();
@@ -37,35 +37,42 @@ void LktInitTracker::run()
         glm::mat4 feat_pose = f_tracker.handleFrame(frame);
         histograms::PoseEstimator2 estimator;
 
+        float feat_pose_error = estimator.estimateEnergy(object3D, processed_frame, feat_pose, 100).first;
+        float old_pose_error = estimator.estimateEnergy(object3D, processed_frame, pose, 100).first;
         if (frame_number > 2)
         //if (false)
         {
-            float feat_pose_error = estimator.estimateEnergy(object3D, processed_frame, feat_pose, 100).first;
-            glm::mat4 extrapolated;
-            //if (frame_number > 3)
-            if (false)
-            {
-                extrapolated = extrapolate(prev_prev_pose, prev_pose, pose);
-            }
-            else
-            {
-                extrapolated = extrapolate(prev_pose, pose);
-            }
+            glm::mat4 extrapolated = extrapolate(prev_pose, pose);
+            
+            extrapolated = prev_pose;
             float extrapolated_pose_error = estimator.estimateEnergy(object3D, processed_frame, extrapolated, 100).first;
             //std::cout << "feat pose error = " << feat_pose_error << std::endl;
             //std::cout << "extrapolated pose error = " << extrapolated_pose_error << std::endl;
+            //if (extrapolated_pose_error < feat_pose_error && extrapolated_pose_error < old_pose_error)
             if (extrapolated_pose_error < feat_pose_error)
             {
                 color_pose_getter.setInitialPose(extrapolated);
             }
+            //else if (feat_pose_error < old_pose_error)
             else
             {
                 color_pose_getter.setInitialPose(feat_pose);
             }
+            //else
+            //{
+              //  color_pose_getter.setInitialPose(pose);
+            //}
         }
         else
         {
-            color_pose_getter.setInitialPose(feat_pose);
+            //if (feat_pose_error < old_pose_error)
+            //{
+                color_pose_getter.setInitialPose(feat_pose);
+            //}
+            //else
+            //{
+                //color_pose_getter.setInitialPose(pose);
+            //}
         }
 
         prev_prev_pose = prev_pose;

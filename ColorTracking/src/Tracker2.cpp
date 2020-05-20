@@ -1,6 +1,10 @@
 #include "Tracker2.h"
 
+#include <fstream>
+#include <glm/gtc/matrix_transform.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
+#include <Object3d2.h>
+#include <PoseEstimator2.h>
 
 Tracker2::Tracker2(const std::string &directory_name) : data(directory_name)
 {
@@ -9,13 +13,15 @@ Tracker2::Tracker2(const std::string &directory_name) : data(directory_name)
 void Tracker2::equalizeHSV(const cv::Mat3b &input, cv::Mat3b &output)
 {
     //output = input;
-    cv::cvtColor(input, output, CV_BGR2HSV);
+    cv::Mat3b hsv_frame;
+    cv::cvtColor(input, hsv_frame, CV_BGR2HSV);
     std::vector<cv::Mat1b> hsv_channels;
-    cv::split(output, hsv_channels);
+    cv::split(hsv_frame, hsv_channels);
     //cv::equalizeHist(hsv_channels[0], hsv_channels[0]);
     //cv::equalizeHist(hsv_channels[1], hsv_channels[1]);
     cv::equalizeHist(hsv_channels[2], hsv_channels[2]);
-    cv::merge(hsv_channels, output);
+    cv::merge(hsv_channels, hsv_frame);
+    cv::cvtColor(hsv_frame, output, CV_HSV2BGR);
 }
 
 void Tracker2::processFrame(const cv::Mat3b & input, cv::Mat3b & output, bool hsv)
@@ -29,9 +35,10 @@ void Tracker2::processFrame(const cv::Mat3b & input, cv::Mat3b & output, bool hs
         }
         cv::Mat3b flipped_frame;
         cv::flip(input, flipped_frame, 0);
-        cv::cvtColor(flipped_frame, output, CV_BGR2HSV);
+        cv::Mat3b hsv_frame;
+        cv::cvtColor(flipped_frame, hsv_frame, CV_BGR2HSV);
         std::vector<cv::Mat1b> hsv_channels;
-        cv::split(output, hsv_channels);
+        cv::split(hsv_frame, hsv_channels);
         //cv::equalizeHist(hsv_channels[0], hsv_channels[0]);
         //cv::equalizeHist(hsv_channels[1], hsv_channels[1]);
         cv::equalizeHist(hsv_channels[2], hsv_channels[2]);

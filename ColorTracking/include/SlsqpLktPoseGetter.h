@@ -18,7 +18,7 @@ class SlsqpLktPoseGetter : public PoseGetter
 
     glm::mat4 initial_pose;
     size_t num_iterations;
-    histograms::Object3d* object;
+    histograms::Object3d2* object;
     lkt::PnPObjective::Ptr pnp_obj;
 
     Feature3DInfoList feature_info_list;
@@ -44,7 +44,7 @@ class SlsqpLktPoseGetter : public PoseGetter
 
 
 public:
-    SlsqpLktPoseGetter(histograms::Object3d* object3d, const glm::mat4& initial_pose, const cv::Mat3b &init_frame);
+    SlsqpLktPoseGetter(histograms::Object3d2* object3d, const glm::mat4& initial_pose, const cv::Mat3b &init_frame);
     glm::mat4 getPose(const cv::Mat& frame, int mode, std::string directory_name, int frame_number);
     glm::mat4 getPose(const cv::Mat& frame);
     glm::mat4 getPose(const cv::Mat& frame, int mode);

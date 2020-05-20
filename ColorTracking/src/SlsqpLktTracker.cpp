@@ -6,7 +6,7 @@
 
 void SlsqpLktTracker::run()
 {
-    histograms::Object3d& object3D = data.object3D;
+    histograms::Object3d2& object3D = data.object3D2;
     glm::mat4 pose = data.getPose(1);
     glm::mat4 prev_pose = pose;
     int frame_number = 1;
@@ -17,7 +17,7 @@ void SlsqpLktTracker::run()
     {
         object3D.updateHistograms(frame, pose);
         data.estimated_poses[frame_number] = pose;
-        data.writePng(frame, frame_number);
+        //data.writePng(frame, frame_number);
 
         frame = getFrame();
         if (frame.empty())
@@ -42,7 +42,8 @@ void SlsqpLktTracker::run()
         }
 
         histograms::PoseEstimator estimator;
-        std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, frame, pose, 10).first << std::endl;
+        //std::cout << frame_number << ' ' << estimator.estimateEnergy(object3D, frame, pose, 10).first << std::endl;
+        std::cout << frame_number << std::endl;
     }
-    data.writePositions();
+    data.writePositions("output_slsqp_lkt_1e6.yml");
 }

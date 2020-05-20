@@ -76,6 +76,7 @@ glm::mat4 LkPoseGetter::handleFrame(const cv::Mat3b &frame)
         feature_info_list.addNewFeatures(gray_frame, mesh, init_model, projection);
         prev_frame = gray_frame;
         prev_model = init_model;
+        std::cout << "num features = " << feature_info_list.size() << std::endl;
         return init_model;
     }
     feature_info_list.moveFeaturesBySparseFlow(prev_frame, gray_frame);
@@ -116,7 +117,11 @@ glm::mat4 LkPoseGetter::handleFrame(const cv::Mat3b &frame)
     return prev_model;
 }
 
-
+double LkPoseGetter::getAvgReprojectionError(const glm::mat4 &transform) const
+{
+    glm::mat4 mvp = projection * transform;
+    return feature_info_list.getAvgReprojectionError(mvp);
+}
 
 void LkPoseGetter::addNewFeatures(const glm::mat4 &pose)
 {
