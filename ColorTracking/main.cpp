@@ -260,36 +260,42 @@ int main()
     //glGenVertexArrays(1, &VAO);
    // std::cout << glGetString(GL_VERSION) << std::endl;
     
-   //track("data/ir_ir_5_r", "slsqp");
+   //track("data/foxes", "slsqp");
 
    boost::filesystem::path opt_small_directory("data/opt_small");
+   boost::filesystem::path opt_results_dir("data\\opt_small\\results");
     for (auto& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(opt_small_directory), {}))
     {
         boost::filesystem::path object_dir_path(entry);
         if (boost::filesystem::is_directory(object_dir_path))
         {
             boost::filesystem::path object_dir_name = object_dir_path.filename();
-            for (auto& case_entry : boost::make_iterator_range(boost::filesystem::directory_iterator(object_dir_path), {}))
+            if (object_dir_name != "results")
             {
-                boost::filesystem::path case_entry_path(case_entry);
-                boost::filesystem::path case_name = case_entry_path.filename();
-                if (boost::filesystem::is_directory(case_entry_path))
+                boost::filesystem::path object_results_path = opt_results_dir / object_dir_name;
+                for (auto& case_entry : boost::make_iterator_range(boost::filesystem::directory_iterator(object_dir_path), {}))
                 {
-                    
-                    
-                        std::cout << case_entry << std::endl;
-                        try
+                    boost::filesystem::path case_entry_path(case_entry);
+                    boost::filesystem::path case_name = case_entry_path.filename();
+                    if (boost::filesystem::is_directory(case_entry_path))
+                    {
+                        boost::filesystem::path case_results_path = object_results_path / case_name / "errors_lkt_init_rgb_no_reproj.yml";
+                        if (!boost::filesystem::exists(case_results_path))
                         {
-                            //track(case_entry.path().string(), "lkt");
-                            track(case_entry.path().string(), "lkt_init");
-                            //track(case_entry.path().string(), "slsqp");
-                            //track(case_entry.path().string(), "slsqp_lkt");
+                            std::cout << case_entry << std::endl;
+                            try
+                            {
+                                //track(case_entry.path().string(), "lkt");
+                                track(case_entry.path().string(), "lkt_init");
+                                //track(case_entry.path().string(), "slsqp");
+                                //track(case_entry.path().string(), "slsqp_lkt");
+                            }
+                            catch (...)
+                            {
+                                std::cout << case_entry << " failed" << std::endl;
+                            }
                         }
-                        catch (...)
-                        {
-                            std::cout << case_entry << " failed" << std::endl;
-                        }
-                    
+                    }
                 }
             }
         }

@@ -120,6 +120,12 @@ namespace histograms
                 if (abs(signed_distance(row, col)) <= frame_offset)
                 {
                     cv::Vec3f transformed_pt = transformed_pts(row, col);
+                    //if (signed_distance(row, col) < 0)
+                    //{
+                    //    cv::Vec3f depth_value = projection.depth_map(row, col);
+                    //    transformed_pt = depth_value;
+                    //    transformed_pt[2] = -transformed_pt[2];
+                    //}
                     int histo_num = getHistogram(transformed_pt, pose_inv);
                     cv::Vec3b& color_value = projection.color_map(row, col);
                     float heaviside_value = projection.heaviside(row, col);
@@ -131,11 +137,18 @@ namespace histograms
                         histo_nums(row, col) = cv::Vec3b(histo_num * 8, (histo_num + 1) * 16 % 255, (histo_num + 2) * 24 % 255);
                         if (signed_distance(row, col) >= 0)
                         {
-                            histo_nums(row, col)[0] *= 0.8f;
+                            histo_nums(row, col)[0] *= 0.6f;
+                            histo_nums(row, col)[1] *= 0.6f;
+                            histo_nums(row, col)[2] *= 0.6f;
                         }
                     }
                 }
             }
+        }
+
+        if (debug_info)
+        {
+            cv::imwrite("C:\\MyProjects\\repo\\VSProjects\\ColorTracking\\ColorTracking\\build\\data\\debug_frames\\histo_nums_foxes_wrong.png", histo_nums);
         }
 
         for (int i = 0; i < 32; ++i)

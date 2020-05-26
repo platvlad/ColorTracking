@@ -12,16 +12,16 @@ Tracker2::Tracker2(const std::string &directory_name) : data(directory_name)
 
 void Tracker2::equalizeHSV(const cv::Mat3b &input, cv::Mat3b &output)
 {
-    //output = input;
-    cv::Mat3b hsv_frame;
-    cv::cvtColor(input, hsv_frame, CV_BGR2HSV);
-    std::vector<cv::Mat1b> hsv_channels;
-    cv::split(hsv_frame, hsv_channels);
-    //cv::equalizeHist(hsv_channels[0], hsv_channels[0]);
-    //cv::equalizeHist(hsv_channels[1], hsv_channels[1]);
-    cv::equalizeHist(hsv_channels[2], hsv_channels[2]);
-    cv::merge(hsv_channels, hsv_frame);
-    cv::cvtColor(hsv_frame, output, CV_HSV2BGR);
+    output = input;
+    //cv::Mat3b hsv_frame;
+    //cv::cvtColor(input, hsv_frame, CV_BGR2HSV);
+    //std::vector<cv::Mat1b> hsv_channels;
+    //cv::split(hsv_frame, hsv_channels);
+    ////cv::equalizeHist(hsv_channels[0], hsv_channels[0]);
+    ////cv::equalizeHist(hsv_channels[1], hsv_channels[1]);
+    //cv::equalizeHist(hsv_channels[2], hsv_channels[2]);
+    //cv::merge(hsv_channels, hsv_frame);
+    //cv::cvtColor(hsv_frame, output, CV_HSV2BGR);
 }
 
 void Tracker2::processFrame(const cv::Mat3b & input, cv::Mat3b & output, bool hsv)

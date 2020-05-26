@@ -302,17 +302,17 @@ void Feature3DInfoList::addNewFeatures(const cv::Mat1b &frame, const lkt::Mesh &
                             float alt_reprojection_error = lkt::computeReprojectionError2(mvp,
                                 feat_3d_info.alt_object_pos,
                                 glm::vec2(feat_info.x, feat_info.y));
-                            if (alt_reprojection_error < feat_3d_info.best_reproj)
-                            {   
-                                feat_3d_info.object_pos = feat_3d_info.alt_object_pos;
-                                feat_3d_info.best_reproj = alt_reprojection_error;
-                                feat_3d_info.face_id = unprojected[i].get().second;
-                                ++new_pos_counter;
-                            }
-                            else
-                            {
-                                ++old_pos_counter;
-                            }
+                            //if (alt_reprojection_error < feat_3d_info.best_reproj)
+                            //{   
+                            //    feat_3d_info.object_pos = feat_3d_info.alt_object_pos;
+                            //    feat_3d_info.best_reproj = alt_reprojection_error;
+                            //    feat_3d_info.face_id = unprojected[i].get().second;
+                            //    ++new_pos_counter;
+                            //}
+                            //else
+                            //{
+                            //    ++old_pos_counter;
+                            //}
                         }
                         else
                         {
