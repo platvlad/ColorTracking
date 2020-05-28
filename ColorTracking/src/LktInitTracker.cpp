@@ -90,5 +90,5 @@ void LktInitTracker::run()
         }
         
     }
-    data.writePositions("output_lkt_init_rgb_no_reproj.yml");
+    data.writePositions("output_lkt_init_rgb_long_reproj.yml");
 }

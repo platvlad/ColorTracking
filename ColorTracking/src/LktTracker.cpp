@@ -59,5 +59,5 @@ void LktTracker::run()
         }
         ++frame_number;
     }
-    data.writePositions("output.yml");
+    data.writePositions("output_lkt.yml");
 }

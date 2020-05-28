@@ -279,14 +279,15 @@ int main()
                     boost::filesystem::path case_name = case_entry_path.filename();
                     if (boost::filesystem::is_directory(case_entry_path))
                     {
-                        boost::filesystem::path case_results_path = object_results_path / case_name / "errors_lkt_init_rgb_no_reproj.yml";
-                        if (!boost::filesystem::exists(case_results_path))
+                        boost::filesystem::path case_results_path = object_results_path / case_name / "errors_smth.yml";
+                        if (!boost::filesystem::exists(case_results_path) && 
+                            case_name == "bi_ir_2_l")
                         {
                             std::cout << case_entry << std::endl;
                             try
                             {
-                                //track(case_entry.path().string(), "lkt");
-                                track(case_entry.path().string(), "lkt_init");
+                                track(case_entry.path().string(), "lkt");
+                                //track(case_entry.path().string(), "lkt_init");
                                 //track(case_entry.path().string(), "slsqp");
                                 //track(case_entry.path().string(), "slsqp_lkt");
                             }

@@ -138,10 +138,6 @@ public:
         while (!frame.empty())
         {
             std::cout << frame_number << std::endl;
-            if (frame_number == 122)
-            {
-                bool for_debug = true;
-            }
             object3D.updateHistograms(processed_frame, pose);
             data.estimated_poses[frame_number] = pose;
             //data.writePng(rgb_frame, frame_number);
@@ -202,6 +198,6 @@ public:
                 ////data.writePlots(frame, frame_number, pose);
             }
         }
-        data.writePositions("output.yml");
+        data.writePositions("output_slsqp_rgb.yml");
     }
 };
