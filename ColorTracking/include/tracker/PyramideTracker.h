@@ -59,6 +59,6 @@ public:
                 //data.writePlots(frame, frame_number, pose);
             }
         }
-        data.writePositions("");
+        data.writePositions("slsqp_rgb_full_hist");
     }
 };

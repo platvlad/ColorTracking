@@ -75,5 +75,5 @@ void LktInitTracker::run()
         }
         
     }
-    data.writePositions("");
+    data.writePositions("lkt_init_rgb_full_hist");
 }
