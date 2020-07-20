@@ -1,13 +1,8 @@
-//#pragma comment(lib, "glew32.lib")
-
 #include <iostream>
 #include <fstream>
 #include <boost/filesystem.hpp>
 #include <opencv2/highgui.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
-//#define GLEW_STATIC
-#include <GL/glew.h>
 
 #include <PoseEstimator.h>
 #include <pose_getter/GroundTruthPoseGetter.h>
@@ -225,14 +220,8 @@ void track(const std::string &directory_name, const std::string &method)
     }
 }
 
-int main()
+void test_opt()
 {
-//    Tests::runTests();
-    //GLuint VAO;
-    //glGenVertexArrays(1, &VAO);
-   // std::cout << glGetString(GL_VERSION) << std::endl;
-    //track("data/bi_ir_5_l", "lkt_init");
-
     boost::filesystem::path opt_small_directory("data/opt_small");
     boost::filesystem::path opt_results_dir("data\\opt_small\\results");
     for (auto& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(opt_small_directory), {}))
@@ -272,6 +261,12 @@ int main()
             }
         }
     }
+}
 
+int main()
+{
+//    Tests::runTests();
+    track("data/bi_ir_5_l", "lkt_init");
+//    test_opt();
     return 0;
 }

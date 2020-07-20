@@ -15,8 +15,8 @@ glm::mat4 applyResultToPose(const glm::mat4& matr, const double* params);
 
 DataIO::DataIO(const std::string& directory_name) : directory_name(directory_name)
 {
-    boost::filesystem::path mesh_path(directory_name + "/../mesh.obj");
-    boost::filesystem::path camera_path(directory_name + "/../camera.yml");
+    boost::filesystem::path mesh_path(directory_name + "/mesh.obj");
+    boost::filesystem::path camera_path(directory_name + "/camera.yml");
     ground_truth_path = boost::filesystem::path(directory_name + "/ground_truth.yml");
     boost::filesystem::path video_path(directory_name + "/rgb");
     histograms::Mesh mesh = DataIO::getMesh(mesh_path);
